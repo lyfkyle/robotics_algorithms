@@ -9,12 +9,16 @@ GRID_HEIGHT = 4
 GRID_WIDTH = 9
 OBSTACLES = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)]
 
-class CliffWalking():
-    def __init__(self, start=(0,0), goal=(7, 0), obstacles=OBSTACLES):
+from .mdp_env import MDP
+
+class CliffWalking(MDP):
+    def __init__(self, start=(0,0), goal=(8, 0), obstacles=OBSTACLES):
         """
         @param, start, the start position of agent
                 goal, the goal position
         """
+        MDP.__init__(self)
+
         self.states = [(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)]
         self.actions = [0, 1, 2, 3]
         self.action_space_size = len(self.actions)
@@ -26,6 +30,51 @@ class CliffWalking():
         self.step_reward = -1
         self.obstacle_reward = -100
         self.goal_reward = 0
+
+    def transit_func(self, state, action):
+        i, j = state
+
+        if state[0] == self.goal[0] and state[1] == self.goal[1]:
+            episode_over = True
+        elif state in self.obstacles:
+            episode_over = True
+        else:
+            episode_over = False
+
+        next_states = []
+        probs = []
+
+        if not episode_over:
+            probs = [0.8, 0.1, 0.1]
+
+            if action == 0:
+                next_states.append((i, min(j + 1, GRID_HEIGHT -1)))
+                next_states.append((max(0, i - 1), min(j + 1, GRID_HEIGHT -1)))
+                next_states.append((min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT -1)))
+            elif action == 1:
+                next_states.append((min(i + 1, GRID_WIDTH - 1), j))
+                next_states.append((min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT -1)))
+                next_states.append((min(i + 1, GRID_WIDTH - 1), max(0, j - 1)))
+            elif action == 2:
+                next_states.append((i, max(0, j - 1)))
+                next_states.append((max(0, i - 1), max(0, j - 1)))
+                next_states.append((min(i + 1, GRID_WIDTH - 1), max(0, j - 1)))
+            elif action == 3:
+                next_states.append((max(0, i - 1), j))
+                next_states.append((max(0, i - 1), min(j + 1, GRID_HEIGHT -1)))
+                next_states.append((max(0, i - 1), max(0, j - 1)))
+
+        return next_states, probs, episode_over
+    
+    def reward_func(self, state, action):
+        if state[0] == self.goal[0] and state[1] == self.goal[1]:
+            reward = self.goal_reward
+        elif state in self.obstacles:
+            reward = self.obstacle_reward
+        else:
+            reward = self.step_reward
+        
+        return reward
 
     def step(self, action):
         """
@@ -41,53 +90,21 @@ class CliffWalking():
             info (dict) :
                  Contains no additional information.
         """
-        i, j = self.cur_pos
-        goal_reached = False
-
-        tmp = random.randint(1, 11) # random int from 1 to 10
-        if action == 0:
-            if tmp <= 8:
-                next_pos = (i, min(j + 1, GRID_HEIGHT -1))
-            elif tmp == 9:
-                next_pos = (max(0, i - 1), min(j + 1, GRID_HEIGHT -1))
-            else:
-                next_pos = (min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT -1))
-        elif action == 1:
-            if tmp <= 8:
-                next_pos = (min(i + 1, GRID_WIDTH - 1), j)
-            elif tmp == 9:
-                next_pos = (min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT -1))
-            else:
-                next_pos = (min(i + 1, GRID_WIDTH - 1), max(0, j - 1))
-        elif action == 2:
-            if tmp <= 8:
-                next_pos = (i, max(0, j - 1))
-            elif tmp == 9:
-                next_pos = (max(0, i - 1), max(0, j - 1))
-            else:
-                next_pos = (min(i + 1, GRID_WIDTH - 1), max(0, j - 1))
-        elif action == 3:
-            if tmp <= 8:
-                next_pos = (max(0, i - 1), j)
-            elif tmp == 9:
-                next_pos = (max(0, i - 1), min(j + 1, GRID_HEIGHT -1))
-            else:
-                next_pos = (max(0, i - 1), max(0, j - 1))
-        if next_pos[0] == self.goal[0] and next_pos[1] == self.goal[1]:
-            reward = self.goal_reward
-            episode_over = True
-            goal_reached = True
-        elif next_pos in self.obstacles:
-            reward = self.obstacle_reward
-            episode_over = True
+        state = self.cur_pos
+        next_states, probs, episode_over = self.transit_func(state, action)
+        if not episode_over:
+            next_state_idx = np.random.choice(np.arange(len(next_states)), p = probs)  # choose next_state
+            next_state = next_states[next_state_idx]
+            self.cur_pos = next_state
         else:
-            reward = self.step_reward
-            # reward = self.goal_reward - abs(self.goal[0] - next_pos[0]) - abs(self.goal[1] - next_pos[1])
-            episode_over = False
-        
-        self.cur_pos = next_pos
+            next_state = state
+        reward = self.reward_func(state, action)
 
-        return next_pos, reward, episode_over, goal_reached
+        goal_reached = False
+        if state[0] == self.goal[0] and state[1] == self.goal[1]:
+            goal_reached = True
+
+        return next_state, reward, episode_over, goal_reached
     
     def reset(self):
         self.cur_pos = self.start

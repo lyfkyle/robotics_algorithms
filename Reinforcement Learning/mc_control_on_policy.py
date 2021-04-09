@@ -7,11 +7,6 @@ import numpy as np
 import sys
 from collections import defaultdict
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from environment.windy_gridworld import WindyGridWorld
-from environment.cliff_walking import CliffWalking
-
 class MCControlOnPolicy():
     def __init__(self):
         pass
@@ -132,6 +127,12 @@ class MCControlOnPolicy():
         return self.episodes, self.cumulative_rewards
 
 if __name__ == "__main__":
+
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+    from environment.windy_gridworld import WindyGridWorld
+    from environment.cliff_walking import CliffWalking
+
     env = WindyGridWorld()
     mc = MCControlOnPolicy()
     Q, policy = mc.learn(env, num_episodes = 400, epsilon = 0.1)

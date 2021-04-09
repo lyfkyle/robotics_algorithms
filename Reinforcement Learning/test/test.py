@@ -46,41 +46,36 @@ def get_success_rate(env, policy, num_of_attempt=100):
 
     return success_cnt / 100.0
 
-# env = WindyGridWorld()
+env = WindyGridWorld()
 
-# EPISODE_NUM = 100
+EPISODE_NUM = 200
 
-# Q, policy = mc.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
-# episodes, learning_curve_1 = mc.get_learning_curve()
-# mc_success_cnt = get_success_rate(env, policy)
+Q, policy = mc.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
+episodes, learning_curve_1 = mc.get_learning_curve()
 
-# Q, policy = sarsa_zero.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
-# _, learning_curve_2 = sarsa_zero.get_learning_curve()
-# success_cnt_1 = get_success_rate(env, policy)
+Q, policy = sarsa_zero.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
+_, learning_curve_2 = sarsa_zero.get_learning_curve()
 
-# # Q, policy = sarsa_one.learn(env, num_episodes = 100, epsilon = 0.1)
-# # _, learning_curve_3 = sarsa_one.get_learning_curve()
+# Q, policy = sarsa_one.learn(env, num_episodes = 100, epsilon = 0.1)
+# _, learning_curve_3 = sarsa_one.get_learning_curve()
 
-# Q, policy = sarsa_five.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
-# _, learning_curve_4 = sarsa_five.get_learning_curve()
-# success_cnt_2 = get_success_rate(env, policy)
+Q, policy = sarsa_five.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
+_, learning_curve_4 = sarsa_five.get_learning_curve()
 
-# Q, policy = sarsa_ten.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
-# _, learning_curve_5 = sarsa_ten.get_learning_curve()
-# success_cnt_3 = get_success_rate(env, policy)
+Q, policy = sarsa_ten.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
+_, learning_curve_5 = sarsa_ten.get_learning_curve()
 
-# plt.plot(episodes, learning_curve_1, label="mc")
-# plt.plot(episodes, learning_curve_2, label="sarsa_zero")
-# # plt.plot(episodes, learning_curve_3, label="sarsa_one")
-# plt.plot(episodes, learning_curve_4, label="sarsa_five")
-# plt.plot(episodes, learning_curve_5, label="sarsa_ten")
-# plt.legend()
-# plt.ylabel('reward')
-# plt.xlabel('episodes')
-# plt.xlim([0, 50])
-# plt.ylim([-500, 0])
-# plt.show()
-
+plt.plot(episodes, learning_curve_1, label="mc")
+plt.plot(episodes, learning_curve_2, label="sarsa_zero")
+# plt.plot(episodes, learning_curve_3, label="sarsa_one")
+plt.plot(episodes, learning_curve_4, label="sarsa_five")
+plt.plot(episodes, learning_curve_5, label="sarsa_ten")
+plt.legend()
+plt.ylabel('reward')
+plt.xlabel('episodes')
+plt.xlim([0, 50])
+plt.ylim([-500, 0])
+plt.show()
 
 env = CliffWalking()
 
@@ -103,17 +98,6 @@ success_cnt_2 = get_success_rate(env, policy)
 Q, policy = sarsa_ten.learn(env, num_episodes = EPISODE_NUM, epsilon = 0.1)
 # _, learning_curve_5 = sarsa_ten.get_learning_curve()
 success_cnt_3 = get_success_rate(env, policy)
-
-# # plt.plot(episodes, learning_curve_1, label="mc")
-# # plt.plot(episodes, learning_curve_2, label="sarsa_zero")
-# # # plt.plot(episodes, learning_curve_3, label="sarsa_one")
-# # plt.plot(episodes, learning_curve_4, label="sarsa_five")
-# # plt.plot(episodes, learning_curve_5, label="sarsa_ten")
-# # plt.legend()
-# # plt.ylabel('reward')
-# # plt.xlabel('episodes')
-# # plt.xlim([0, 800])
-# # plt.ylim([-500, 0])
 
 plt.bar(["sarsa_zero", "sarsa_five", "sarsa_ten", "mc"], [success_cnt_1, success_cnt_2, success_cnt_3, mc_success_cnt])
 plt.ylabel("success rate")
