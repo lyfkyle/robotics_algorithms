@@ -1,13 +1,13 @@
 #!/usr/bin/evn python
 
 import sys
-sys.path.append('../../environment/')
-sys.path.append('../')
+import os.path as osp
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
 
 import random
 
-from one_d_localization_discrete import OneDLocalizationDiscrete
-from discrete_bayes_filter import DiscreteBayesFilter
+from env.one_d_localization_discrete import OneDLocalizationDiscrete
+from state_estimation.discrete_bayes_filter import DiscreteBayesFilter
 
 env = OneDLocalizationDiscrete()
 my_filter = DiscreteBayesFilter(env.state_space_size)

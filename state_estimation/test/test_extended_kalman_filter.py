@@ -1,16 +1,16 @@
 #!/usr/bin/evn python
 
 import sys
-sys.path.append('../../environment/')
-sys.path.append('../')
+import os.path as osp
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
 
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 import math
 
-from two_d_localization_with_feature import TwoDLocalizationWithFeature
-from extended_kalman_filter import ExtendedKalmanFilter
+from env.two_d_localization_with_feature import TwoDLocalizationWithFeature
+from state_estimation.extended_kalman_filter import ExtendedKalmanFilter
 
 # Initialize environment
 env = TwoDLocalizationWithFeature()
@@ -69,13 +69,13 @@ NUM_OF_TIMESTAMP += 1
 t = np.arange(NUM_OF_TIMESTAMP)
 
 fig, (ax1, ax2, ax3) = plt.subplots(nrows = 3, ncols = 1)
-ax1.plot(t, [true_state[i][0, 0] for i in range(NUM_OF_TIMESTAMP)], 'k')
-ax1.plot(t, [filter_state[i][0, 0] for i in range(NUM_OF_TIMESTAMP)], 'bo')
+ax1.plot(t, [true_state[i][0] for i in range(NUM_OF_TIMESTAMP)], 'k')
+ax1.plot(t, [filter_state[i][0] for i in range(NUM_OF_TIMESTAMP)], 'bo')
 ax1.set_ylabel('x')
-ax2.plot(t, [true_state[i][1, 0] for i in range(NUM_OF_TIMESTAMP)], 'k')
-ax2.plot(t, [filter_state[i][1, 0] for i in range(NUM_OF_TIMESTAMP)], 'bo')
+ax2.plot(t, [true_state[i][1] for i in range(NUM_OF_TIMESTAMP)], 'k')
+ax2.plot(t, [filter_state[i][1] for i in range(NUM_OF_TIMESTAMP)], 'bo')
 ax2.set_ylabel('y')
-ax3.plot(t, [true_state[i][2, 0] for i in range(NUM_OF_TIMESTAMP)], 'k')
-ax3.plot(t, [filter_state[i][2, 0] for i in range(NUM_OF_TIMESTAMP)], 'bo')
+ax3.plot(t, [true_state[i][2] for i in range(NUM_OF_TIMESTAMP)], 'k')
+ax3.plot(t, [filter_state[i][2] for i in range(NUM_OF_TIMESTAMP)], 'bo')
 ax3.set_ylabel('theta')
 plt.show()
