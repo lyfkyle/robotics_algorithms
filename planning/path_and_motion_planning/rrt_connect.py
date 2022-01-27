@@ -1,8 +1,8 @@
-from dijkstra import Dirkstra
 from sklearn.neighbors import NearestNeighbors
 from collections import defaultdict
 import numpy as np
 
+from .dijkstra import Dirkstra
 
 class RRT(object):
     TRAPPED = 0

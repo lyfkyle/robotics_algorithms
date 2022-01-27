@@ -1,15 +1,15 @@
 #!/usr/bin/evn python
 
 import sys
-sys.path.append('../../environment/')
-sys.path.append('../')
+import os.path as osp
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
 
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-from one_d_localization_continuous import OneDLocalizationContinuous
-from kalman_filter import KalmanFilter
+from env.one_d_localization_continuous import OneDLocalizationContinuous
+from state_estimation.kalman_filter import KalmanFilter
 
 env = OneDLocalizationContinuous()
 

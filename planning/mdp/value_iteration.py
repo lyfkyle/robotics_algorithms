@@ -15,12 +15,12 @@ class ValueIteration():
     def make_greedy_policy(self, Q, nA):
         """
         Creates an epsilon-greedy policy based on a given Q-function and epsilon.
-        
+
         Args:
             Q: A dictionary that maps from state -> action-values.
                 Each value is a numpy array of length nA (see below)
             nA: Number of actions in the environment.
-        
+
         Returns:
             A function that takes the observation as an argument and returns the action
         """
@@ -63,7 +63,7 @@ class ValueIteration():
                         next_state_values = 0
                         for i, next_state in enumerate(next_states):
                             next_state_values += probs[i] * v_state[next_state]
-                            
+
                     # update Q(s,a)
                     Q[state][action] = reward + discount_factor * next_state_values
 
@@ -82,8 +82,8 @@ class ValueIteration():
 if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-    from environment.windy_gridworld import WindyGridWorld
-    from environment.cliff_walking import CliffWalking
+    from env.windy_gridworld import WindyGridWorld
+    from env.cliff_walking import CliffWalking
 
     # env = WindyGridWorld()
     env = CliffWalking()
@@ -106,5 +106,5 @@ if __name__ == "__main__":
 
         if done:
             break
-    
+
     env.plot(path)

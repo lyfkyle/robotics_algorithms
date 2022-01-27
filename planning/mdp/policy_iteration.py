@@ -14,12 +14,12 @@ class PolicyIteration():
     def make_greedy_policy(self, Q, nA):
         """
         Creates an epsilon-greedy policy based on a given Q-function and epsilon.
-        
+
         Args:
             Q: A dictionary that maps from state -> action-values.
                 Each value is a numpy array of length nA (see below)
             nA: Number of actions in the environment.
-        
+
         Returns:
             A function that takes the observation as an argument and returns the action
         """
@@ -39,7 +39,7 @@ class PolicyIteration():
 
         # random init Q
         Q = defaultdict(lambda: np.zeros(env.action_space_size))
-        
+
         iter = 0
         policy_converged = False
         while not policy_converged:
@@ -49,7 +49,7 @@ class PolicyIteration():
             Q, policy_converged = self.policy_evaluation(env, Q, prev_policy, discount_factor)
             policy = self.policy_improvement(env, Q)
             iter += 1
-        
+
         return Q, policy
 
     def policy_evaluation(self, env, Q, policy, discount_factor=0.99, max_steps = 10, diff_threshold = 0.01):
@@ -60,7 +60,7 @@ class PolicyIteration():
 
         for state in states:
             action_probs = policy(state)
-            value = np.dot(action_probs, Q[state]) # calculate v_pi  
+            value = np.dot(action_probs, Q[state]) # calculate v_pi
             v_state[state] = value
 
         iter = 0
@@ -79,7 +79,7 @@ class PolicyIteration():
                         next_state_values = 0
                         for i, next_state in enumerate(next_states):
                             next_state_values += probs[i] * v_state[next_state]
-                            
+
                     # update Q(s,a)
                     Q[state][action] = reward + discount_factor * next_state_values
 
@@ -103,8 +103,8 @@ class PolicyIteration():
 if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-    from environment.windy_gridworld import WindyGridWorld
-    from environment.cliff_walking import CliffWalking
+    from env.windy_gridworld import WindyGridWorld
+    from env.cliff_walking import CliffWalking
 
     # env = WindyGridWorld()
     env = CliffWalking()
@@ -124,5 +124,5 @@ if __name__ == "__main__":
 
         if done:
             break
-    
+
     env.plot(path)
