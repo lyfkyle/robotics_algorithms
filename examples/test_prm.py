@@ -1,10 +1,10 @@
 import time
 
-from robotics_algorithm.env.two_d_maze import TwoDMaze
+from robotics_algorithm.env.grid_world_maze import GridWorldMaze
 from robotics_algorithm.planning import ProbabilisticRoadmap
 
 # Initialize environment
-env = TwoDMaze()
+env = GridWorldMaze()
 
 # -------- Settings ------------
 FIX_MAZE = True
@@ -112,7 +112,7 @@ def compute_local_path(v1, v2):
 def compute_source():
     for x in reversed(range(env.size)):
         for y in range(env.size):
-            if env.maze[x, y] == TwoDMaze.FREE_SPACE:
+            if env.maze[x, y] == GridWorldMaze.FREE_SPACE:
                 source = x, y
                 return source
 
@@ -120,7 +120,7 @@ def compute_source():
 def compute_goal():
     for x in range(env.size):
         for y in reversed(range(env.size)):
-            if env.maze[x, y] == TwoDMaze.FREE_SPACE:
+            if env.maze[x, y] == GridWorldMaze.FREE_SPACE:
                 goal = x, y
                 return goal
 
@@ -140,7 +140,7 @@ env.add_default_obstacles()
 source = compute_source()
 goal = compute_goal()
 # goal = (45, 0)
-env.add_source(source)
+env.add_start(source)
 env.add_goal(goal)
 # path = compute_local_path(source, goal)
 # env.add_path(path)

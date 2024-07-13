@@ -3,16 +3,16 @@ class Dirkstra(object):
         pass
 
     def run(self, graph, source, goal):
-        '''
+        """
         @param, graph, represented by adjacency list
         @param, source, the source vertex
         @param, goal, the goal vertex
         @return, boolean, return true if a path is found, return false otherwise
-                 shortest_path, a list of vertice if shortest path is found
+                 shortest_path, a list of vertices if shortest path is found
                  shortest_path_len, the length of shortest path if found.
-        '''
+        """
 
-        # initialzie
+        # initialize
         unvisited_vertices_set = set()
         shortest_path = []
         shortest_path_len = 0
@@ -21,14 +21,14 @@ class Dirkstra(object):
         prev = {}
 
         for v in graph:
-            dist[v] = float('inf')
+            dist[v] = float("inf")
             unvisited_vertices_set.add(v)
-        dist[source] = 0 # distance to source is 0
+        dist[source] = 0  # distance to source is 0
 
         # run algorithm
         path_exist = True
         while len(unvisited_vertices_set) > 0:
-            min_dist = float('inf')
+            min_dist = float("inf")
             for v in unvisited_vertices_set:
                 if dist[v] < min_dist:
                     min_dist = dist[v]
@@ -36,7 +36,7 @@ class Dirkstra(object):
 
             # print("mid_dist: {}".format(min_dist))
             # there is no path
-            if min_dist == float('inf'):
+            if min_dist == float("inf"):
                 path_exist = False
                 break
 
