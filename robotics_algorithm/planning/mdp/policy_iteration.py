@@ -7,7 +7,8 @@ import math
 import numpy as np
 from collections import defaultdict
 
-class PolicyIteration():
+
+class PolicyIteration:
     def __init__(self) -> None:
         pass
 
@@ -46,13 +47,17 @@ class PolicyIteration():
             print("PolicyIteration, iter {},".format(iter))
             prev_Q = copy.deepcopy(Q)
             prev_policy = self.make_greedy_policy(prev_Q, env.action_space_size)
-            Q, policy_converged = self.policy_evaluation(env, Q, prev_policy, discount_factor)
+            Q, policy_converged = self.policy_evaluation(
+                env, Q, prev_policy, discount_factor
+            )
             policy = self.policy_improvement(env, Q)
             iter += 1
 
         return Q, policy
 
-    def policy_evaluation(self, env, Q, policy, discount_factor=0.99, max_steps = 10, diff_threshold = 0.01):
+    def policy_evaluation(
+        self, env, Q, policy, discount_factor=0.99, max_steps=10, diff_threshold=0.01
+    ):
         states = env.states
         actions = env.actions
 
@@ -60,7 +65,7 @@ class PolicyIteration():
 
         for state in states:
             action_probs = policy(state)
-            value = np.dot(action_probs, Q[state]) # calculate v_pi
+            value = np.dot(action_probs, Q[state])  # calculate v_pi
             v_state[state] = value
 
         iter = 0
@@ -71,7 +76,7 @@ class PolicyIteration():
             for state in states:
                 for action in actions:
                     next_states, probs, done = env.transit_func(state, action)
-                    reward = env.reward_func(state, action) # r(s,a)
+                    reward = env.reward_func(state, action)  # r(s,a)
 
                     if done:
                         next_state_values = 0
@@ -84,14 +89,16 @@ class PolicyIteration():
                     Q[state][action] = reward + discount_factor * next_state_values
 
                 action_probs = policy(state)
-                value = np.dot(action_probs, Q[state]) # calculate v_pi
+                value = np.dot(action_probs, Q[state])  # calculate v_pi
                 if v_state[state] != value:
                     v_state_new[state] = value
                     max_change = max(max_change, math.fabs(value - v_state[state]))
 
             v_state = v_state_new
 
-            print("policy_evaluation, iter {}, max_change = {}".format(iter, max_change))
+            print(
+                "policy_evaluation, iter {}, max_change = {}".format(iter, max_change)
+            )
             iter += 1
 
         return Q, max_change < diff_threshold
@@ -100,8 +107,11 @@ class PolicyIteration():
         policy = self.make_greedy_policy(Q, env.action_space_size)
         return policy
 
+
 if __name__ == "__main__":
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    )
 
     from env.windy_gridworld import WindyGridWorld
     from env.cliff_walking import CliffWalking
@@ -116,7 +126,7 @@ if __name__ == "__main__":
     while True:
         ## choose action according to epsilon-greedy policy
         action_probs = policy(state)
-        action = np.random.choice(env.actions, p = action_probs)  # choose action
+        action = np.random.choice(env.actions, p=action_probs)  # choose action
         next_state, reward, done, _ = env.step(action)
 
         path.append(state)

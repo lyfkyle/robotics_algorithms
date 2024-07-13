@@ -13,7 +13,7 @@ class AStar(object):
                  shortest_path_len, the length of shortest path if found.
         '''
 
-        # initialzie
+        # initialize
         # for every vertex, dist[v] = g(s, v) + h(v, g)
         unvisited_vertices_set = set() # OPEN set. Nodes not in this set is in CLOSE set
         shortest_path = []

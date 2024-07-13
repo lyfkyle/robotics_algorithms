@@ -1,11 +1,13 @@
 # robotics_algorithms
 
-This repository contains algorithm related to robotics. They are organized into field of state estimation, planning, control.
+This repository contains algorithms related to robotics for personal learning purpose.
 
 ## Requirement
-Python 3.7
+
+Python 3.10
 numpy
 scikit-learn
 
 ## How to use
-Run respective test script.
+
+Run respective script under example folder

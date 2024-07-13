@@ -1,16 +1,8 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-
-import matplotlib.pyplot as plt
-from matplotlib import colors
-import numpy as np
-import random
 import time
 import math
 
-from env.two_d_maze import TwoDMaze
-from planning.path_and_motion_planning.rrt_connect import RRTConnect
+from robotics_algorithm.env.two_d_maze import TwoDMaze
+from robotics_algorithm.planning import RRTStar
 
 # Initialize environment
 env = TwoDMaze()
@@ -18,14 +10,17 @@ env = TwoDMaze()
 # -------- Settings ------------
 FIX_MAZE = True
 
+
 # -------- Helper Functions -------------
 def sample_vertex():
     x, y = env.get_random_point()
     return x, y
 
+
 def check_clear(vertex):
     x, y = vertex
     return env.maze[x, y] == env.FREE_SPACE
+
 
 def expand(v_source, v_goal, delta):
     v_source_x, v_source_y = v_source
@@ -56,12 +51,19 @@ def expand(v_source, v_goal, delta):
 
     return v
 
+
+def compute_distance(v1, v2):
+    dist = abs(v1[0] - v2[0]) + abs(v1[1] - v2[1])
+    return dist
+
+
 def check_link(v1, v2):
     local_path = compute_local_path(v1, v2)
     if local_path is None:
         return False, 0
     else:
         return True, len(local_path)
+
 
 def compute_local_path(v1, v2):
     v1_x, v1_y = v1
@@ -72,14 +74,14 @@ def compute_local_path(v1, v2):
 
     # try x first then y
     if v1_x >= v2_x:
-        for x in range(v1_x, v2_x-1, -1):
+        for x in range(v1_x, v2_x - 1, -1):
             if env.maze[x, v1_y] == env.OBSTACLE:
                 path_exist = False
                 break
 
             local_path.append((x, v1_y))
     else:
-        for x in range(v1_x, v2_x+1):
+        for x in range(v1_x, v2_x + 1):
             if env.maze[x, v1_y] == env.OBSTACLE:
                 path_exist = False
                 break
@@ -87,14 +89,14 @@ def compute_local_path(v1, v2):
             local_path.append((x, v1_y))
 
     if v1_y >= v2_y:
-        for y in range(v1_y-1, v2_y-1, -1):
+        for y in range(v1_y - 1, v2_y - 1, -1):
             if env.maze[v2_x, y] == env.OBSTACLE:
                 path_exist = False
                 break
 
             local_path.append((v2_x, y))
     else:
-        for y in range(v1_y+1, v2_y+1):
+        for y in range(v1_y + 1, v2_y + 1):
             if env.maze[v2_x, y] == env.OBSTACLE:
                 path_exist = False
                 break
@@ -108,14 +110,14 @@ def compute_local_path(v1, v2):
     local_path.clear()
     # try y first then x
     if v1_y >= v2_y:
-        for y in range(v1_y, v2_y-1, -1):
+        for y in range(v1_y, v2_y - 1, -1):
             if env.maze[v1_x, y] == env.OBSTACLE:
                 path_exist = False
                 break
 
             local_path.append((v1_x, y))
     else:
-        for y in range(v1_y, v2_y+1):
+        for y in range(v1_y, v2_y + 1):
             if env.maze[v1_x, y] == env.OBSTACLE:
                 path_exist = False
                 break
@@ -123,14 +125,14 @@ def compute_local_path(v1, v2):
             local_path.append((v1_x, y))
 
     if v1_x >= v2_x:
-        for x in range(v1_x-1, v2_x-1, -1):
+        for x in range(v1_x - 1, v2_x - 1, -1):
             if env.maze[x, v2_y] == env.OBSTACLE:
                 path_exist = False
                 break
 
             local_path.append((x, v2_y))
     else:
-        for x in range(v1_x+1, v2_x+1):
+        for x in range(v1_x + 1, v2_x + 1):
             if env.maze[x, v2_y] == env.OBSTACLE:
                 path_exist = False
                 break
@@ -142,6 +144,7 @@ def compute_local_path(v1, v2):
 
     return None
 
+
 def compute_source():
     for x in reversed(range(env.size)):
         for y in range(env.size):
@@ -149,12 +152,14 @@ def compute_source():
                 source = x, y
                 return source
 
+
 def compute_goal():
     for x in range(env.size):
         for y in reversed(range(env.size)):
             if env.maze[x, y] == TwoDMaze.FREE_SPACE:
                 goal = x, y
                 return goal
+
 
 # -------- Main Code ----------
 # add default obstacles
@@ -176,13 +181,17 @@ env.add_goal(goal)
 
 
 # initialize planner
-my_path_planner = RRTConnect(number_of_samples = 1000) # 1000 samples out of total 2500 vertex.
+my_path_planner = RRTStar(
+    number_of_samples=1000
+)  # 1000 samples out of total 2500 vertex.
 
 # run path planner
 start_time = time.time()
-res, shortest_path, shortest_path_len = my_path_planner.run(source, goal, sample_vertex, expand, delta=1)
+res, shortest_path, shortest_path_len = my_path_planner.run(
+    source, goal, sample_vertex, expand, 1, compute_distance, check_link
+)
 end_time = time.time()
-print("TestRRT, online takes {} seconds".format(end_time - start_time))
+print("TestRRTStar, online takes {} seconds".format(end_time - start_time))
 
 # visualize tree
 tree = my_path_planner.get_tree()
@@ -198,7 +207,7 @@ for vertex in tree:
         env.add_point(vertex, env.WAYPOINT)
 
 if not res:
-    print("TestRRT, no path is available!")
+    print("TestRRTStar, no path is available!")
 else:
     # visualize path
     path = [source]
@@ -210,11 +219,11 @@ else:
             print("!!! this should not happen !!!")
             break
         else:
-            path += local_path[1:] # ignore source of local path
+            path += local_path[1:]  # ignore source of local path
 
         v1 = v2
 
     env.add_path(path)
-    print("TestRRT, found path of len {}".format(len(path)))
+    print("TestRRTStar, found path of len {}".format(len(path)))
 
 env.plot()

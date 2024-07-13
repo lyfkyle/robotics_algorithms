@@ -1,0 +1,4 @@
+setuptools
+numpy
+matplotlib
+scikit-learn
