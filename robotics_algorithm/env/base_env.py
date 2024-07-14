@@ -5,7 +5,7 @@ import numpy as np
 from numpy.random import choice
 
 
-class PlanningEnv:
+class ContinuousEnv:
     """Base environment for planning.
 
     Continuous state space.
@@ -32,10 +32,9 @@ class PlanningEnv:
             new_state (any): new state.
             reward (float): the reward(cost) for the transition.
         """
-        new_state, reward = self.state_transition_func(self._cur_state, action)
-        return new_state, reward
+        return self.state_transition_func(self._cur_state, action)
 
-    def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float]:
+    def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
         """State transition function.
 
         Models both stochastic and deterministic transition.
@@ -47,6 +46,9 @@ class PlanningEnv:
         Returns:
             new_state (Any): the new state
             reward (float): the reward(cost) for the transition.
+            term (bool): whether the transition terminates the episode
+            trunc (bool): whether the transition truncates the episode
+            info (dict): additional info
         """
         pass
 
@@ -65,53 +67,6 @@ class PlanningEnv:
             "trunc": False,
         }
 
-
-class StochasticPlanningEnv(PlanningEnv):
-    @override
-    def step(self, action: Any) -> Any:
-        """Apply action to current environment. H
-
-        Args:
-            action (Any): action to apply
-
-        Returns:
-            new_state (any): new state
-        """
-        new_states, rewards, probs = self.state_transition_func(self._cur_state, action)
-        idx = choice(np.arange(len(new_states)), 1, probs)  # choose new state according to the transition probability.
-
-        new_state = new_states[idx]
-        reward = rewards[idx]
-        info = self._get_state_info(new_state)
-
-        # Conform to gymnasium env
-        return new_state, reward, info["term"], info["trunc"], info
-
-    @override
-    def state_transition_func(self, state: Any, action: Any) -> tuple[list[Any], list[float], list[float]]:
-        """State transition function.
-
-        Models both stochastic and deterministic transition.
-
-        Args:
-            state (Any): state to transit from
-            action (Any): action to apply
-
-        Returns:
-            new_states (list[Any]): a list of possible new states.
-            rewards (float): a list of reward(cost) for the transition.
-            probs (list[float]): the probabilities of transitioning to new states.
-        """
-        pass
-
-
-class DiscretePlanningEnv(PlanningEnv):
-    """A planning environment with discrete state and discrete action space."""
-
-    def __init__(self):
-        self.all_states = None
-        self.all_actions = None
-
     def get_available_actions(self, state: Any) -> list[Any]:
         """Get available actions in the current state.
 
@@ -124,7 +79,53 @@ class DiscretePlanningEnv(PlanningEnv):
         pass
 
 
-class MDPEnv(DiscretePlanningEnv, StochasticPlanningEnv):
+class DiscreteEnv(ContinuousEnv):
+    """A planning environment with discrete state and discrete action space."""
+
+    def __init__(self):
+        super().__init__()
+        self.all_states = None
+        self.all_actions = None
+
+
+class StochasticEnv(ContinuousEnv):
+    @override
+    def step(self, action: Any) -> Any:
+        """Apply action to current environment. H
+
+        Args:
+            action (Any): action to apply
+
+        Returns:
+            new_state (any): new state
+        """
+        transition_results, probs = self.state_transition_func(self._cur_state, action)
+        idx = choice(np.arange(len(transition_results)), 1, probs)  # choose new state according to the transition probability.
+
+        # Conform to gymnasium env
+        return transition_results[idx]
+
+    @override
+    def state_transition_func(
+        self, state: Any, action: Any
+    ) -> tuple[list[Any], list[float]]:
+        """State transition function.
+
+        Models both stochastic and deterministic transition.
+
+        Args:
+            state (Any): state to transit from
+            action (Any): action to apply
+
+        Returns:
+            new_states (list[Any]): a list of state transition result, consisting of new_state, reward, term,
+                trunc and info.
+            probs (list[float]): the probabilities of transitioning to new states.
+        """
+        pass
+
+
+class MDPEnv(DiscreteEnv, StochasticEnv):
     """Markov Decision Process environments.
 
     Compared to DiscretePlanningEnv, it now has a reward function.

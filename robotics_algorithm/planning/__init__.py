@@ -1,4 +1,5 @@
 from .path_and_motion_planning.a_star import AStar
+from .path_and_motion_planning.hybrid_a_star import HybridAStar
 from .path_and_motion_planning.dijkstra import Dirkstra
 from .path_and_motion_planning.prm import ProbabilisticRoadmap
 from .path_and_motion_planning.rrt_connect import RRTConnect, RRT
