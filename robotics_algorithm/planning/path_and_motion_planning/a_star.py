@@ -1,75 +1,97 @@
+from typing import Callable, Any
+import heapq
+
+from robotics_algorithm.env.base_env import DiscreteEnv
+
+
 class AStar(object):
-    def __init__(self):
-        pass
+    def __init__(self, env: DiscreteEnv, heuristic_func: Callable):
+        """Constructor.
 
-    def run(self, graph, source, goal, heuristic_func):
-        '''
-        @param, graph, represented by adjacency list
-        @param, source, the source vertex
-        @param, goal, the goal vertex
-        @param, heuristic_func, a function to return estimated cost to go from a vertex to goal
-        @return, boolean, return true if a path is found, return false otherwise
-                 shortest_path, a list of vertice if shortest path is found
-                 shortest_path_len, the length of shortest path if found.
-        '''
+        Args:
+            env (DiscreteEnv): A planning env.
+            heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal
+        """
+        self.env = env
+        self._heuristic_func = heuristic_func
 
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+        """Run Astar.
+
+        Args:
+            start (tuple): the start state
+            goal (tuple): the goal state
+
+        Returns:
+            res (bool): return true if a path is found, return false otherwise.
+            shortest_path (list[tuple]): a list of state if shortest path is found.
+            shortest_path_len (float): the length of shortest path if found.
+        """
         # initialize
-        # for every vertex, dist[v] = g(s, v) + h(v, g)
-        unvisited_vertices_set = set() # OPEN set. Nodes not in this set is in CLOSE set
+        # for every state, f[v] = g(s, v) + h(v, g)
+        unvisited_states = set()  # OPEN set. Nodes not in this set is in CLOSE set
+        priority_q = []
         shortest_path = []
         shortest_path_len = 0
-        g = {} # cost from source to v
-        dist = {}
-        prev = {} # used to extract shortest path
+        g = {}  # cost-to-come from start to a state
+        f = {}  # cost-to-come + heuristic cost-to-go
+        prev_state_dict = {}  # used to extract shortest path
 
-        for v in graph:
-            g[v] = float('inf')
-            dist[v] = float('inf')
-            unvisited_vertices_set.add(v)
-        g[source] = 0
-        dist[source] = heuristic_func(source, goal) # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
+        for state in self.env.all_states:
+            g[state] = float("inf")
+            f[state] = float("inf")
+            unvisited_states.add(state)  # All states are unvisited
+
+        g[start] = 0    # distance to source is 0
+        f[start] = self._heuristic_func(start, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
+        heapq.heappush(priority_q, (f[start], start))
 
         # run algorithm
-        path_exist = True
-        while len(unvisited_vertices_set) > 0:
-            min_dist = float('inf')
-            for v in unvisited_vertices_set:
-                if dist[v] < min_dist:
-                    min_dist = dist[v]
-                    min_v = v
-
-            # print("mid_dist: {}".format(min_dist))
-            # there is no path
-            if min_dist == float('inf'):
-                path_exist = False
-                break
+        path_exist = False
+        while len(priority_q) > 0:
+            # pop the best state found so far.
+            _, best_state = heapq.heappop(priority_q)
+            if best_state not in unvisited_states:
+                print("Here!!")
+                continue
 
             # path to goal is found
-            if min_v == goal:
+            if best_state == goal:
+                path_exist = True
                 break
 
-            unvisited_vertices_set.remove(min_v)
+            # Find possible transitions from best_state, and add them to queue ranked by heuristics.
+            unvisited_states.remove(best_state)
+            available_actions = self.env.get_available_actions(best_state)
+            # print(best_state, available_actions)
+            for action in available_actions:
+                new_state, cost, term, _, info = self.env.state_transition_func(best_state, action)
 
-            for v, edge_length in graph[min_v].items():
-                if v in unvisited_vertices_set:
-                    g_v = g[min_v] + edge_length
-                    h_v = heuristic_func(v, goal)
-                    if g_v < g[v]:
-                        g[v] = g_v
-                        dist[v] = g_v + h_v
-                        prev[v] = min_v
+                # skip actions that result in failures
+                if term and not info["success"]:
+                    continue
+
+                if new_state in unvisited_states:
+                    g_new_state = g[best_state] + cost  # cost-to-come
+                    h_new_state = self._heuristic_func(new_state, goal)  # cost-to-go
+                    # print(new_state, h_new_state)
+                    if g_new_state < g[new_state]:
+                        g[new_state] = g_new_state
+                        f[new_state] = g_new_state + h_new_state
+                        heapq.heappush(priority_q, (f[new_state], new_state))
+                        prev_state_dict[new_state] = best_state
 
         if path_exist:
             # extract shortest path:
             shortest_path.insert(0, goal)
-            v = goal
-            prev_v = prev[v]
-            while prev_v != -1 and prev_v != source:
+            state = goal
+            prev_v = prev_state_dict[state]
+            while prev_v != -1 and prev_v != start:
                 shortest_path.insert(0, prev_v)
-                prev_v= prev[prev_v]
+                prev_v = prev_state_dict[prev_v]
 
-            shortest_path.insert(0, source)
-            shortest_path_len = dist[goal]
+            shortest_path.insert(0, start)
+            shortest_path_len = g[goal]
             return (True, shortest_path, shortest_path_len)
         else:
             return (False, None, None)

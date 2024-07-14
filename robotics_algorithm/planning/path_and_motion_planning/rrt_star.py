@@ -1,180 +1,199 @@
+from collections import defaultdict
+import math
+from typing import Callable
 
 from sklearn.neighbors import NearestNeighbors
-from collections import defaultdict
 import numpy as np
-import math
+import networkx as nx
 
-from .dijkstra import Dirkstra
+from robotics_algorithm.env.base_env import ContinuousEnv
+
 
 class RRTStar(object):
     TRAPPED = 0
     REACHED = 1
-    ADVANCED = 2
 
-    def __init__(self):
-        self.V = {}  # vertice dict
+    def __init__(
+        self,
+        env: ContinuousEnv,
+        sample_func: Callable,
+        vertex_expand_func: Callable,
+        edge_col_check_func: Callable,
+        distance_func: Callable,
+        num_of_samples: int,
+    ):
+        """Constructor.
+
+        Args:
+            env (ContinuousEnv): env
+            sample_func (Callable): a function to obtain a state sample from env.
+            vertex_expand_func (Callable): a function to expand one state towards another.
+            edge_col_check_func (Callable): a function to check whether two states are connectable
+            distance_func (Callable): a function to calculate distance between two states.
+            num_of_samples (int): maximum of number of samples. Defaults to 1.
+        """
+        self.env = env
+        self._sample_func = sample_func
+        self._vertex_expand_func = vertex_expand_func
+        self._edge_col_check_func = edge_col_check_func
+        self._distance_func = distance_func
+        self.tree = nx.Graph()
         self.g = {}
-        self.adj_list = defaultdict(dict)
+        self.num_of_samples = num_of_samples
+
+        self.goal_bias = 0.2
 
     def initialize_tree(self, root):
-        self.root = root
-        self.g[root] = 0 # cost_to_come to itself is 0.
-        self.V[root] = root
+        self.g[root] = 0  # cost_to_come to itself is 0.
+        self.tree.add_node(root)
 
-    def extend(self, v_goal, expand_func, delta, distance_func, check_link, radius = 2):
-        '''
-        Extend towards v_goal one step.
-            1. find nearest_neighbour
-            2. extend from nearest_neighbour to v_goal -> v_new
-            3. find best_neighbour around v_new
-            4. connect best_neighbour to v_new
-            5. rewire neighbours to v_new
-        @param v_goal, tuple, the goal vertex to extend to
-        @param expand_func, function(v1, v2, delta) -> v_new, a function that expand tree from v1 to v2 by delta, return resulting v_new
-        @param delta, the delta for expand_func
-        @param distance_func, function(v1, v2) -> dist, a function to compute distance between v1 and v2
-        @param check_link, function(v1, v2) -> can_link, dist, a function that checks whether v1 and v2 can be linked by a simple path.
-        @param radius, the radius to search around v_new to find neighbours.
-        '''
-        # Like A-Star, the notion here is dist[v] = g(s, v) + h(v, g). (total cost = cost to come + cost to go)
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+        """
+        Run planner.
 
-        # check whether v_goal is already reached
-        if v_goal in self.V:
-            return RRTStar.REACHED, v_goal
+        Args:
+            start (tuple): the start state.
+            goal (tuple): the goal state.
 
-        # find nearest neighbour
-        nearest_neighbour, _ = self.get_nearest_neighbour(np.array(list(self.V)), np.array(v_goal).reshape(1, 2))
-        # expand towards v_goal
-        v_new = expand_func(nearest_neighbour, v_goal, delta)
-        if v_new is not None:
-            # !!! Instead of using nearest neighbour, find best_neighbour around v_new
-            neighbours = self.find_neighbours_within_radius(v_new, radius, distance_func)
-            if len(neighbours) > 0:
-                # filter out those that can't connect to v_new
-                neighbours = self._filter_neighbours(neighbours, v_new, check_link)
-                # find best neighbour
-                best_neighbour, best_g = self.find_best_neighbour(neighbours, v_new, radius, distance_func)
+        Returns:
+            success (boolean): return true if a path is found, return false otherwise.
+            shortest_path (list[tuple]): a list of vertices if shortest path is found.
+            shortest_path_len (float): the length of shortest path if found.
+        """
+        start = tuple(start)
+        goal = tuple(goal)
+
+        self.initialize_tree(start)
+
+        for i in range(self.num_of_samples):
+            if i % 100 == 0:
+                print("RRTStar/run, iteration {}".format(i))
+
+            if np.random.uniform() > self.goal_bias:
+                v_target = self._sample_func(self.env)
             else:
-                best_neighbour, best_g = nearest_neighbour, distance_func(nearest_neighbour, v_new) + self.g[nearest_neighbour]
+                v_target = goal
 
-            # add v_new to tree
-            v_new = tuple(v_new)
-            self.V[v_new] = best_neighbour
+            self.extend(v_target)
 
-            # add edge from best_neighbour to v_new
-            self.adj_list[v_new][best_neighbour] = best_g - self.g[best_neighbour] # use best_g to compute dist
-            self.adj_list[best_neighbour][v_new] = best_g - self.g[best_neighbour] # use best_g to compute dist
-            self.g[v_new] = best_g
+        if goal in self.tree:
+            path = nx.shortest_path(self.tree, start, goal, weight="weight")
+            path_len = nx.shortest_path_length(self.tree, start, goal, weight="weight")
+            print(path, path_len)
+            return True, path, path_len
+        else:
+            return False, None, None
 
-            # !!! rewire
-            for neighbour in neighbours:
-                dist_v_neighbour = distance_func(v_new, neighbour)
-                if self.g[v_new] + dist_v_neighbour < self.g[neighbour]:
-                    self.g[neighbour] = self.g[v_new] + dist_v_neighbour
-                    # self.adj_list[neighbour].clear() # clear all?
-                    self.adj_list[neighbour].pop(self.V[neighbour]) # delete connection from neighbour to its parent
-                    self.adj_list[v_new][neighbour] = dist_v_neighbour
-                    self.adj_list[neighbour][v_new] = dist_v_neighbour
-                    self.V[neighbour] = v_new
+    def extend(self, v_target: tuple):
+        """
+        Extend towards v_goal one step.
+            1. find nearest_neighbor
+            2. extend from nearest_neighbor to v_goal -> v_new
+            3. find best_neighbor around v_new
+            4. connect best_neighbor to v_new
+            5. rewire neighbors to v_new
 
-        if v_new is None:
-            return RRTStar.TRAPPED, None
-        elif v_new == v_goal:
+        Args:
+            v_target (tuple): the target vertex to extend to.
+
+        """
+        # Like A-Star, the notion here is dist[v] = g(s, v) + h(v, g). (total cost = cost to come + cost to go)
+        v_target = tuple(v_target)
+
+        # RRT finds the nearest node in tree to v_target
+        all_nodes = list(self.tree.nodes)
+        nearest_neighbors = self.get_nearest_neighbors(all_nodes, v_target)
+        v_cur = tuple(nearest_neighbors[0])
+
+        # expand towards v_target
+        v_new, path_len = self._vertex_expand_func(self.env, v_cur, v_target)
+        v_new = tuple(v_new)
+        # print(v_cur, v_target, v_new)
+
+        # if expansion happens.
+        if v_new != v_cur:
+            raw_neighbors = self.get_nearest_neighbors(all_nodes, v_new, n_neighbors=10)
+
+            # filter out neighbors that are not connectable
+            neighbors = [n for n in raw_neighbors if self._edge_col_check_func(self.env, n, v_new)[0]]
+
+            # shortcut. Instead of connecting v_new to v_cur, connect to neighbor that has best cost-to-come
+            best_cost_to_come = self.g[v_cur] + path_len
+            best_neighbor = v_cur
+            best_dist = path_len
+            for neighbor in neighbors:
+                assert self._edge_col_check_func(self.env, v_new, neighbor)
+                dist = self._distance_func(self.env, neighbor, v_new)
+                if self.g[neighbor] + dist < best_cost_to_come:
+                    best_cost_to_come = self.g[neighbor] + dist
+                    best_neighbor = neighbor
+                    best_dist = dist
+
+            self.tree.add_edge(best_neighbor, v_new, weight=best_dist)
+            self.g[v_new] = best_cost_to_come
+
+            # rewire nearby neighbors.
+            for neighbor in neighbors:
+                dist_v_neighbour = self._distance_func(self.env, v_new, neighbor)
+                if self.g[v_new] + dist_v_neighbour < self.g[neighbor]:
+                    self.g[neighbor] = self.g[v_new] + dist_v_neighbour
+                    self.tree.remove_node(neighbor)  # remove old edge by removing the node itself.
+                    self.tree.add_edge(v_new, neighbor, weight=dist_v_neighbour)
+
+        if v_new == v_target:
             return RRTStar.REACHED, v_new
         else:
-            return RRTStar.ADVANCED, v_new
+            return RRTStar.TRAPPED, v_new
 
-    def connect(self, v_goal, expand_func, delta, distance_func, check_link):
-        '''
-        extend towards v
-        '''
-        # print('RRTStar/Conect')
-        res = RRTStar.ADVANCED
-        while res == RRTStar.ADVANCED:
-            res, _ = self.extend(v_goal, expand_func, delta, distance_func, check_link)
+    def get_nearest_neighbors(self, all_vertices: list[tuple], v: tuple, n_neighbors: int = 1) -> list[tuple]:
+        """
+        return the closest neighbors of v in all_vertices.
 
-        return res
+        Args:
+            all_vertices (list[tuple]): a list of vertices
+            v (tuple): the target vertex.
+            n_neighbors (int): number of nearby neighbors.
 
-    def get_nearest_neighbour(self, V, v):
-        '''
-        return the closest neighbours of v in V
-        @param V, a list of vertices, must be a 2D numpy array
-        @param v, the target vertice, must be a 2D numpy array
-        @return, (list, distance), the nearest neighbour index and its distance
-        '''
+        Returns:
+            (list[tuple]): a list of nearby vertices
+        """
+        n_neighbors = min(n_neighbors, len(all_vertices))
 
-        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(V)
+        all_vertices = np.array(all_vertices)
+        v = np.array(v).reshape(1, -1)
+
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        indices = np.take(np.array(V), indices.ravel(), axis=0).tolist()
-        indice = tuple(indices[0])
-        distance = distances[0]
-        return indice, distance
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).tolist()
+        nbr_vertices = [tuple(v) for v in nbr_vertices]
+        return nbr_vertices
 
-    def find_neighbours_within_radius(self, v, radius, distance_func):
-        '''
-        find all vertices within radius to v
-        @param, v, tuple, the center vertex
-        @param, radius, the radius to search
-        @return neighbours, list of tuple, the neighbour vertices.
-        '''
-        neighbours = []
-        for v1 in self.V: # this is expensive, any alternatives?
-            dist_v_v1 = distance_func(v, v1)
-            if dist_v_v1 <= radius:
-                neighbours.append(v1)
+    def get_tree(self):
+        return self.tree
 
-        return neighbours
 
-    def find_best_neighbour(self, v_candidates, v_goal, radius, distance_func):
-        '''
-        find among v_candidates, the best v that has the minimum cost-to-come to v_goal
-        @param, v_candidates, list of tuple, a candidates of vertice
-        @param, v_goal, tuple, v_goal
-        @param radius, float, the radius to search
-        @return best_neighbour, tuple, the best_neighbour
-        '''
-
-        best_g = float('inf')
-        best_neighbour = v_candidates[0]
-        for v1 in v_candidates:
-            dist_v1_v_goal = distance_func(v1, v_goal)
-            g_v_goal = self.g[v1] + dist_v1_v_goal
-            if g_v_goal < best_g:
-                best_g = g_v_goal
-                best_neighbour = v1
-
-        return best_neighbour, best_g
-
-    def _filter_neighbours(self, neighbours, v_new, check_link):
-        filtered_neighbours = []
-        for neighbour in neighbours:
-            collision_free, _ = check_link(neighbour, v_new)
-            if collision_free:
-                filtered_neighbours.append(neighbour)
-        return filtered_neighbours
-
+# TODO
 class RRTStarConnect(object):
-    def __init__(self, number_of_samples):
-        self.N = number_of_samples
-        self._path_finder = Dirkstra()
-        self.source_rrt = RRTStar()
+    def __init__(self, num_of_samples):
+        self.num_of_samples = num_of_samples
+        self.start_rrt = RRTStar()
         self.goal_rrt = RRTStar()
         self.adj_list = defaultdict(dict)
 
     def run(self, source, goal, sample_vertex_func, expand_func, delta, distance_func, check_link):
-        self.source_rrt.initialize_tree(source)
+        self.start_rrt.initialize_tree(source)
         self.goal_rrt.initialize_tree(goal)
 
-        rrt1 = self.source_rrt
+        rrt1 = self.start_rrt
         rrt2 = self.goal_rrt
         reached = False
-        for i in range(self.N):
+        for i in range(self.num_of_samples):
             if i % 100 == 0:
                 print("RRTConnect/run, iteration {}".format(i))
 
-            v_new = sample_vertex_func()
-            res, v = rrt1.extend(v_new, expand_func, delta, distance_func, check_link)
+            v_target = sample_vertex_func()
+            res, v = rrt1.extend(v_target, expand_func, delta, distance_func, check_link)
             if res != RRTStar.TRAPPED:
                 res = rrt2.connect(v, expand_func, delta, distance_func, check_link)
                 if res == RRTStar.REACHED:
@@ -193,18 +212,17 @@ class RRTStarConnect(object):
         # call dijkstra to find the path
         path_exist, shortest_path, path_len = self._path_finder.run(adj_list, source, goal)
         if not path_exist:
-            print("RRTConnect/get_path: No path is found, this should not happen!!!")
+            print("RRTStarConnect/get_path: No path is found, this should not happen!!!")
             return False, None, None
         else:
             return True, shortest_path, path_len
 
     def get_tree(self):
         # merge adj_list from two rrt
-        adj_list = self.source_rrt.adj_list.copy()
+        adj_list = self.start_rrt.adj_list.copy()
         for key in self.goal_rrt.adj_list:
             for key1, val1 in self.goal_rrt.adj_list[key].items():
                 adj_list[key][key1] = val1
         self.adj_list = adj_list
 
         return self.adj_list
-
