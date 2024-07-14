@@ -225,7 +225,7 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
         s2 = np.array(state2)
 
         if np.allclose(s1, s2):
-            return [s1]
+            return [s1.tolist()]
 
         num_of_steps = max(int((s2 - s1).max() / step_size) + 1, 2)
         step_size = (s2 - s1) / (num_of_steps - 1)

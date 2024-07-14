@@ -60,6 +60,6 @@ if not res:
 else:
     # visualize path
     env.add_path(shortest_path)
-    print("TestRRT, found path of len {}".format(shortest_path_len))
+    print("TestPRM, found path of len {}".format(shortest_path_len))
 
 env.render()
