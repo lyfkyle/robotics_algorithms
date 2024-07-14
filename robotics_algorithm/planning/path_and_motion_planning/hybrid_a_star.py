@@ -13,20 +13,20 @@ class HybridAStar(object):
             heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal
             transform_func (Callable): _description_
         """
-        self._env = env
+        self.env = env
         self._heuristic_func = heuristic_func
         self._state_key_func = state_key_func
 
-    def run(self, start: Any, goal: Any) -> tuple[bool, list[Any], float]:
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
         """Run Hybrid A star.
 
         Args:
-            start (Any): the start state
-            goal (Any): the goal state
+            start (tuple): the start state
+            goal (tuple): the goal state
 
         Returns:
             res (bool): return true if a path is found, return false otherwise.
-            shortest_path (list[Any]): a list of state if shortest path is found.
+            shortest_path (list[tuple]): a list of state if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
 
@@ -71,9 +71,9 @@ class HybridAStar(object):
                 break
 
             # Find possible transitions from best_state, and add them to queue ranked by heuristics.
-            available_actions = self._env.get_available_actions(best_state)
+            available_actions = self.env.get_available_actions(best_state)
             for action in available_actions:
-                new_state, cost, term, _, info = self._env.state_transition_func(best_state, action)
+                new_state, cost, term, _, info = self.env.state_transition_func(best_state, action)
                 # print(new_state, best_state, action)
                 g_new_state = g[best_state_key] + cost  # cost-to-come
                 new_state_key = self._state_key_func(new_state)

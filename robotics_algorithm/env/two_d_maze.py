@@ -253,14 +253,14 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
 
         state = self.start_state
         # Run simulation
-        print(path)
         for action in path[1:]:
             interpolated_path += self.extend(state, action)
             assert tuple(interpolated_path[-1]) == action
             state = action
 
         self.path = interpolated_path
-        print(self.path)
+        print("[TwoDMaze]: Before interpolation", path)
+        print("[TwoDMaze]: After interpolation", interpolated_path)
 
     def add_state_samples(self, state):
         if self.state_samples is None:
