@@ -1,4 +1,3 @@
-
 import time
 import math
 
@@ -11,6 +10,7 @@ env = TwoDMazeDiffDrive()
 # -------- Settings ------------
 FIX_MAZE = True
 
+
 # -------- Helper Functions -------------
 def heuristic_func(state, goal):
     # simply the distance between v and goal
@@ -21,6 +21,7 @@ def heuristic_func(state, goal):
 
 def state_key_func(state):
     return (int(state[0] // 0.25), int(state[1] // 0.25), int(state[2] // math.radians(30)))
+
 
 # -------- Main Code ----------
 env.reset(random_env=not FIX_MAZE)
