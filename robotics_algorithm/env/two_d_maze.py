@@ -14,7 +14,7 @@ from robotics_algorithm.robot.differential_drive import DiffDrive
 
 DEFAULT_OBSTACLES = [[2, 2, 0.5], [5, 5, 1], [3, 8, 0.5], [8, 3, 1]]
 DEFAULT_START = [0.5, 0.5, 0]
-DEFAULT_GOAL = [9, 9, math.radians(90)]
+DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
 class TwoDMazeDiffDrive(ContinuousEnv):
@@ -149,17 +149,6 @@ class TwoDMazeDiffDrive(ContinuousEnv):
             marker="s",
         )
 
-        if self.path:
-            for state in self.path:
-                plt.scatter(
-                    state[0],
-                    state[1],
-                    # s=(s * self.robot_radius * 2) ** 2,
-                    s=(s * 0.01 * 2) ** 2,
-                    c="green",
-                    marker="o",
-                )
-
         if self.state_samples:
             for state in self.state_samples:
                 plt.scatter(
@@ -171,7 +160,17 @@ class TwoDMazeDiffDrive(ContinuousEnv):
                     marker="o",
                 )
 
-        # plt.grid()
+        if self.path:
+            for state in self.path:
+                plt.scatter(
+                    state[0],
+                    state[1],
+                    # s=(s * self.robot_radius * 2) ** 2,
+                    s=(s * 0.01 * 2) ** 2,
+                    c="green",
+                    marker="o",
+                )
+
         plt.xlim(0, self.size)
         plt.xticks(np.arange(self.size))
         plt.ylim(0, self.size)
@@ -227,10 +226,10 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
         if np.allclose(s1, s2):
             return [s1.tolist()]
 
-        num_of_steps = max(int((s2 - s1).max() / step_size) + 1, 2)
+        num_of_steps = max(int(np.abs(s2 - s1).max() / step_size) + 1, 2)
         step_size = (s2 - s1) / (num_of_steps - 1)
 
-        path = [s1.tolist()]
+        path = []
         for i in range(num_of_steps):
             s = s1 + i * step_size
             if not self.is_state_valid(s):
@@ -242,20 +241,22 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
 
     def is_edge_valid(self, state1, state2, step_size=0.1):
         path = self.extend(state1, state2, step_size)
-        return self.is_equal(path[-1], state2), np.linalg.norm(np.array(state2) - np.array(state1))
+        res = self.is_equal(path[-1], state2)
+        return res, np.linalg.norm(np.array(state2) - np.array(state1))
 
     def is_equal(self, state1, state2):
         return np.allclose(np.array(state1), np.array(state2))
 
     @override
     def add_path(self, path):
-        interpolated_path = [self.start_state]
+        interpolated_path = []
 
         state = self.start_state
         # Run simulation
         print(path)
-        for action in path:
+        for action in path[1:]:
             interpolated_path += self.extend(state, action)
+            assert tuple(interpolated_path[-1]) == action
             state = action
 
         self.path = interpolated_path

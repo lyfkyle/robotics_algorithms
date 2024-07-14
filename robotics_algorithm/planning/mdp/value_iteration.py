@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 
-import sys
-import os
 import numpy as np
 import copy
 import math
@@ -81,10 +79,6 @@ class ValueIteration:
 
 
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-    )
-
     from env.windy_gridworld import WindyGridWorld
     from env.cliff_walking import CliffWalking
 
