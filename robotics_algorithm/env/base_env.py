@@ -5,22 +5,24 @@ import numpy as np
 from numpy.random import choice
 
 
-class ContinuousEnv:
+class DeterministicEnv:
     """Base environment for planning.
 
-    Continuous state space.
-    Continuous action space.
+    Continuous/discrete state space.
+    Continuous/discrete action space.
     Deterministic transition.
     Fully observable.
     """
 
     def __init__(self):
+        # For continuous env, this is space.
+        # For discrete env, this is a list of all states
         self.state_space = None
         self.action_space = None
 
     def reset(self):
         """Reset env."""
-        self._cur_state = None
+        self.cur_state = None
 
     def step(self, action: Any) -> tuple[Any, float]:
         """Apply action to current environment. H
@@ -32,7 +34,7 @@ class ContinuousEnv:
             new_state (any): new state.
             reward (float): the reward(cost) for the transition.
         """
-        return self.state_transition_func(self._cur_state, action)
+        return self.state_transition_func(self.cur_state, action)
 
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
         """State transition function.
@@ -51,6 +53,10 @@ class ContinuousEnv:
             info (dict): additional info
         """
         raise NotImplementedError()
+
+    def render(self) -> None:
+        """Visualize env."""
+        pass
 
     def _get_state_info(self, state: Any) -> dict:
         """retrieve information about the state.
@@ -90,16 +96,7 @@ class ContinuousEnv:
         raise NotImplementedError()
 
 
-class DiscreteEnv(ContinuousEnv):
-    """A planning environment with discrete state and discrete action space."""
-
-    def __init__(self):
-        super().__init__()
-        self.all_states = None
-        self.all_actions = None
-
-
-class StochasticEnv(ContinuousEnv):
+class StochasticEnv(DeterministicEnv):
     @override
     def step(self, action: Any) -> Any:
         """Apply action to current environment. H
@@ -110,16 +107,16 @@ class StochasticEnv(ContinuousEnv):
         Returns:
             new_state (any): new state
         """
-        transition_results, probs = self.state_transition_func(self._cur_state, action)
-        idx = choice(
-            np.arange(len(transition_results)), 1, probs
-        )  # choose new state according to the transition probability.
+        results, probs = self.state_transition_func(self.cur_state, action)
+        idx = choice(np.arange(len(results)), 1, p=probs)[0]  # choose new state according to the transition probability.
+
+        self.cur_state = results[idx][0]
 
         # Conform to gymnasium env
-        return transition_results[idx]
+        return results[idx]
 
     @override
-    def state_transition_func(self, state: Any, action: Any) -> tuple[list[Any], list[float]]:
+    def state_transition_func(self, state: Any, action: Any) -> tuple[list[tuple], list[float]]:
         """State transition function.
 
         Models both stochastic and deterministic transition.
@@ -129,14 +126,14 @@ class StochasticEnv(ContinuousEnv):
             action (Any): action to apply
 
         Returns:
-            new_states (list[Any]): a list of state transition result, consisting of new_state, reward, term,
+            new_states (list[tuple]): a list of state transition result, consisting of new_state, reward, term,
                 trunc and info.
             probs (list[float]): the probabilities of transitioning to new states.
         """
         pass
 
 
-class MDPEnv(DiscreteEnv, StochasticEnv):
+class MDPEnv(StochasticEnv):
     """Markov Decision Process environments.
 
     Compared to DiscretePlanningEnv, it now has a reward function.

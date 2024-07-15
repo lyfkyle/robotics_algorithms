@@ -1,15 +1,15 @@
 from typing import Callable, Any
 import heapq
 
-from robotics_algorithm.env.base_env import DiscreteEnv
+from robotics_algorithm.env.base_env import DeterministicEnv
 
 
 class Dijkstra:
-    def __init__(self, env: DiscreteEnv):
+    def __init__(self, env: DeterministicEnv):
         """Constructor.
 
         Args:
-            env (DiscreteEnv): A planning env.
+            env (DeterministicEnv): A planning env.
         """
         self.env = env
 
@@ -34,7 +34,7 @@ class Dijkstra:
         g = {}  # cost-to-come from start to a state
         prev_state_dict = {}  # used to extract shortest path
 
-        for state in self.env.all_states:
+        for state in self.env.state_space:
             g[state] = float("inf")
             unvisited_states.add(state)
 
