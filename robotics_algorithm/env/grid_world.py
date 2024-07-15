@@ -514,7 +514,7 @@ DEFAULT_MAZE_OBSTACLES = [
 DEFAULT_START = (0, 49)
 DEFAULT_GOAL = (49, 0)
 
-class GridWorldMaze(DeterministicEnv):
+class DeterministicGridWorld(DeterministicEnv):
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -527,17 +527,17 @@ class GridWorldMaze(DeterministicEnv):
         super().__init__()
 
         self.size = size
-        self.maze = np.full((size, size), GridWorldMaze.FREE_SPACE)
+        self.maze = np.full((size, size), DeterministicGridWorld.FREE_SPACE)
         self.adjacency_list = self.compute_adjacency_list()
         self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
         bounds = [
-            GridWorldMaze.FREE_SPACE,
-            GridWorldMaze.OBSTACLE,
-            GridWorldMaze.START,
-            GridWorldMaze.GOAL,
-            GridWorldMaze.PATH,
-            GridWorldMaze.WAYPOINT,
-            GridWorldMaze.MAX_POINT_TYPE,
+            DeterministicGridWorld.FREE_SPACE,
+            DeterministicGridWorld.OBSTACLE,
+            DeterministicGridWorld.START,
+            DeterministicGridWorld.GOAL,
+            DeterministicGridWorld.PATH,
+            DeterministicGridWorld.WAYPOINT,
+            DeterministicGridWorld.MAX_POINT_TYPE,
         ]
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
@@ -561,8 +561,8 @@ class GridWorldMaze(DeterministicEnv):
             self.start_state = self.random_valid_state()
             self.goal_state = self.random_valid_state()
 
-        self.maze[self.start_state[0], self.start_state[1]] = GridWorldMaze.START
-        self.maze[self.goal_state[0], self.goal_state[1]] = GridWorldMaze.GOAL
+        self.maze[self.start_state[0], self.start_state[1]] = DeterministicGridWorld.START
+        self.maze[self.goal_state[0], self.goal_state[1]] = DeterministicGridWorld.GOAL
 
     @override
     def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:
@@ -570,7 +570,7 @@ class GridWorldMaze(DeterministicEnv):
         new_state[0] = max(min(new_state[0], self.size - 1), 0)
         new_state[1] = max(min(new_state[1], self.size - 1), 0)
 
-        if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
+        if self.maze[new_state[0], new_state[1]] == DeterministicGridWorld.OBSTACLE:
             return state, 0, False, False, {}
 
         return tuple(new_state), 1, False, False, {}
@@ -582,7 +582,7 @@ class GridWorldMaze(DeterministicEnv):
         valid = False
         while not valid:
             state = np.random.randint(0, self.size, (2))
-            if self.maze[state[0], state[1]] == GridWorldMaze.FREE_SPACE:
+            if self.maze[state[0], state[1]] == DeterministicGridWorld.FREE_SPACE:
                 return (state[0], state[1])
 
     def compute_adjacency_list(self):
@@ -590,13 +590,13 @@ class GridWorldMaze(DeterministicEnv):
 
         for i in range(self.size):
             for j in range(self.size):
-                if j + 1 < self.size and self.maze[i, j + 1] == GridWorldMaze.FREE_SPACE:
+                if j + 1 < self.size and self.maze[i, j + 1] == DeterministicGridWorld.FREE_SPACE:
                     adjacency_list[(i, j)][(i, j + 1)] = 1
-                if j > 0 and self.maze[i, j - 1] == GridWorldMaze.FREE_SPACE:
+                if j > 0 and self.maze[i, j - 1] == DeterministicGridWorld.FREE_SPACE:
                     adjacency_list[(i, j)][(i, j - 1)] = 1
-                if i > 0 and self.maze[i - 1, j] == GridWorldMaze.FREE_SPACE:
+                if i > 0 and self.maze[i - 1, j] == DeterministicGridWorld.FREE_SPACE:
                     adjacency_list[(i, j)][(i - 1, j)] = 1
-                if i + 1 < self.size and self.maze[i + 1, j] == GridWorldMaze.FREE_SPACE:
+                if i + 1 < self.size and self.maze[i + 1, j] == DeterministicGridWorld.FREE_SPACE:
                     adjacency_list[(i, j)][(i + 1, j)] = 1
 
         self.adjacency_list = adjacency_list
@@ -604,13 +604,13 @@ class GridWorldMaze(DeterministicEnv):
 
     def add_default_obstacles(self):
         for x, y in DEFAULT_MAZE_OBSTACLES:
-            self.maze[x, y] = GridWorldMaze.OBSTACLE
+            self.maze[x, y] = DeterministicGridWorld.OBSTACLE
         self.adjacency_list = self.compute_adjacency_list()
 
     def random_maze_obstacle_every_grid(self):
         for x in range(self.size):
             for y in range(self.size):
-                self.maze[x, y] = random.randint(GridWorldMaze.FREE_SPACE, GridWorldMaze.OBSTACLE)
+                self.maze[x, y] = random.randint(DeterministicGridWorld.FREE_SPACE, DeterministicGridWorld.OBSTACLE)
         self.compute_adjacency_list()
 
     def random_maze_obstacle_per_row(self, num_of_obstacle_per_row=1):
@@ -618,10 +618,10 @@ class GridWorldMaze(DeterministicEnv):
             cnt = 0
             while cnt < num_of_obstacle_per_row:
                 y = random.randint(0, self.size - 1)
-                if self.maze[x, y] == GridWorldMaze.OBSTACLE:
+                if self.maze[x, y] == DeterministicGridWorld.OBSTACLE:
                     continue
 
-                self.maze[x, y] = GridWorldMaze.OBSTACLE
+                self.maze[x, y] = DeterministicGridWorld.OBSTACLE
                 cnt += 1
         self.compute_adjacency_list()
 
@@ -643,7 +643,7 @@ class GridWorldMaze(DeterministicEnv):
     def get_random_free_point(self):
         x = random.randint(0, self.size - 1)
         y = random.randint(0, self.size - 1)
-        while self.maze[x, y] != GridWorldMaze.FREE_SPACE:
+        while self.maze[x, y] != DeterministicGridWorld.FREE_SPACE:
             x = random.randint(0, self.size - 1)
             y = random.randint(0, self.size - 1)
 
@@ -657,28 +657,28 @@ class GridWorldMaze(DeterministicEnv):
 
     def add_start(self, source):
         x, y = source
-        if self.maze[x, y] == GridWorldMaze.OBSTACLE:
+        if self.maze[x, y] == DeterministicGridWorld.OBSTACLE:
             print("TwoDMaze/add_source: unable to add source on obstalce")
             return False
 
-        if self.maze[x, y] == GridWorldMaze.GOAL:
+        if self.maze[x, y] == DeterministicGridWorld.GOAL:
             print("TwoDMaze/add_source: unable to add source on goal")
             return False
 
-        self.maze[x, y] = GridWorldMaze.START
+        self.maze[x, y] = DeterministicGridWorld.START
         return True
 
     def add_goal(self, goal):
         x, y = goal
-        if self.maze[x, y] == GridWorldMaze.OBSTACLE:
+        if self.maze[x, y] == DeterministicGridWorld.OBSTACLE:
             print("TwoDMaze/add_source: unable to add source on obstalce")
             return False
 
-        if self.maze[x, y] == GridWorldMaze.START:
+        if self.maze[x, y] == DeterministicGridWorld.START:
             print("TwoDMaze/add_source: unable to add source on source")
             return False
 
-        self.maze[x, y] = GridWorldMaze.GOAL
+        self.maze[x, y] = DeterministicGridWorld.GOAL
         return True
 
     def add_random_source(self):
@@ -695,16 +695,16 @@ class GridWorldMaze(DeterministicEnv):
         """
         for x, y in path[1:-1]:
             if only_change_free_space:
-                if self.maze[x, y] == GridWorldMaze.FREE_SPACE:
-                    self.maze[x, y] = GridWorldMaze.PATH
+                if self.maze[x, y] == DeterministicGridWorld.FREE_SPACE:
+                    self.maze[x, y] = DeterministicGridWorld.PATH
             else:
-                self.maze[x, y] = GridWorldMaze.PATH
+                self.maze[x, y] = DeterministicGridWorld.PATH
 
         return True
 
     def add_point(self, p, p_type):
         x, y = p
-        if p_type >= GridWorldMaze.FREE_SPACE and p_type < GridWorldMaze.MAX_POINT_TYPE:
+        if p_type >= DeterministicGridWorld.FREE_SPACE and p_type < DeterministicGridWorld.MAX_POINT_TYPE:
             self.maze[x, y] = p_type
         else:
             print("TwoDMaze/add_point, invalid point type {}".format(p_type))

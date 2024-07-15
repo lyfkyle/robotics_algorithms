@@ -54,8 +54,13 @@ class ValueIteration:
 
         # Iterate until convergence.
         # Value iteration operates on Bellman optimality equation
-        # Q*(s, a) = reward + discount * sum_s' [p(s' | s) * V*(s')]
+        # For state-action reward:
+        # Q*(s, a) = r(s, a) + discount * sum_s' [p(s' | s) * V*(s')]
+        # For state reward:
+        # Q*(s, a) = sum_s' [p(s' | s) * (r(s') +  discount * V*(s'))]
+        # Note: r(s, a) = sum_s' [p(s' | s) * (r(s')]
         # V*(s) = max_a Q*(s, a)
+
         max_change = np.inf
         iter = 0
         while max_change > diff_threshold:
@@ -69,13 +74,13 @@ class ValueIteration:
                     results, probs = env.state_transition_func(state, action)
 
                     # calculate Q values
-                    next_state_value = 0
+                    q_sa = 0
                     for i, result in enumerate(results):
                         next_state, reward, term, trunc, info = result
-                        next_state_value += probs[i] * v_state[next_state]
+                        q_sa += probs[i] * (reward + discount_factor * v_state[next_state])
 
                     # update Q(s,a)
-                    Q[state][action] = reward + discount_factor * next_state_value
+                    Q[state][action] = q_sa
 
                 # V(s) = max_a Q(s,a)
                 value = Q[state].max(axis=-1)

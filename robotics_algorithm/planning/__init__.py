@@ -6,4 +6,5 @@ from .path_and_motion_planning.rrt_connect import RRTConnect, RRT
 from .path_and_motion_planning.rrt_star import RRTStar, RRTStarConnect
 from .mdp.value_iteration import ValueIteration
 from .mdp.policy_iteration import PolicyIteration
+from .mdp.policy_tree_search import PolicyTreeSearch
 from .pomdp.belief_tree_search import BeliefTreeSearch

@@ -1,9 +1,9 @@
 
 import numpy as np
 
-from .pomdp_env import POMDP
+from robotics_algorithm.env.base_env. import POMDPEnv
 
-class Tiger(POMDP):
+class Tiger(POMDPEnv):
     # action
     OPEN_LEFT = 0
     OPEN_RIGHT = 1
@@ -18,7 +18,7 @@ class Tiger(POMDP):
     HEARD_TIGER_RIGHT = 1
 
     def __init__(self) -> None:
-        POMDP.__init__(self)
+        super().__init__()
 
         self.states = [Tiger.TIGER_AT_LEFT, Tiger.TIGER_AT_RIGHT]
         self.actions = [Tiger.OPEN_LEFT, Tiger.OPEN_RIGHT, Tiger.LISTEN]

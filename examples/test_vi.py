@@ -1,6 +1,6 @@
 import numpy as np
 
-from robotics_algorithm.env.windy_gridworld import WindyGridWorld
+from robotics_algorithm.env.windy_grid_world import WindyGridWorld
 from robotics_algorithm.env.cliff_walking import CliffWalking
 from robotics_algorithm.planning import ValueIteration
 

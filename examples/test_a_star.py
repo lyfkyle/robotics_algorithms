@@ -1,11 +1,11 @@
 import time
 import math
 
-from robotics_algorithm.env.grid_world_maze import GridWorldMaze
+from robotics_algorithm.env.grid_world import DeterministicGridWorld
 from robotics_algorithm.planning import AStar
 
 # Initialize environment
-env = GridWorldMaze()
+env = DeterministicGridWorld()
 
 # -------- Settings ------------
 FIX_MAZE = True
