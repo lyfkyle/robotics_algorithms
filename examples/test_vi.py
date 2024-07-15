@@ -4,14 +4,14 @@ from robotics_algorithm.env.windy_gridworld import WindyGridWorld
 from robotics_algorithm.env.cliff_walking import CliffWalking
 from robotics_algorithm.planning import ValueIteration
 
-vi = ValueIteration()
+planner = ValueIteration()
 
 env = CliffWalking()
 state = env.reset()
 env.render()
 
 # Plan
-Q, policy = vi.run(env)
+Q, policy = planner.run(env)
 
 # Execute
 path = []
@@ -39,7 +39,7 @@ state = env.reset()
 env.render()
 
 # Plan
-Q, policy = vi.run(env)
+Q, policy = planner.run(env)
 
 # Execute
 path = []

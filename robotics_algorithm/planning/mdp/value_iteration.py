@@ -1,6 +1,7 @@
 import copy
 import math
 from collections import defaultdict
+from typing import Callable
 
 import numpy as np
 
@@ -13,7 +14,7 @@ class ValueIteration:
 
     def make_greedy_policy(self, Q, num_actions):
         """
-        Creates an epsilon-greedy policy based on a given Q-function and epsilon.
+        Creates an greedy policy based on a given Q-function.
 
         Args:
             Q: A dictionary that maps from state -> action-values.
@@ -32,7 +33,17 @@ class ValueIteration:
 
         return policy_fn
 
-    def run(self, env: MDPEnv, discount_factor: float = 0.99, diff_threshold: float = 0.01):
+    def run(self, env: MDPEnv, discount_factor: float = 0.99, diff_threshold: float = 0.01) -> tuple[dict, Callable]:
+        """Run algorithm.
+
+        Args:
+            env (MDPEnv): the env.
+            discount_factor (float, optional): discount factor for future reward. Defaults to 0.99.
+
+        Returns:
+            Q (dict): Q function
+            policy (Callable): policy constructed according to the Q function.
+        """
         print("ValueIteration: plan!!")
 
         states = env.state_space
@@ -43,8 +54,8 @@ class ValueIteration:
 
         # Iterate until convergence.
         # Value iteration operates on Bellman optimality equation
-        # Q(s, a) <- Sum_s' p(s' | s) [reward + discount * V(s')]
-        # V(s) = max_a Q(s, a)
+        # Q*(s, a) = reward + discount * sum_s' [p(s' | s) * V*(s')]
+        # V*(s) = max_a Q*(s, a)
         max_change = np.inf
         iter = 0
         while max_change > diff_threshold:
@@ -61,10 +72,10 @@ class ValueIteration:
                     next_state_value = 0
                     for i, result in enumerate(results):
                         next_state, reward, term, trunc, info = result
-                        next_state_value += probs[i] * (reward + discount_factor * v_state[next_state])
+                        next_state_value += probs[i] * v_state[next_state]
 
                     # update Q(s,a)
-                    Q[state][action] = next_state_value
+                    Q[state][action] = reward + discount_factor * next_state_value
 
                 # V(s) = max_a Q(s,a)
                 value = Q[state].max(axis=-1)
