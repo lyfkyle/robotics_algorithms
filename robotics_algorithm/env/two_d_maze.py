@@ -34,6 +34,8 @@ class TwoDMazeDiffDrive(DeterministicEnv):
 
         self.state_space = (np.array([0, 0, -math.pi]), np.array([self.size, self.size, math.pi]))
         self.action_space = (np.array([0, 0]), np.array([self.size, self.size]))
+        self.state_space_size = self.state_space[1] - self.state_space[0]
+        self.action_space_size = self.action_space[1] - self.action_space[0]
 
         self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
         bounds = [
@@ -266,3 +268,5 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
         if self.state_samples is None:
             self.state_samples = []
         self.state_samples.append(state)
+
+

@@ -19,6 +19,8 @@ class DeterministicEnv:
         # For discrete env, this is a list of all states
         self.state_space = None
         self.action_space = None
+        self.state_space_size = None
+        self.action_space_size = None
 
     def reset(self):
         """Reset env."""
