@@ -82,7 +82,10 @@ class WindyGridWorld(MDPEnv):
         return info
 
     @override
-    def reward_func(self, state: tuple, action: tuple | None = None) -> float:
+    def reward_func(self, state: tuple, new_state: tuple | None = None) -> float:
+        # R(s, s')
+        # Transition to goal state gives goal reward.
+        # Transition to free gives step reward.
         if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
             reward = self.goal_reward
         else:

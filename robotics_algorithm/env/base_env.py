@@ -144,8 +144,10 @@ class MDPEnv(StochasticEnv):
     def __init__(self) -> None:
         pass
 
-    def reward_func(self, state: Any, action: Any = None) -> float:
+    def reward_func(self, state: Any, new_state: Any = None) -> float:
         """Calculate the reward of apply action at a state.
+
+        NOTE: Following the gym convention, reward is defined as R(s, s') instead of R(s, a)
 
         Args:
             state (Any): the state
