@@ -1,23 +1,21 @@
 import numpy as np
 
-from robotics_algorithm.env.grid_world import GridWorld
+from robotics_algorithm.env.frozen_lake import FrozenLake
 from robotics_algorithm.planning import PolicyTreeSearch
 
-planner = PolicyTreeSearch()
 
-env = GridWorld()
+env = FrozenLake(dense_reward=True)
 state = env.reset(random_env=False)
 env.render()
 
 # Plan
-policy = planner.run(env, max_depth=5)
+planner = PolicyTreeSearch(env, max_depth=5)
 
 # Execute
 path = []
 while True:
-    # choose action according to epsilon-greedy policy
-    action_probs = policy(state)
-    action = np.random.choice(env.action_space, p=action_probs)  # choose action
+    # choose action according to the computed policy
+    action = planner.run(state)
     next_state, reward, term, trunc, info = env.step(action)
     env.render()
 
