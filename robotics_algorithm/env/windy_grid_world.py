@@ -1,3 +1,5 @@
+#!/usr/bin/evn python
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -5,32 +7,23 @@ from typing_extensions import override
 
 from robotics_algorithm.env.base_env import MDPEnv
 
-GRID_HEIGHT = 4
-GRID_WIDTH = 9
-OBSTACLES = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)]
+GRID_HEIGHT = 7
+GRID_WIDTH = 10
 
 
-class CliffWalking(MDPEnv):
+class WindyGridWorld(MDPEnv):
     """
-    A player is placed in grid world. The player should move from start to goal. If the player reaches the goal the
-    episode ends. If the player moves to a cliff location the episode terminates with failure.
-    During each move, the player has a chance of ending up in the left or right of the target grid.
+    Windy Gridworld is a standard gridworld with start and goal states. The difference is that there is a crosswind running upward through the middle of the grid. Actions are the standard four: up, right, down, and left. In the middle region the resultant next states are shifted upward by the "wind" which strength varies from column to column. The reward is -1 until goal state is reached.
     """
 
-    def __init__(
-        self,
-        start: tuple = (0, 0),
-        goal: tuple = (8, 0),
-        obstacles: list[tuple] = OBSTACLES,
-        dense_reward: bool = False,
-    ):
+    def __init__(self, start: tuple = (0, 3), goal: tuple = (7, 3), wind: list = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]):
         """Constructor.
 
         Args:
             start (tuple): the start position of agent.
             goal (tuple): the goal position.
-            obstacles (list[tuple]): a list of obstacle positions.
-            dense_reward (bool): whether to use dense reward for this env.
+            wind (list): the strength of upward wind in each horizontal position.
+                      The number decides how many grid cell the agent will be pushed upward.
         """
         super().__init__()
 
@@ -43,35 +36,30 @@ class CliffWalking(MDPEnv):
         self.start_state = start
         self.cur_state = start
         self.goal_state = goal
-        self.obstacles = obstacles
+        self.wind = wind
         self.step_reward = -1
-        self.obstacle_reward = -100
-        self.goal_reward = 100
+        self.goal_reward = 10
         self.sol_path = []
-        self.dense_reward = dense_reward
 
     @override
     def state_transition_func(self, state: tuple, action: int) -> tuple[list[tuple], list[float]]:
+        # NOTE: This environment has deterministic transition
         i, j = state
 
         next_states = []
         if action == 0:
-            next_states.append((i, min(j + 1, GRID_HEIGHT - 1)))
-            next_states.append((max(0, i - 1), min(j + 1, GRID_HEIGHT - 1)))
-            next_states.append((min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT - 1)))
+            next_state = (i, min(j + 1 + self.wind[i], GRID_HEIGHT - 1))
         elif action == 1:
-            next_states.append((min(i + 1, GRID_WIDTH - 1), j))
-            next_states.append((min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT - 1)))
-            next_states.append((min(i + 1, GRID_WIDTH - 1), max(0, j - 1)))
+            new_i = min(i + 1, GRID_WIDTH - 1)
+            next_state = (new_i, min(j + self.wind[new_i], GRID_HEIGHT - 1))
         elif action == 2:
-            next_states.append((i, max(0, j - 1)))
-            next_states.append((max(0, i - 1), max(0, j - 1)))
-            next_states.append((min(i + 1, GRID_WIDTH - 1), max(0, j - 1)))
+            next_state = (i, max(0, min(j - 1 + self.wind[i], GRID_HEIGHT - 1)))
         elif action == 3:
-            next_states.append((max(0, i - 1), j))
-            next_states.append((max(0, i - 1), min(j + 1, GRID_HEIGHT - 1)))
-            next_states.append((max(0, i - 1), max(0, j - 1)))
-        probs = [0.8, 0.1, 0.1]
+            new_i = max(i - 1, 0)
+            next_state = (new_i, min(j + self.wind[new_i], GRID_HEIGHT - 1))
+
+        next_states.append(next_state)
+        probs = [1.0]
 
         results = []
         for next_state in next_states:
@@ -87,9 +75,6 @@ class CliffWalking(MDPEnv):
         if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
             info["term"] = True
             info["success"] = True
-        elif state in self.obstacles:
-            info["term"] = True
-            info["success"] = False
         else:
             info["term"] = False
             info["success"] = False
@@ -100,24 +85,16 @@ class CliffWalking(MDPEnv):
     def reward_func(self, state: tuple, new_state: tuple | None = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.
-        # Transition to obstacle gives obstacle reward.
         # Transition to free gives step reward.
         if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
             reward = self.goal_reward
-        elif state in self.obstacles:
-            reward = self.obstacle_reward
         else:
-            if not self.dense_reward:
-                reward = self.step_reward
-            else:
-                # Negative of dist as penalty.
-                # This encourages moving to goal.
-                reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1])) * 0.1
+            reward = self.step_reward
 
         return reward
 
     @override
-    def reset(self, random_env=False):
+    def reset(self):
         self.cur_state = self.start_state
         return self.cur_state
 
@@ -128,9 +105,6 @@ class CliffWalking(MDPEnv):
     def render(self):
         _, ax = plt.subplots()
         self.gridworld = np.full((GRID_HEIGHT, GRID_WIDTH), 0)
-
-        for obstacle in self.obstacles:
-            self.gridworld[GRID_HEIGHT - obstacle[1] - 1][obstacle[0]] = 1
 
         self.gridworld[GRID_HEIGHT - self.start_state[1] - 1][self.start_state[0]] = 2
         self.gridworld[GRID_HEIGHT - self.goal_state[1] - 1][self.goal_state[0]] = 3

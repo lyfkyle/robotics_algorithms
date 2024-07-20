@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
 
-from robotics_algorithm.env.base_env import ContinuousEnv
+from robotics_algorithm.env.base_env import DeterministicEnv
 
 
 class RRT(object):
@@ -14,7 +14,7 @@ class RRT(object):
     REACHED = 1
 
     def __init__(
-        self, env: ContinuousEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int = 1
+        self, env: DeterministicEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int = 1
     ):
         """Constructor.
 
@@ -134,7 +134,7 @@ class RRT(object):
 
 
 class RRTConnect(object):
-    def __init__(self, env: ContinuousEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int):
+    def __init__(self, env: DeterministicEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int):
         """Constructor.
 
         Args:

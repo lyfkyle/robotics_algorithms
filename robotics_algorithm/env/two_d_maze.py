@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from robotics_algorithm.env.base_env import ContinuousEnv
+from robotics_algorithm.env.base_env import DeterministicEnv
 from robotics_algorithm.robot.differential_drive import DiffDrive
 
 
@@ -17,7 +17,7 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class TwoDMazeDiffDrive(ContinuousEnv):
+class TwoDMazeDiffDrive(DeterministicEnv):
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -34,6 +34,8 @@ class TwoDMazeDiffDrive(ContinuousEnv):
 
         self.state_space = (np.array([0, 0, -math.pi]), np.array([self.size, self.size, math.pi]))
         self.action_space = (np.array([0, 0]), np.array([self.size, self.size]))
+        self.state_space_size = self.state_space[1] - self.state_space[0]
+        self.action_space_size = self.action_space[1] - self.action_space[0]
 
         self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
         bounds = [
@@ -259,10 +261,12 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
             state = action
 
         self.path = interpolated_path
-        print("[TwoDMaze]: Before interpolation", path)
-        print("[TwoDMaze]: After interpolation", interpolated_path)
+        # print("[TwoDMaze]: Before interpolation", path)
+        # print("[TwoDMaze]: After interpolation", interpolated_path)
 
     def add_state_samples(self, state):
         if self.state_samples is None:
             self.state_samples = []
         self.state_samples.append(state)
+
+

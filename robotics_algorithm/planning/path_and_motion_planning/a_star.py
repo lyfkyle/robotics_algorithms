@@ -1,15 +1,15 @@
 from typing import Callable, Any
 import heapq
 
-from robotics_algorithm.env.base_env import DiscreteEnv
+from robotics_algorithm.env.base_env import DeterministicEnv
 
 
 class AStar(object):
-    def __init__(self, env: DiscreteEnv, heuristic_func: Callable):
+    def __init__(self, env: DeterministicEnv, heuristic_func: Callable):
         """Constructor.
 
         Args:
-            env (DiscreteEnv): A planning env.
+            env (DeterministicEnv): A planning env.
             heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal
         """
         self.env = env
@@ -37,7 +37,7 @@ class AStar(object):
         f = {}  # cost-to-come + heuristic cost-to-go
         prev_state_dict = {}  # used to extract shortest path
 
-        for state in self.env.all_states:
+        for state in self.env.state_space:
             g[state] = float("inf")
             f[state] = float("inf")
             unvisited_states.add(state)  # All states are unvisited
