@@ -12,17 +12,25 @@ OBSTACLES = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)]
 
 class CliffWalking(MDPEnv):
     """
-    A player is placed in grid world. The player should move from start to goal. If the player reaches the goal the episode ends. If the player moves to a cliff location the episode terminates with failure.
+    A player is placed in grid world. The player should move from start to goal. If the player reaches the goal the
+    episode ends. If the player moves to a cliff location the episode terminates with failure.
     During each move, the player has a chance of ending up in the left or right of the target grid.
     """
 
-    def __init__(self, start: tuple = (0, 0), goal: tuple = (8, 0), obstacles: list[tuple] = OBSTACLES):
+    def __init__(
+        self,
+        start: tuple = (0, 0),
+        goal: tuple = (8, 0),
+        obstacles: list[tuple] = OBSTACLES,
+        dense_reward: bool = False,
+    ):
         """Constructor.
 
         Args:
             start (tuple): the start position of agent.
             goal (tuple): the goal position.
             obstacles (list[tuple]): a list of obstacle positions.
+            dense_reward (bool): whether to use dense reward for this env.
         """
         super().__init__()
 
@@ -38,8 +46,9 @@ class CliffWalking(MDPEnv):
         self.obstacles = obstacles
         self.step_reward = -1
         self.obstacle_reward = -100
-        self.goal_reward = 0
+        self.goal_reward = 100
         self.sol_path = []
+        self.dense_reward = dense_reward
 
     @override
     def state_transition_func(self, state: tuple, action: int) -> tuple[list[tuple], list[float]]:
@@ -98,7 +107,12 @@ class CliffWalking(MDPEnv):
         elif state in self.obstacles:
             reward = self.obstacle_reward
         else:
-            reward = self.step_reward
+            if not self.dense_reward:
+                reward = self.step_reward
+            else:
+                # Negative of dist as penalty.
+                # This encourages moving to goal.
+                reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1])) * 0.1
 
         return reward
 
@@ -121,8 +135,11 @@ class CliffWalking(MDPEnv):
         self.gridworld[GRID_HEIGHT - self.start_state[1] - 1][self.start_state[0]] = 2
         self.gridworld[GRID_HEIGHT - self.goal_state[1] - 1][self.goal_state[0]] = 3
 
-        for state in self.sol_path:
-            self.gridworld[GRID_HEIGHT - state[1] - 1][state[0]] = 4
+        if len(self.sol_path) > 0:
+            for state in self.sol_path:
+                self.gridworld[GRID_HEIGHT - state[1] - 1][state[0]] = 4
+        else:
+            self.gridworld[GRID_HEIGHT - self.cur_state[1] - 1][self.cur_state[0]] = 4
 
         self.colour_map = colors.ListedColormap(["white", "black", "yellow", "red", "green"])
         bounds = [0, 1, 2, 3, 4, 5]
@@ -132,12 +149,10 @@ class CliffWalking(MDPEnv):
 
         # draw gridlines
         ax.grid(which="major", axis="both", linestyle="-", color="k", linewidth=1)
-        ax.set_xticks(np.arange(0.5, GRID_WIDTH, 1))
+        ax.set_xticks(np.arange(GRID_WIDTH) - 0.5)
         ax.set_xticklabels(np.array([str(i) for i in range(GRID_WIDTH)]))
-        ax.set_yticks(np.arange(0.5, GRID_HEIGHT, 1))
+        ax.set_yticks(np.flip(np.arange(GRID_HEIGHT) + 0.5))
         ax.set_yticklabels(np.array([str(i) for i in range(GRID_HEIGHT)]))
-        # ax.axis('off')
         plt.tick_params(axis="both", labelsize=5, length=0)
 
-        # fig.set_size_inches((8.5, 11), forward=False)
         plt.show()

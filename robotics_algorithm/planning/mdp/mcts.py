@@ -73,13 +73,13 @@ class MCTS:
         return best_action
 
     def select_and_expand(self, node: TreeNode) -> TreeNode:
-        """Perform both selection and expansion.
+        """Perform both selection and expansion using Upper Confidence Bound (UCB).
 
         Args:
-            node (TreeNode): _description_
+            node (TreeNode): the current node to expand from
 
         Returns:
-            expanded node (TreeNode): _description_
+            expanded node (TreeNode): the newly expanded node.
         """
         print("[MCTS]: select...")
         state = node.attr["state"]
@@ -131,7 +131,15 @@ class MCTS:
         # else, we sampled an existing state, recurse deeper.
         return self.select_and_expand(new_node)
 
-    def simulate(self, node):
+    def simulate(self, node: TreeNode) -> float:
+        """Simulate using random policy
+
+        Args:
+            node (TreeNode): the current tree node to expand.
+
+        Returns:
+            return (float): total return of the simulated episode.
+        """
         state = node.attr["state"]
         print(f"[MCTS]: Simulate from {state}")
 
@@ -152,7 +160,13 @@ class MCTS:
 
         return total_return
 
-    def backpropogate(self, node, total_return):
+    def backpropogate(self, node: TreeNode, total_return: float) -> None:
+        """Backpropogate return from leaf node to the root.
+
+        Args:
+            node (TreeNode): The leaf node.
+            total_return (float): total return of the simulated episode.
+        """
         print(f"[MCTS]: Backpropogate with total_return {total_return}")
         state = node.attr["state"]
         self.state_visit_cnt[state] += 1
