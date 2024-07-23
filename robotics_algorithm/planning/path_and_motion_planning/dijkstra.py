@@ -1,4 +1,3 @@
-from typing import Callable, Any
 import heapq
 
 from robotics_algorithm.env.base_env import DeterministicEnv
@@ -46,8 +45,10 @@ class Dijkstra:
         while len(priority_q) > 0:
             # pop the best state found so far.
             _, best_state = heapq.heappop(priority_q)
+
+            # filter out state visited before. This may happen if multiple path leads to the same state with
+            # different values.
             if best_state not in unvisited_states:
-                print("Here!!")
                 continue
 
             # path to goal is found
@@ -69,6 +70,9 @@ class Dijkstra:
                     g_new_state = g[best_state] + cost  # cost-to-come
                     if g_new_state < g[new_state]:
                         g[new_state] = g_new_state
+                        # NOTE: here we do not need to remove the the previous stored new_state with old best-to-come
+                        #       value because of new_state will be marked as visited when first poped with the best
+                        #       cost-to-come value.
                         heapq.heappush(priority_q, (g[new_state], new_state))
                         prev_state_dict[new_state] = best_state
 
