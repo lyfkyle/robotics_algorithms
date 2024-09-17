@@ -6,9 +6,9 @@ import numpy as np
 import copy
 import math
 from collections import defaultdict
-import matplotlib.pyplot as plt
 
-class ValueIteration():
+
+class ValueIteration:
     def __init__(self) -> None:
         pass
 
@@ -33,7 +33,7 @@ class ValueIteration():
 
         return policy_fn
 
-    def plan(self, env, discount_factor=0.99, diff_threshold = 0.01):
+    def plan(self, env, discount_factor=0.99, diff_threshold=0.01):
         print("ValueIteration: plan!!")
 
         states = env.states
@@ -55,7 +55,7 @@ class ValueIteration():
             for state in states:
                 for action in actions:
                     next_states, probs, done = env.transit_func(state, action)
-                    reward = env.reward_func(state, action) # r(s,a)
+                    reward = env.reward_func(state, action)  # r(s,a)
 
                     if done:
                         next_state_values = 0
@@ -79,8 +79,11 @@ class ValueIteration():
 
         return Q, policy
 
+
 if __name__ == "__main__":
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    )
 
     from env.windy_gridworld import WindyGridWorld
     from env.cliff_walking import CliffWalking
@@ -95,7 +98,7 @@ if __name__ == "__main__":
     while True:
         ## choose action according to epsilon-greedy policy
         action_probs = policy(state)
-        action = np.random.choice(env.actions, p = action_probs)  # choose action
+        action = np.random.choice(env.actions, p=action_probs)  # choose action
         next_state, reward, done, _ = env.step(action)
 
         path.append(state)

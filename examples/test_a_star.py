@@ -1,21 +1,16 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 
-import matplotlib.pyplot as plt
-import numpy as np
-import random
 import time
 import math
 
-from env.two_d_maze import TwoDMaze
-from planning.path_and_motion_planning.a_star import AStar
+from robotics_algorithm.env.two_d_maze import TwoDMaze
+from robotics_algorithm.planning import AStar
 
 # Initialize environment
 env = TwoDMaze()
 
 # -------- Settings ------------
 FIX_MAZE = True
+
 
 # -------- Helper Functions -------------
 def heuristic_func(v, goal):
@@ -24,13 +19,14 @@ def heuristic_func(v, goal):
     goal_x, goal_y = goal
     return math.sqrt((goal_x - v_x) ** 2 + (goal_y - v_y) ** 2)
 
+
 # -------- Main Code ----------
 
 # add random obstacle to environment
 if FIX_MAZE:
     env.add_default_obstacles()
 else:
-    env.random_maze_obstacle_per_row(num_of_obstacle_per_row = 10)
+    env.random_maze_obstacle_per_row(num_of_obstacle_per_row=10)
 
 # env.plot()
 
@@ -60,7 +56,9 @@ my_path_planner = AStar()
 
 # run path planner
 start_time = time.time()
-res, shortest_path, shortest_path_len = my_path_planner.run(env.adjacency_list, source, goal, heuristic_func)
+res, shortest_path, shortest_path_len = my_path_planner.run(
+    env.adjacency_list, source, goal, heuristic_func
+)
 end_time = time.time()
 print("TestAStar, takes {} seconds".format(end_time - start_time))
 

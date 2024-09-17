@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: robotics_algorithm
+Version: 0.1.0
+Summary: A collection of robotics algorithms
+Maintainer: Yunfan Lu
+Maintainer-email: luyunfan44@gmail.com
+Requires-Dist: setuptools
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: scikit-learn

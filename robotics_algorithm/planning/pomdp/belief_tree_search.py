@@ -1,9 +1,9 @@
-
 import sys
 import os
 import numpy as np
 
-class BeliefTreeSearch():
+
+class BeliefTreeSearch:
     def __init__(self) -> None:
         pass
 
@@ -14,7 +14,9 @@ class BeliefTreeSearch():
             # Step 1: calculate prior
             prior = 0.0
             for prev_state_idx, prev_state in enumerate(env.states):
-                next_states, next_state_probs, episode_over = env.transit_func(prev_state, action)
+                next_states, next_state_probs, episode_over = env.transit_func(
+                    prev_state, action
+                )
                 if episode_over:
                     continue
 
@@ -44,7 +46,9 @@ class BeliefTreeSearch():
             # Step 1: calculate prior
             prior = 0.0
             for prev_state_idx, prev_state in enumerate(env.states):
-                next_states, next_state_probs, episode_over = env.transit_func(prev_state, action)
+                next_states, next_state_probs, episode_over = env.transit_func(
+                    prev_state, action
+                )
                 if episode_over:
                     continue
 
@@ -100,7 +104,7 @@ class BeliefTreeSearch():
         belief_value = q_b.max()
         return q_b, belief_value
 
-    def plan(self, env, discount_factor=0.99, max_depth = 4):
+    def plan(self, env, discount_factor=0.99, max_depth=4):
         self.max_depth = max_depth
         self.discount_factor = discount_factor
 
@@ -112,8 +116,11 @@ class BeliefTreeSearch():
 
         return policy_fn
 
+
 if __name__ == "__main__":
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    )
 
     from env.tiger import Tiger
 
@@ -123,11 +130,13 @@ if __name__ == "__main__":
 
     _ = env.reset()
     path = []
-    belief = np.ones(env.state_space_size, dtype=np.float) / env.state_space_size # uniform belief over states
+    belief = (
+        np.ones(env.state_space_size, dtype=np.float) / env.state_space_size
+    )  # uniform belief over states
     while True:
         action_probs = policy(belief)
         # print(action_probs)
-        action = np.random.choice(env.actions, p = action_probs)  # choose action
+        action = np.random.choice(env.actions, p=action_probs)  # choose action
         obs, reward, done, _ = env.step(action)
 
         print(action)
@@ -139,4 +148,3 @@ if __name__ == "__main__":
 
         belief = bts.belief_update(env, belief, action, obs)
         print(belief)
-
