@@ -23,7 +23,7 @@ class Tiger(POMDP):
         self.states = [Tiger.TIGER_AT_LEFT, Tiger.TIGER_AT_RIGHT]
         self.actions = [Tiger.OPEN_LEFT, Tiger.OPEN_RIGHT, Tiger.LISTEN]
         self.observations = [Tiger.HEARD_TIGER_LEFT, Tiger.HEARD_TIGER_RIGHT]
-        
+
         self.state_space_size = len(self.states)
         self.action_space_size = len(self.actions)
         self.observation_space_size = len(self.observations)
@@ -48,9 +48,9 @@ class Tiger(POMDP):
                 # listen does not change state
                 next_states.append(state)
                 probs.append(1.0)
-        
+
         return next_states, probs, episode_over
-    
+
     def reward_func(self, state, action):
         reward = 0
         if action == Tiger.LISTEN:
@@ -65,22 +65,22 @@ class Tiger(POMDP):
                 reward = 10
             else:
                 reward = -100
-        
+
         return reward
 
     def observation_func(self, state):
         obs = []
         probs = []
-        
+
         if state == Tiger.TIGER_AT_LEFT:
             obs = [Tiger.HEARD_TIGER_LEFT, Tiger.HEARD_TIGER_RIGHT]
             probs = [0.85, 0.15]
         else: # state == Tiger.TIGER_AT_RIGHT
             obs = [Tiger.HEARD_TIGER_LEFT, Tiger.HEARD_TIGER_RIGHT]
             probs = [0.15, 0.85]
-        
+
         return obs, probs
-    
+
     def step(self, action):
         state = self.cur_state
         next_states, probs, episode_over = self.transit_func(state, action)

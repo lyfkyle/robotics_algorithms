@@ -34,6 +34,8 @@ class BeliefTreeSearch():
 
         new_belief /= new_belief.sum()
 
+        # print(belief, action, obs, new_belief)
+
         return new_belief
 
     def get_p_obs_ba(self, env, belief, action, obs):
@@ -77,12 +79,20 @@ class BeliefTreeSearch():
                 # sample observation
                 future_reward = 0
                 for obs in env.observations:
-                    new_belief = self.belief_update(env, belief, action, obs)
-
                     # p(obs | b, a)
                     p_obs_ba = self.get_p_obs_ba(env, belief, action, obs)
 
+                    # ignore observations that are not applicable
+                    ## this can happen for example if the action terminates the process
+                    if p_obs_ba < 1e-5:
+                        continue
+
+                    # belief update
+                    new_belief = self.belief_update(env, belief, action, obs)
+
+                    # calculate belief value
                     _, value = self.get_belief_value(env, new_belief, cur_depth + 1)
+
                     future_reward += p_obs_ba * value
 
                 q_b[action_idx] = r_ba + self.discount_factor * future_reward
@@ -105,9 +115,8 @@ class BeliefTreeSearch():
 if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-    from environment.tiger import Tiger
+    from env.tiger import Tiger
 
-    # env = WindyGridWorld()
     env = Tiger()
     bts = BeliefTreeSearch()
     policy = bts.plan(env)
@@ -117,6 +126,7 @@ if __name__ == "__main__":
     belief = np.ones(env.state_space_size, dtype=np.float) / env.state_space_size # uniform belief over states
     while True:
         action_probs = policy(belief)
+        # print(action_probs)
         action = np.random.choice(env.actions, p = action_probs)  # choose action
         obs, reward, done, _ = env.step(action)
 
@@ -128,5 +138,5 @@ if __name__ == "__main__":
             break
 
         belief = bts.belief_update(env, belief, action, obs)
-
+        print(belief)
 
