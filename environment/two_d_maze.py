@@ -43,7 +43,10 @@ class TwoDMaze(object):
                 self.maze[x, y] = random.randint(TwoDMaze.FREE_SPACE, TwoDMaze.OBSTACLE)
         self.compute_adjacency_list()
 
-    def random_maze_obstacle_per_row(self, num_of_obstacle_per_row = 1):
+    def random_maze_obstacle_per_row(self, num_of_obstacle_per_row = 1, random_seed = None):
+        if random_seed is not None:
+            random.seed(random_seed)
+
         for x in range(self.size):
             cnt = 0
             while cnt < num_of_obstacle_per_row:

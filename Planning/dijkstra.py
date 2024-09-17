@@ -49,17 +49,17 @@ class Dirkstra(object):
                 if v in unvisited_vertex_set:
                     if dist[min_v] + edge_length < dist[v]:
                         dist[v] = dist[min_v] + edge_length
-                        prev[v] = (min_v, edge_length)
+                        prev[v] = min_v
 
         if path_exist:
             # extract shortest path:
             v = goal
-            prev_v, edge_length = prev[v]
+            prev_v = prev[v]
             while prev_v != -1 and prev_v != source:
                 shortest_path.insert(0, prev_v)
-                shortest_path_len += edge_length
-                prev_v, edge_length = prev[prev_v]
+                prev_v = prev[prev_v]
 
+            shortest_path_len = dist[goal]
             return (True, shortest_path, shortest_path_len)
         else:
             return (False, None, None)
