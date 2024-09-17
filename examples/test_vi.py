@@ -7,7 +7,7 @@ from robotics_algorithm.planning import ValueIteration
 planner = ValueIteration()
 
 env = CliffWalking()
-state = env.reset()
+state, _ = env.reset()
 env.render()
 
 # Plan
@@ -35,7 +35,7 @@ env.render()
 
 
 env = WindyGridWorld()
-state = env.reset()
+state, _ = env.reset()
 env.render()
 
 # Plan

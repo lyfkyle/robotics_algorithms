@@ -563,6 +563,9 @@ class GridWorldMaze(DiscreteEnv, DeterministicEnv, FullyObservableEnv):
         self.maze[self.start_state[0], self.start_state[1]] = GridWorldMaze.START
         self.maze[self.goal_state[0], self.goal_state[1]] = GridWorldMaze.GOAL
 
+        self.cur_state = self.start_state
+        return self.cur_state, {}
+
     @override
     def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:
         new_state = [state[0] + action[0], state[1] + action[1]]

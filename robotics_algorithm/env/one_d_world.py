@@ -72,7 +72,9 @@ class DoubleIntegratorEnv(ContinuousEnv, StochasticEnv, PartiallyObservableEnv):
     def reset(self):
         self.start_state = [random.uniform(self.state_space[0][0], self.state_space[1][0]), 0]
         self.goal_state = [0, 0]  # fixed
-        self.cur_state = self.start_state
+        self.cur_state = self.start_state.copy()
+
+        return self.cur_state, {}
 
     @override
     def sample_state_transition(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:

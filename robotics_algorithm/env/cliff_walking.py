@@ -125,7 +125,7 @@ class CliffWalking(MDPEnv):
     @override
     def reset(self, random_env=False):
         self.cur_state = self.start_state
-        return self.cur_state
+        return self.cur_state, {}
 
     def add_path(self, path):
         self.sol_path = path

@@ -105,7 +105,7 @@ class WindyGridWorld(MDPEnv):
     @override
     def reset(self):
         self.cur_state = self.start_state
-        return self.cur_state
+        return self.cur_state, {}
 
     def add_path(self, path):
         self.sol_path = path

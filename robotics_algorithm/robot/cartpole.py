@@ -11,7 +11,7 @@ class Cartpole(object):
         self.length = 0.5  # actually half the pole's length
         self.polemass_length = self.masspole * self.length
         self.force_mag = 10.0
-        self.tau = 0.02  # seconds between state updates
+        self.dt = 0.02  # seconds between state updates
 
     def control(self, state: list, force: float) -> list:
         state = np.array(state)
@@ -29,14 +29,14 @@ class Cartpole(object):
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
         if self.kinematics_integrator == "euler":
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
+            x = x + self.dt * x_dot
+            x_dot = x_dot + self.dt * xacc
+            theta = theta + self.dt * theta_dot
+            theta_dot = theta_dot + self.dt * thetaacc
         else:  # semi-implicit euler
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
+            x_dot = x_dot + self.dt * xacc
+            x = x + self.dt * x_dot
+            theta_dot = theta_dot + self.dt * thetaacc
+            theta = theta + self.dt * theta_dot
 
         return [x.item(), x_dot.item(), theta.item(), theta_dot.item()]

@@ -54,9 +54,11 @@ class BaseEnv(object):
         self.state_transition_noise_type = NoiseType.GAUSSIAN.value
         self.observation_noise_type = NoiseType.GAUSSIAN.value
 
-    def reset(self):
+    def reset(self) -> tuple[Any, dict]:
         """Reset env."""
         self.cur_state = None
+
+        return self.cur_state, {}
 
     def render(self) -> None:
         """Visualize env."""
@@ -150,7 +152,7 @@ class BaseEnv(object):
 class DiscreteEnv(BaseEnv):
     def __init__(self):
         super().__init__()
-        self.space_type == EnvType.DISCRETE.value
+        self.space_type = EnvType.DISCRETE.value
 
     @property
     def state_space_size(self):
@@ -183,7 +185,7 @@ class DiscreteEnv(BaseEnv):
 class ContinuousEnv(BaseEnv):
     def __init__(self):
         super().__init__()
-        self.space_type == EnvType.CONTINUOUS.value
+        self.space_type = EnvType.CONTINUOUS.value
 
     def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
         """Sample an available action in the current state.
@@ -247,7 +249,8 @@ class StochasticEnv(DeterministicEnv):
         super().__init__()
         self.state_transition_type = EnvType.STOCHASTIC.value
 
-    def sample_transition_discrete(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+    @override
+    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
         assert self.space_type == EnvType.DISCRETE.value
         results, probs = self.state_transition_func(state, action)
         idx = choice(np.arange(len(results)), 1, p=probs)[

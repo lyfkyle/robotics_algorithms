@@ -53,7 +53,7 @@ class FrozenLake(MDPEnv):
             self.goal_state = self.random_valid_state()
 
         self.cur_state = self.start_state
-        return self.cur_state
+        return self.cur_state, {}
 
     @override
     def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:

@@ -33,7 +33,7 @@ class Tiger(POMDPEnv):
     def reset(self):
         self.cur_state = np.random.choice(self.states)
 
-        return self.cur_state
+        return self.cur_state, {}
 
     def transit_func(self, state, action):
         next_states = []

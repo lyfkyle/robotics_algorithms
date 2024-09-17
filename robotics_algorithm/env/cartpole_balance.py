@@ -88,6 +88,7 @@ class CartPoleEnv(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
         self.x_threshold = 2.4
+        self.max_steps = 1000
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
         # is still within bounds.
@@ -112,6 +113,15 @@ class CartPoleEnv(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         self.cur_state: np.ndarray | None = None
 
         self.steps_beyond_terminated = None
+
+    @override
+    def step(self, action: list) -> tuple[list, float, bool, bool, dict]:
+        new_state, reward, term, trunc, info = super().step(action)
+
+        self.step_cnt += 1
+        trunc = self.step_cnt > self.max_steps  # set truncated flag
+
+        return new_state, reward, term, trunc, info
 
     @override
     def state_transition_func(self, state: list, action: list):
@@ -148,10 +158,13 @@ class CartPoleEnv(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         return new_state, reward, terminated, False, {}
 
     def reset(self):
-        self.cur_state = [0, 0, 0, 0]  # upright position with
-        self.steps_beyond_terminated = None
+        self.cur_state = (np.random.randn(4) * 0.05).tolist()  # near-upright position
+        self.goal_state = [0, 0, 0, 0]  # upright position
 
-        return np.array(self.cur_state, dtype=np.float32), {}
+        self.steps_beyond_terminated = None
+        self.step_cnt = 0
+
+        return self.cur_state, {}
 
     def render(self):
         if self.screen is None:
@@ -242,7 +255,8 @@ if __name__ == "__main__":
     # Execute
     while True:
         # Call tree search online
-        action = env.sample_action()
+        # action = env.sample_action()
+        action = 0.0
         new_state, reward, term, trunc, info = env.step(action)
 
         print(state)

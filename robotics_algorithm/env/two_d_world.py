@@ -100,7 +100,9 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
             self.goal_state = DEFAULT_GOAL
         self.ref_path = None
         self.cur_ref_path_idx = 0
-        self.cur_state = self.start_state
+        self.cur_state = self.start_state.copy()
+
+        return self.cur_state, {}
 
     @override
     def step(self, action):
@@ -367,6 +369,9 @@ class TwoDWorldOmni(TwoDWorldDiffDrive):
             self.obstacles = DEFAULT_OBSTACLES
             self.start_state = DEFAULT_START[:2]
             self.goal_state = DEFAULT_GOAL[:2]
+
+        self.cur_state = self.start_state.copy()
+        return self.cur_state, {}
 
     @override
     def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:

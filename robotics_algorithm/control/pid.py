@@ -10,18 +10,21 @@ class PID(object):
     # can be computed analytically and has the form: u = -Kx
     """
 
-    def __init__(self, env: BaseEnv, Kp: float = 1.0, Ki: float = 0.0, Kd: float = 0.0):
+    def __init__(self, env: BaseEnv, goal_state=None, Kp: float = 1.0, Ki: float = 0.0, Kd: float = 0.0):
         """
         State transition:
         """
         self.env = env
-        self.goal_state = np.array(env.goal_state)
+        if goal_state is None:
+            self.goal_state = np.array(env.goal_state, dtype=np.float32)
+        else:
+            self.goal_state = np.array(goal_state, dtype=np.float32)
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
 
-        self._prev_error = np.zeros_like(self.goal_state)
-        self._accum_error = np.zeros_like(self.goal_state)
+        self._prev_error = np.zeros_like(self.goal_state, dtype=np.float32)
+        self._accum_error = np.zeros_like(self.goal_state, dtype=np.float32)
 
     def run(self, state: list) -> list:
         """Compute the current action based on the current state.
@@ -34,11 +37,11 @@ class PID(object):
         """
         state = np.array(state)
 
-        error = state - self.goal_state
+        error = self.goal_state - state
         delta_error = error - self._prev_error
         self._accum_error += error
 
-        control = self.Kp @ error + self.Kd @ delta_error + self.Ki @ self._accum_error
+        control = self.Kp * error + self.Kd * delta_error + self.Ki * self._accum_error
 
         self._prev_error = error
 
