@@ -17,8 +17,13 @@ class EnvType(Enum):
 
 class FunctionType(Enum):
     GENERAL = 0
-    Linear = 1
+    LINEAR = 1
     QUADRATIC = 2
+
+
+class NoiseType(Enum):
+    GENERAL = 0
+    GAUSSIAN = 3
 
 
 class BaseEnv(object):
@@ -45,6 +50,10 @@ class BaseEnv(object):
         self.state_transition_type = FunctionType.GENERAL.value
         self.reward_func_type = FunctionType.GENERAL.value
 
+        # Noise type
+        self.state_transition_noise_type = NoiseType.GAUSSIAN.value
+        self.observation_noise_type = NoiseType.GAUSSIAN.value
+
     def reset(self):
         """Reset env."""
         self.cur_state = None
@@ -53,7 +62,6 @@ class BaseEnv(object):
         """Visualize env."""
         pass
 
-    @override
     def step(self, action: Any) -> tuple[Any, float, bool, bool, dict]:
         """Apply action to current environment. H
 
@@ -63,7 +71,7 @@ class BaseEnv(object):
         Returns:
             new_state (any): new state
         """
-        new_state, reward, term, trunc, info = self.sample_transition(self.cur_state, action)
+        new_state, reward, term, trunc, info = self.sample_state_transition(self.cur_state, action)
         self.cur_state = new_state
 
         # replace state with its observation
@@ -72,15 +80,20 @@ class BaseEnv(object):
         # Conform to gymnasium env
         return new_obs, reward, term, trunc, info
 
-    def is_state_valid(self, state: Any) -> bool:
-        """Check whether a state is valid
+    def sample_state(self) -> Any:
+        """Sample a state"""
+        raise NotImplementedError()
 
-        Args:
-            state (Any): state
+    def sample_action(self) -> Any:
+        """Sample an action"""
+        raise NotImplementedError()
 
-        Returns:
-            bool: return True if valid
-        """
+    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+        """Sample a transition."""
+        raise NotImplementedError()
+
+    def sample_observation(self, state) -> Any:
+        """Sample an observation for the state."""
         raise NotImplementedError()
 
     def state_transition_func(self, state: Any, action: Any) -> Any:
@@ -105,20 +118,15 @@ class BaseEnv(object):
         """
         raise NotImplementedError()
 
-    def sample_state(self) -> Any:
-        """Sample a state"""
-        raise NotImplementedError()
+    def is_state_valid(self, state: Any) -> bool:
+        """Check whether a state is valid
 
-    def sample_action(self) -> Any:
-        """Sample an action"""
-        raise NotImplementedError()
+        Args:
+            state (Any): state
 
-    def sample_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
-        """Sample a transition."""
-        raise NotImplementedError()
-
-    def sample_observation(self, state) -> Any:
-        """Sample an observation for the state."""
+        Returns:
+            bool: return True if valid
+        """
         raise NotImplementedError()
 
     def _get_state_info(self, state: Any) -> dict:
@@ -209,7 +217,7 @@ class DeterministicEnv(BaseEnv):
         self.state_transition_type = EnvType.DETERMINISTIC.value
 
     @override
-    def sample_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
         return self.state_transition_func(state, action)
 
     @override
@@ -237,8 +245,8 @@ class StochasticEnv(DeterministicEnv):
         super().__init__()
         self.state_transition_type = EnvType.STOCHASTIC.value
 
-    @override
-    def sample_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+    def sample_transition_discrete(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+        assert self.space_type == EnvType.DISCRETE.value
         results, probs = self.state_transition_func(state, action)
         idx = choice(np.arange(len(results)), 1, p=probs)[
             0
@@ -305,8 +313,9 @@ class PartiallyObservableEnv(BaseEnv):
         # Define an additional observation space
         self.observation_space = None
 
-    @override
-    def sample_observation(self, state) -> Any:
+    def sample_observation_discrete(self, state) -> Any:
+        assert self.space_type == EnvType.DISCRETE.value
+
         obss, obs_prob = self.observation_func(state)
         obs = choice(obss, 1, obs_prob)  # choose new observation according to the transition probability.
         return obs
@@ -315,7 +324,9 @@ class PartiallyObservableEnv(BaseEnv):
     def observation_func(self, state: Any) -> tuple[list[Any], list[float]]:
         """Return the observation for a given state.
 
-        Since the environment is partially-observable, we return each possible observation with its probability.
+        Note the environment is partially-observable.
+        Therefore, for discrete env, this function return each possible observations with its probability.
+        For continuous env, we should return a parameterized distributions. (Unsupported for now).
 
         Args:
             state (Any): the state

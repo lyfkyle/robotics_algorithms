@@ -3,19 +3,19 @@ import matplotlib.pyplot as plt
 
 
 class DoubleIntegrator:
-    def __init__(self, continuous_time=True, dt=0.01):
+    def __init__(self, use_discrete_time_model=True, dt=0.01):
         # Robot parameters
 
         # x = [q, q_dot]
         # x_dot = [q_dot, q_dot_dot] = Ax + Bu
-        if continuous_time:
+        if not use_discrete_time_model:
             self.A = np.array([[0, 1], [0, 0]])
             self.B = np.array([[0, 1]]).T
         else:
             self.A = np.array([[1, dt], [0, 1]])
             self.B = np.array([[0.5 * dt * dt], [dt]])
 
-        self.continuous_time = continuous_time
+        self.use_discrete_time_model = use_discrete_time_model
 
     def control(self, state: list, control: list, dt: float) -> list:
         """Compute the end state given then current state and control.
@@ -28,16 +28,18 @@ class DoubleIntegrator:
         Returns:
             new state [q, q_dot]
         """
-        state = np.array(state)
-        control = np.array(control)
+        state = np.array(state).reshape(-1, 1)
+        control = np.array(control).reshape(-1, 1)
 
-        x_dot = self.A @ state + self.B @ control
-
-        # discretize using zero order hold, assuming dt is small enough
-        if self.continuous_time:
+        if not self.use_discrete_time_model:
+            # discretize using zero order hold, assuming dt is small enough
+            x_dot = self.A @ state + self.B @ control
             new_state = state + x_dot * dt
+        else:
+            # if discrete_time model is used, transition func directly gives new state
+            new_state = self.A @ state + self.B @ control
 
-        return new_state.tolist()
+        return new_state.reshape(-1).tolist()
 
 
 if __name__ == "__main__":
