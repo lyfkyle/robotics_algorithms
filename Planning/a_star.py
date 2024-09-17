@@ -15,7 +15,7 @@ class AStar(object):
 
         # initialzie
         # for every vertex, dist[v] = g(s, v) + h(v, g)
-        unvisited_vertices_set = set()
+        unvisited_vertices_set = set() # OPEN set. Nodes not in this set is in CLOSE set
         shortest_path = []
         shortest_path_len = 0
         g = {} # cost from source to v
