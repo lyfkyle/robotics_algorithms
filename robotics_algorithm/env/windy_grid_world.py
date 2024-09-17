@@ -109,8 +109,11 @@ class WindyGridWorld(MDPEnv):
         self.gridworld[GRID_HEIGHT - self.start_state[1] - 1][self.start_state[0]] = 2
         self.gridworld[GRID_HEIGHT - self.goal_state[1] - 1][self.goal_state[0]] = 3
 
-        for state in self.sol_path:
-            self.gridworld[GRID_HEIGHT - state[1] - 1][state[0]] = 4
+        if len(self.sol_path) > 0:
+            for state in self.sol_path:
+                self.gridworld[GRID_HEIGHT - state[1] - 1][state[0]] = 4
+        else:
+            self.gridworld[GRID_HEIGHT - self.cur_state[1] - 1][self.cur_state[0]] = 4
 
         self.colour_map = colors.ListedColormap(["white", "black", "yellow", "red", "green"])
         bounds = [0, 1, 2, 3, 4, 5]
@@ -120,12 +123,10 @@ class WindyGridWorld(MDPEnv):
 
         # draw gridlines
         ax.grid(which="major", axis="both", linestyle="-", color="k", linewidth=1)
-        ax.set_xticks(np.arange(0.5, GRID_WIDTH, 1))
+        ax.set_xticks(np.arange(GRID_WIDTH) - 0.5)
         ax.set_xticklabels(np.array([str(i) for i in range(GRID_WIDTH)]))
-        ax.set_yticks(np.arange(0.5, GRID_HEIGHT, 1))
+        ax.set_yticks(np.flip(np.arange(GRID_HEIGHT) + 0.5))
         ax.set_yticklabels(np.array([str(i) for i in range(GRID_HEIGHT)]))
-        # ax.axis('off')
         plt.tick_params(axis="both", labelsize=5, length=0)
 
-        # fig.set_size_inches((8.5, 11), forward=False)
         plt.show()

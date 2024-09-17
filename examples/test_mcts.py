@@ -1,11 +1,12 @@
 import numpy as np
 
-from robotics_algorithm.env.grid_world import GridWorld
+# from robotics_algorithm.env.grid_world import GridWorld
+from robotics_algorithm.env.cliff_walking import CliffWalking
 from robotics_algorithm.planning import MCTS
 
 
-env = GridWorld()
-state = env.reset(random_env=False)
+env = CliffWalking(dense_reward=True)  # For online tree search, dense reward needs to be enabled.
+state = env.reset()
 env.render()
 
 planner = MCTS(env)
