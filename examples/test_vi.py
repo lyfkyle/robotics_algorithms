@@ -1,18 +1,19 @@
 import numpy as np
 
-# from robotics_algorithm.env.windy_gridworld import WindyGridWorld
+from robotics_algorithm.env.windy_gridworld import WindyGridWorld
 from robotics_algorithm.env.cliff_walking import CliffWalking
 from robotics_algorithm.planning import ValueIteration
 
+vi = ValueIteration()
 
 env = CliffWalking()
-env.reset()
+state = env.reset()
 env.render()
 
-vi = ValueIteration()
+# Plan
 Q, policy = vi.run(env)
 
-state = env.reset()
+# Execute
 path = []
 while True:
     # choose action according to epsilon-greedy policy
@@ -32,25 +33,30 @@ while True:
 env.add_path(path)
 env.render()
 
-# env = WindyGridWorld()
-# Q, policy = vi.run(env)
 
-# state = env.reset()
-# path = []
-# while True:
-#     # choose action according to epsilon-greedy policy
-#     action_probs = policy(state)
-#     action = np.random.choice(env.actions, p=action_probs)  # choose action
-#     next_state, reward, done, _ = env.step(action)
+env = WindyGridWorld()
+state = env.reset()
+env.render()
 
-#     path.append(state)
-#     state = next_state
+# Plan
+Q, policy = vi.run(env)
 
-#     print(state)
-#     print(action)
+# Execute
+path = []
+while True:
+    # choose action according to epsilon-greedy policy
+    action_probs = policy(state)
+    action = np.random.choice(env.action_space, p=action_probs)  # choose action
+    next_state, reward, term, trunc, info = env.step(action)
 
-#     if done:
-#         break
+    print(state)
+    print(action)
 
-# env.add_path(path)
-# env.render()
+    path.append(state)
+    state = next_state
+
+    if term or trunc:
+        break
+
+env.add_path(path)
+env.render()

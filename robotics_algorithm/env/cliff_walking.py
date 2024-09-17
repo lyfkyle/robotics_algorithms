@@ -11,10 +11,18 @@ OBSTACLES = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)]
 
 
 class CliffWalking(MDPEnv):
-    def __init__(self, start=(0, 0), goal=(8, 0), obstacles=OBSTACLES):
-        """
-        @param, start, the start position of agent
-                goal, the goal position
+    """
+    A player is placed in grid world. The player should move from start to goal. If the player reaches the goal the episode ends. If the player moves to a cliff location the episode terminates with failure.
+    During each move, the player has a chance of ending up in the left or right of the target grid.
+    """
+
+    def __init__(self, start: tuple = (0, 0), goal: tuple = (8, 0), obstacles: list[tuple] = OBSTACLES):
+        """Constructor.
+
+        Args:
+            start (tuple): the start position of agent.
+            goal (tuple): the goal position.
+            obstacles (list[tuple]): a list of obstacle positions.
         """
         super().__init__()
 
@@ -98,7 +106,7 @@ class CliffWalking(MDPEnv):
 
     @override
     def render(self):
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         self.gridworld = np.full((GRID_HEIGHT, GRID_WIDTH), 0)
 
         for obstacle in self.obstacles:

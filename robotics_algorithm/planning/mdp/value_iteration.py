@@ -56,7 +56,6 @@ class ValueIteration:
             for state in states:
                 for action in actions:
                     results, probs = env.state_transition_func(state, action)
-                    print(results, probs)
 
                     # calculate Q values
                     next_state_value = 0
