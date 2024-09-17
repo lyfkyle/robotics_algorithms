@@ -2,17 +2,16 @@ import numpy as np
 
 from robotics_algorithm.env.windy_grid_world import WindyGridWorld
 from robotics_algorithm.env.cliff_walking import CliffWalking
-from robotics_algorithm.planning import PolicyIteration
+from robotics_algorithm.planning import PolicyTreeSearch
 
-
-planner = PolicyIteration()
+planner = PolicyTreeSearch()
 
 env = CliffWalking()
 state = env.reset()
 env.render()
 
 # Plan
-Q, policy = planner.run(env)
+policy = planner.run(env, max_depth=15)
 
 # Execute
 path = []
@@ -40,7 +39,7 @@ state = env.reset()
 env.render()
 
 # Plan
-Q, policy = planner.run(env)
+policy = planner.run(env)
 
 # Execute
 path = []
