@@ -199,11 +199,11 @@ class ContinuousEnv(BaseEnv):
 
     @override
     def sample_state(self):
-        return np.random.uniform(self.state_space[0], self.state_space[1]).tolist()
+        return np.random.uniform(np.nan_to_num(self.state_space[0]), np.nan_to_num(self.state_space[1])).tolist()
 
     @override
     def sample_action(self):
-        return np.random.uniform(self.action_space[0], self.action_space[1]).tolist()
+        return np.random.uniform(np.nan_to_num(self.action_space[0]), np.nan_to_num(self.action_space[1])).tolist()
 
 
 class DeterministicEnv(BaseEnv):
@@ -279,10 +279,6 @@ class FullyObservableEnv(BaseEnv):
     def __init__(self):
         super().__init__()
         self.observability = EnvType.FULLY_OBSERVABLE.value
-
-    @property
-    def state_space_size(self):
-        return len(self.state_space)
 
     @property
     def observation_space_size(self):

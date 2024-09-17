@@ -284,9 +284,10 @@ while True:
     # env.state_samples = state_samples
 
     next_state, reward, term, trunc, info = env.step(action)
+    print(state, action, next_state, reward)
 
-    nearest_idx = env._get_nearest_waypoint_to_state(next_state)
-    print(state, action, next_state, reward, shortest_path[nearest_idx])
+    # nearest_idx = env._get_nearest_waypoint_to_state(next_state)
+    # print(shortest_path[nearest_idx])
 
     # env.render()
 
