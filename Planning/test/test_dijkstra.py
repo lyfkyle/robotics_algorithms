@@ -11,9 +11,25 @@ import time
 from two_d_maze import TwoDMaze
 from dijkstra import Dirkstra
 
+# Initialize environment
 env = TwoDMaze()
 
-env.random_maze_obstacle_per_row(num_of_obstacle_per_row = 10)
+# -------- Settings ------------
+FIX_MAZE = True
+
+# only applicable if FIX_MAZE is True
+RANDOM_SEED = 3 # dont change this, This seed will ensure there is path from source to goal
+NUM_OF_OBSTACLE_PER_ROW = 10 # dont change this, This seed will ensure there is path from source to goal
+
+# -------- Helper Functions -------------
+
+# -------- Main Code ----------
+
+# add random obstacle to environment
+if FIX_MAZE:
+    env.random_maze_obstacle_per_row(num_of_obstacle_per_row = NUM_OF_OBSTACLE_PER_ROW, random_seed = RANDOM_SEED)
+else:
+    env.random_maze_obstacle_per_row(num_of_obstacle_per_row = 10)
 # env.plot()
 
 # generate source and goal
@@ -33,22 +49,26 @@ for x in reversed(range(env.size)):
             goal_x, goal_y = x, y
             break
 
+# add source and goal to environment
 env.add_source(source_x, source_y)
 env.add_goal(goal_x, goal_y)
 source = source_x * env.size + source_y
 goal = goal_x * env.size + goal_y
 
+# initialize planner
 my_path_planner = Dirkstra()
 
+# run path planner
 start_time = time.time()
 res, shortest_path, shortest_path_len = my_path_planner.run(env.adjacency_list, source, goal)
 end_time = time.time()
-
 print("TestDijkstra, takes {} seconds".format(end_time - start_time))
 
 if not res:
     print("TestDijkstra, no path is available!")
 else:
+    print("TestDijkstra, found path of len {}".format(shortest_path_len))
+    # visualize path
     path = []
     for v in shortest_path:
         v_x = v // env.size
@@ -58,6 +78,9 @@ else:
     env.add_path(path)
 
 env.plot()
+
+
+# -------- Legacy Code ----------
 
 """
 EMPTY_CELL = 0
