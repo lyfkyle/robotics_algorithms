@@ -6,28 +6,27 @@ from robotics_algorithm.env.base_env import DiscreteEnv
 
 class AStar(object):
     def __init__(self, env: DiscreteEnv, heuristic_func: Callable):
-        """_summary_
+        """Constructor.
 
         Args:
             env (DiscreteEnv): A planning env.
             heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal
         """
-        self._env = env
+        self.env = env
         self._heuristic_func = heuristic_func
 
-    def run(self, start: Any, goal: Any):
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
         """Run Astar.
 
         Args:
-            start (Any): the start state
-            goal (Any): the goal state
+            start (tuple): the start state
+            goal (tuple): the goal state
 
         Returns:
             res (bool): return true if a path is found, return false otherwise.
-            shortest_path (list[Any]): a list of state if shortest path is found.
+            shortest_path (list[tuple]): a list of state if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
-
         # initialize
         # for every state, f[v] = g(s, v) + h(v, g)
         unvisited_states = set()  # OPEN set. Nodes not in this set is in CLOSE set
@@ -38,16 +37,15 @@ class AStar(object):
         f = {}  # cost-to-come + heuristic cost-to-go
         prev_state_dict = {}  # used to extract shortest path
 
-        for state in self._env.all_states:
+        for state in self.env.all_states:
             g[state] = float("inf")
             f[state] = float("inf")
             unvisited_states.add(state)  # All states are unvisited
 
-        g[start] = 0
+        g[start] = 0    # distance to source is 0
         f[start] = self._heuristic_func(start, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
         heapq.heappush(priority_q, (f[start], start))
 
-        print(start, goal)
         # run algorithm
         path_exist = False
         while len(priority_q) > 0:
@@ -64,14 +62,19 @@ class AStar(object):
 
             # Find possible transitions from best_state, and add them to queue ranked by heuristics.
             unvisited_states.remove(best_state)
-            available_actions = self._env.get_available_actions(best_state)
+            available_actions = self.env.get_available_actions(best_state)
             # print(best_state, available_actions)
             for action in available_actions:
-                new_state, cost, _, _, _ = self._env.state_transition_func(best_state, action)
+                new_state, cost, term, _, info = self.env.state_transition_func(best_state, action)
+
+                # skip actions that result in failures
+                if term and not info["success"]:
+                    continue
+
                 if new_state in unvisited_states:
                     g_new_state = g[best_state] + cost  # cost-to-come
                     h_new_state = self._heuristic_func(new_state, goal)  # cost-to-go
-                    print(new_state, h_new_state)
+                    # print(new_state, h_new_state)
                     if g_new_state < g[new_state]:
                         g[new_state] = g_new_state
                         f[new_state] = g_new_state + h_new_state
@@ -88,7 +91,7 @@ class AStar(object):
                 prev_v = prev_state_dict[prev_v]
 
             shortest_path.insert(0, start)
-            shortest_path_len = f[goal]
+            shortest_path_len = g[goal]
             return (True, shortest_path, shortest_path_len)
         else:
             return (False, None, None)

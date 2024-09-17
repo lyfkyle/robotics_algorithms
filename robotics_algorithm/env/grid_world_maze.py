@@ -511,7 +511,8 @@ DEFAULT_MAZE_OBSTACLES = [
     (49, 43),
     (49, 47),
 ]
-
+DEFAULT_START = (0, 49)
+DEFAULT_GOAL = (49, 0)
 
 class GridWorldMaze(DiscreteEnv):
     FREE_SPACE = 0
@@ -550,11 +551,18 @@ class GridWorldMaze(DiscreteEnv):
         # print(self.all_states)
 
     @override
-    def reset(self, random=True):
-        if not random:
+    def reset(self, random_env=True):
+        if not random_env:
             self.add_default_obstacles()
+            self.start_state = DEFAULT_START
+            self.goal_state = DEFAULT_GOAL
         else:
             self.random_maze_obstacle_per_row()
+            self.start_state = self.random_valid_state()
+            self.goal_state = self.random_valid_state()
+
+        self.maze[self.start_state[0], self.start_state[1]] = GridWorldMaze.START
+        self.maze[self.goal_state[0], self.goal_state[1]] = GridWorldMaze.GOAL
 
     @override
     def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:
@@ -569,6 +577,13 @@ class GridWorldMaze(DiscreteEnv):
 
     def get_available_actions(self, state: tuple) -> list[tuple]:
         return self.all_actions
+
+    def random_valid_state(self) -> tuple:
+        valid = False
+        while not valid:
+            state = np.random.randint(0, self.size, (2))
+            if self.maze[state[0], state[1]] == GridWorldMaze.FREE_SPACE:
+                return (state[0], state[1])
 
     def compute_adjacency_list(self):
         adjacency_list = defaultdict(dict)
@@ -610,7 +625,7 @@ class GridWorldMaze(DiscreteEnv):
                 cnt += 1
         self.compute_adjacency_list()
 
-    def plot(self):
+    def render(self):
         fig, ax = plt.subplots()
         ax.imshow(self.maze, cmap=self.colour_map, norm=self.norm)
         # draw gridlines

@@ -32,7 +32,7 @@ env.render()
 
 # initialize planner
 planner = ProbabilisticRoadmap(
-    env, sample_func, is_state_valid, is_edge_valid, num_of_samples=100, K=10
+    env, sample_func, is_state_valid, is_edge_valid, num_of_samples=100, num_neighbors=10
 )  # 1000 samples out of total 2500 vertex.
 
 # offline portion of PRM

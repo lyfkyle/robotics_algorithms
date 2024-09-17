@@ -1,28 +1,40 @@
-from typing import Any
+from typing import Any, Callable
 
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
 
+from robotics_algorithm.env.base_env import ContinuousEnv
+
 
 class ProbabilisticRoadmap(object):
-    def __init__(self, env, sample_func, state_col_check_func, edge_col_check_func, num_of_samples: int, K):
+    def __init__(
+        self,
+        env: ContinuousEnv,
+        sample_func: Callable,
+        state_col_check_func: Callable,
+        edge_col_check_func: Callable,
+        num_of_samples: int,
+        num_neighbors: int,
+    ):
         """_summary_
 
         Args:
-            self._sample_func, the sampling function, returns a random point in space.
-            state_col_check_func, a function that takes in a random point and returns whether it is in collision.
-            edge_col_check_func, a function that takes in two points and returns whether there is a collision-free
-                simple path between them.
-            num_of_samples (int): _description_
-            K (int): number of closest neighbors to attempt connection.
+            env (ContinuousEnv): the env
+            sample_func (Callable): the sampling function, returns a random point in space.
+            state_col_check_func (Callable): a function that takes in a random point and returns whether it is in
+                collision.
+            edge_col_check_func (Callable): a function that takes in two points and returns whether there is a
+                collision-free simple path between them.
+            num_of_samples (int): maximum of samples drawn during planning.
+            num_neighbors (int): number of closest neighbors to attempt connection.
         """
         self.env = env
         self._sample_func = sample_func
         self._state_col_check_func = state_col_check_func
         self._edge_col_check_func = edge_col_check_func
         self.num_of_samples = num_of_samples
-        self.K = K
+        self.num_neighbors = num_neighbors
 
     def compute_roadmap(self):
         """
@@ -42,44 +54,54 @@ class ProbabilisticRoadmap(object):
         # print(self.V)
 
         for v in self.all_samples:
-            neighbors = self.get_K_closest_neighbors(self.all_samples, v, self.K)
+            neighbors = self.get_nearest_neighbors(self.all_samples, v, self.num_neighbors)
             # print("neighbours {}".format(neighbours))
             for neighbor in neighbors:
                 can_link, length = self._edge_col_check_func(self.env, v, neighbor)
                 if can_link:
                     self.roadmap.add_edge(tuple(v), tuple(neighbor), weight=length)
 
-    def get_K_closest_neighbors(self, V, v, K):
+    def get_nearest_neighbors(self, all_vertices: list[tuple], v: tuple, n_neighbors: int = 1) -> list[tuple]:
         """
-        return K closest neighbors of v in V
-        @param V, a list of vertices, must be a 2D numpy array
-        @param v, the target vertices, must be a 2D numpy array
-        @param K, number of neighbors to get
-        @return, list, the list of nearest neighbours
-        """
+        return the closest neighbors of v in all_vertices.
 
-        nbrs = NearestNeighbors(n_neighbors=K, algorithm="ball_tree").fit(np.array(V))
-        distances, indices = nbrs.kneighbors(np.array(v).reshape(1, 2))
+        Args:
+            all_vertices (list[tuple]): a list of vertices
+            v (tuple): the target vertex.
+            n_neighbors (int): number of nearby neighbors.
+
+        Returns:
+            (list[tuple]): a list of nearby vertices
+        """
+        n_neighbors = min(n_neighbors, len(all_vertices))
+
+        all_vertices = np.array(all_vertices)
+        v = np.array(v).reshape(1, -1)
+
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
+        distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        return np.take(np.array(V), indices.ravel(), axis=0).tolist()
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).tolist()
+        nbr_vertices = [tuple(v) for v in nbr_vertices]
+        return nbr_vertices
 
-    def get_path(self, start: list, goal: list) -> tuple[bool, list[Any], float]:
+    def get_path(self, start: list, goal: list) -> tuple[bool, list[tuple], float]:
         """
         Online computation of path.
 
         Args:
-            start (list): the start state.
-            goal (list): the goal state.
+            start (tuple): the start state.
+            goal (tuple): the goal state.
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise
-            shortest_path: a list of vertices if shortest path is found
-            shortest_path_len: the length of shortest path if found.
+            shortest_path (list[tuple]): a list of vertices if shortest path is found
+            shortest_path_len (float): the length of shortest path if found.
         """
         start = tuple(start)
         goal = tuple(goal)
 
-        source_neighbors = self.get_K_closest_neighbors(self.all_samples, start, self.K)
+        source_neighbors = self.get_nearest_neighbors(self.all_samples, start, self.num_neighbors)
         for neighbor in source_neighbors:
             can_link, length = self._edge_col_check_func(self.env, start, neighbor)
             if can_link:
@@ -89,7 +111,7 @@ class ProbabilisticRoadmap(object):
             print("can't connect start to roadmap!!!")
             return False, None, None
 
-        goal_neighbors = self.get_K_closest_neighbors(self.all_samples, goal, self.K)
+        goal_neighbors = self.get_nearest_neighbors(self.all_samples, goal, self.num_neighbors)
         for neighbor in goal_neighbors:
             can_link, length = self._edge_col_check_func(self.env, goal, neighbor)
             if can_link:
@@ -105,7 +127,19 @@ class ProbabilisticRoadmap(object):
         print(path, path_len)
         return True, path, path_len
 
-    def run(self, start, goal):
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+        """
+        Run algorithm.
+
+        Args:
+            start (tuple): the start state.
+            goal (tuple): the goal state.
+
+        Returns:
+            success (boolean): return true if a path is found, return false otherwise.
+            shortest_path (list[tuple]): a list of vertices if shortest path is found.
+            shortest_path_len (float): the length of shortest path if found.
+        """
         self.compute_roadmap()
         return self.get_path(start, goal)
 
