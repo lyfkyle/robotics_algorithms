@@ -2,11 +2,11 @@
 import time
 import math
 
-from robotics_algorithm.env.two_d_maze import TwoDMaze
+from robotics_algorithm.env.grid_world_maze import GridWorldMaze
 from robotics_algorithm.planning import AStar
 
 # Initialize environment
-env = TwoDMaze()
+env = GridWorldMaze()
 
 # -------- Settings ------------
 FIX_MAZE = True
@@ -37,18 +37,18 @@ else:
 #     goal_x, goal_y = env.get_random_free_point()
 for x in range(env.size):
     for y in range(env.size):
-        if env.maze[x, y] == TwoDMaze.FREE_SPACE:
-            source = x, y
+        if env.maze[x, y] == GridWorldMaze.FREE_SPACE:
+            start = x, y
             break
 
 for x in reversed(range(env.size)):
     for y in reversed(range(env.size)):
-        if env.maze[x, y] == TwoDMaze.FREE_SPACE:
+        if env.maze[x, y] == GridWorldMaze.FREE_SPACE:
             goal = x, y
             break
 
 # add source and goal to environment
-env.add_source(source)
+env.add_start(start)
 env.add_goal(goal)
 
 # initialize planner
@@ -57,7 +57,7 @@ my_path_planner = AStar()
 # run path planner
 start_time = time.time()
 res, shortest_path, shortest_path_len = my_path_planner.run(
-    env.adjacency_list, source, goal, heuristic_func
+    env, start, goal, heuristic_func
 )
 end_time = time.time()
 print("TestAStar, takes {} seconds".format(end_time - start_time))
@@ -74,6 +74,3 @@ else:
     env.add_path(path)
 
 env.plot()
-
-
-# -------- Legacy Code ----------
