@@ -13,7 +13,18 @@ GRID_WIDTH = 10
 
 class WindyGridWorld(MDPEnv):
     """
-    Windy Gridworld is a standard gridworld with start and goal states. The difference is that there is a crosswind running upward through the middle of the grid. Actions are the standard four: up, right, down, and left. In the middle region the resultant next states are shifted upward by the "wind" which strength varies from column to column. The reward is -1 until goal state is reached.
+    Windy Gridworld is a standard gridworld with start and goal states. The difference is that there is a crosswind
+    running upward through the middle of the grid. Actions are the standard four: up, right, down, and left.
+    In the middle region the resultant next states are shifted upward by the "wind" which strength varies from column
+    to column. The reward is -1 until goal state is reached.
+
+    State: [x, y]
+    Action: [up, down, left, right]
+
+    Discrete state space.
+    Discrete action space.
+    Deterministic transition.
+    Fully observable.
     """
 
     def __init__(self, start: tuple = (0, 3), goal: tuple = (7, 3), wind: list = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]):
@@ -30,8 +41,6 @@ class WindyGridWorld(MDPEnv):
         # Define spaces
         self.state_space = [(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)]
         self.action_space = [0, 1, 2, 3]  # action, 0: up, 1: right, 2: down, 3: left
-        self.action_space_size = len(self.action_space)
-        self.state_space_size = len(self.state_space)
 
         self.start_state = start
         self.cur_state = start

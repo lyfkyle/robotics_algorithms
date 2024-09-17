@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from .base_env import DeterministicEnv, StochasticEnv
+from .base_env import DeterministicEnv, DiscreteEnv, FullyObservableEnv
 
 DEFAULT_MAZE_OBSTACLES = [
     (0, 0),
@@ -515,7 +515,7 @@ DEFAULT_START = (0, 49)
 DEFAULT_GOAL = (49, 0)
 
 
-class GridWorldMaze(DeterministicEnv):
+class GridWorldMaze(DiscreteEnv, DeterministicEnv, FullyObservableEnv):
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -548,8 +548,6 @@ class GridWorldMaze(DeterministicEnv):
 
         self.state_space = [tuple(s) for s in all_states]
         self.action_space = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # left, right, top and bottom
-        self.state_space_size = len(self.state_space)
-        self.action_space_size = len(self.action_space)
 
     @override
     def reset(self, random_env=True):

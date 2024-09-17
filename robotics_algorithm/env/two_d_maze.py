@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from robotics_algorithm.env.base_env import DeterministicEnv
+from robotics_algorithm.env.base_env import DeterministicEnv, ContinuousEnv, FullyObservableEnv
 from robotics_algorithm.robot.differential_drive import DiffDrive
 
 
@@ -17,7 +17,17 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class TwoDMazeDiffDrive(DeterministicEnv):
+class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
+    """A differential drive robot must reach goal state in a 2d maze with obstacles.
+
+    State: [x, y, theta]
+    Action: [lin_vel, ang_vel]
+
+    Continuous state space.
+    Continuous action space.
+    Deterministic transition.
+    Fully observable.
+    """
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -76,7 +86,7 @@ class TwoDMazeDiffDrive(DeterministicEnv):
 
     @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
-        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=1.0).tolist()
+        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=1.0)
 
         if new_state[0] <= 0 or new_state[1] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
             return state, 0, True, False, {"success": False}
@@ -84,17 +94,16 @@ class TwoDMazeDiffDrive(DeterministicEnv):
         if not self.is_state_valid(new_state):
             return state, 0, True, False, {"success": False}
 
-        return tuple(new_state), 1, False, False, {}
+        # Check goal state reached for termination
+        term = False
+        if np.allclose(np.array(new_state), np.array(self.goal_state), atol=1e-4):
+            term = True
+
+        return new_state, 1, term, False, {}
 
     @override
     def get_available_actions(self, state: Any) -> list[Any]:
         return self._sample_actions
-
-    def _random_obstacles(self, num_of_obstacles=5):
-        self.obstacles = []
-        for _ in range(num_of_obstacles):
-            obstacle = np.random.uniform([0, 0, 0.1], [self.size, self.size, 1])
-            self.obstacles.append(obstacle.tolist())
 
     @override
     def is_state_valid(self, state):
@@ -104,13 +113,19 @@ class TwoDMazeDiffDrive(DeterministicEnv):
 
         return True
 
+    def _random_obstacles(self, num_of_obstacles=5):
+        self.obstacles = []
+        for _ in range(num_of_obstacles):
+            obstacle = np.random.uniform([0, 0, 0.1], [self.size, self.size, 1])
+            self.obstacles.append(obstacle.tolist())
+
     def _random_valid_state(self):
         while True:
             robot_pos = np.random.uniform(self.state_space[0], self.state_space[1])
             if self.is_state_valid(robot_pos):
                 break
 
-        return robot_pos
+        return robot_pos.tolist()
 
     def add_path(self, path):
         interpolated_path = [self.start_state]
@@ -200,13 +215,8 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
             self.goal_state = DEFAULT_GOAL[:2]
 
     @override
-    def get_available_actions(self, state: Any) -> list[Any]:
-        raise NotImplementedError(
-            "TwoDMazeOmni does not support get_available_actions, " "use sample_available_actions instead!!"
-        )
-
-    def sample_available_actions(self, state: Any, num_to_sample=1) -> list[Any]:
-        return np.random.sample(self.state_space[0], self.state_space[1], num_to_sample)
+    def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
+        return np.random.sample(self.state_space[0], self.state_space[1], num_samples)
 
     @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
@@ -241,7 +251,7 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
 
         return path
 
-    def is_edge_valid(self, state1, state2, step_size=0.1):
+    def is_state_transition_valid(self, state1, state2, step_size=0.1):
         path = self.extend(state1, state2, step_size)
         res = self.is_equal(path[-1], state2)
         return res, np.linalg.norm(np.array(state2) - np.array(state1))

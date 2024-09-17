@@ -146,12 +146,14 @@ class MCTS:
         if node.attr["term"]:
             return total_return
 
+        current_discount_factor = self.discount_factor
         for _ in range(self.max_simulation_eps_len):
             random_action = np.random.choice(self.env.action_space)
             result, _ = self._sample_step(state, random_action)
             new_state, reward, term, trunc, info = result
 
-            total_return += reward
+            total_return += current_discount_factor * reward
+            current_discount_factor *= self.discount_factor
             if term or trunc:
                 break
 
@@ -175,7 +177,6 @@ class MCTS:
         while parent_node is not None:
             state = node.attr["state"]
             parent_state = parent_node.attr["state"]
-            print(f"[MCTS]: Backpropogate through {parent_state}")
 
             # # Increase state visit cnt
             self.state_visit_cnt[parent_state] += 1
@@ -187,6 +188,8 @@ class MCTS:
             # Increase state value, considering transition prob and discount factor.
             prob = parent_node.transition_attr(node)["prob"]
             reward = parent_node.transition_attr(node)["reward"]
+
+            print(f"[MCTS]: Backpropogate through {parent_state} with prob {prob} and reward {reward}")
 
             # Back up using Bellman optimality equation
             # Q(s, a) = p(s' | s, a) * (R(s, s') + lamda * V(s'))

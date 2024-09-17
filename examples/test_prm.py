@@ -22,7 +22,7 @@ def is_state_valid(env, state):
 
 
 def is_edge_valid(env, state1, state2):
-    return env.is_edge_valid(state1, state2)
+    return env.is_state_transition_valid(state1, state2)
 
 
 # -------- Main Code ----------

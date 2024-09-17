@@ -3,18 +3,28 @@ from typing_extensions import override
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .base_env import StochasticEnv
+from .base_env import MDPEnv
 
 
-class FrozenLake(StochasticEnv):
+class FrozenLake(MDPEnv):
     """Frozen lake involves crossing a frozen lake from start to goal without falling into any holes by walking over
     the frozen lake. The player may not always move in the intended direction due to the slippery nature of the
     frozen lake.
+
+    State: [x, y]
+    Action: [up, down, left, right]
+
+    Discrete state space.
+    Discrete action space.
+    Stochastic transition.
+    Fully observable.
     """
     FREE = 0
     OBSTACLE = 1
 
     def __init__(self, size=5, num_of_obstacles=None, dense_reward: float = False):
+        super().__init__()
+
         self.size = size
         self.num_of_obstacles = size if num_of_obstacles is None else num_of_obstacles
         self.map = np.zeros((size, size), dtype=np.int8)
@@ -29,8 +39,6 @@ class FrozenLake(StochasticEnv):
         # Define spaces
         self.state_space = [tuple(s) for s in all_states]
         self.action_space = [0, 1, 2, 3]  #  0: up, 1: right, 2: down, 3: left
-        self.state_space_size = len(self.state_space)
-        self.action_space_size = len(self.action_space)
 
     @override
     def reset(self, random_env=True) -> tuple:
