@@ -117,7 +117,7 @@ class CliffWalking(MDPEnv):
         return reward
 
     @override
-    def reset(self):
+    def reset(self, random_env=False):
         self.cur_state = self.start_state
         return self.cur_state
 

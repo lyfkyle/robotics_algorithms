@@ -1,6 +1,3 @@
-import random
-from collections import defaultdict
-from typing import Any
 from typing_extensions import override
 
 import numpy as np
@@ -9,17 +6,21 @@ import matplotlib.pyplot as plt
 from .base_env import StochasticEnv
 
 
-class GridWorld(StochasticEnv):
+class FrozenLake(StochasticEnv):
+    """Frozen lake involves crossing a frozen lake from start to goal without falling into any holes by walking over
+    the frozen lake. The player may not always move in the intended direction due to the slippery nature of the
+    frozen lake.
+    """
     FREE = 0
     OBSTACLE = 1
 
-    def __init__(self, size=5, num_of_obstacles=None, max_eps_len=50):
+    def __init__(self, size=5, num_of_obstacles=None, dense_reward: float = False):
         self.size = size
         self.num_of_obstacles = size if num_of_obstacles is None else num_of_obstacles
         self.map = np.zeros((size, size), dtype=np.int8)
         self.obstacles = []
         self.cur_state = None
-        self.max_eps_len = 50
+        self.dense_reward = dense_reward
 
         # Get all indices inside the 2D grid
         indices = np.indices((size, size))
@@ -36,7 +37,7 @@ class GridWorld(StochasticEnv):
         if not random_env:
             self.start_state = (0, 0)
             self.goal_state = (self.size - 1, self.size - 1)
-            self.obstacles = [(0, 1), (1, 1), (2, 1), (2, 3), (4, 3), (4, 0)]
+            self.obstacles = [(1, 1), (3, 1), (1, 2), (4, 2), (4, 3), (2, 4)]
         else:
             for _ in range(self.num_of_obstacles):
                 self.obstacles.append(self.random_valid_state())
@@ -111,9 +112,12 @@ class GridWorld(StochasticEnv):
         elif state in self.obstacles:
             reward = -100
         else:
-            # Negative of dist as penalty.
-            # This encourages moving to goal.
-            reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1])) * 0.1
+            if not self.dense_reward:
+                reward = -1
+            else:
+                # Negative of dist as penalty.
+                # This encourages moving to goal.
+                reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1]))
 
         return reward
 
@@ -121,7 +125,7 @@ class GridWorld(StochasticEnv):
         valid = False
         while not valid:
             state = np.random.randint(0, self.size, (2))
-            if self.map[state[0], state[1]] == GridWorld.FREE:
+            if self.map[state[0], state[1]] == FrozenLake.FREE:
                 return (state[0], state[1])
 
     @override

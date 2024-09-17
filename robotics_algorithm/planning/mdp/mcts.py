@@ -14,7 +14,7 @@ class MCTS:
     """Monte Carlo Tree Search."""
 
     def __init__(
-        self, env: MDPEnv, max_depth: int = 5, discount_factor: float = 0.99, c: float = 25, max_simulation_eps_len=50
+        self, env: MDPEnv, max_depth: int = 5, discount_factor: float = 0.99, c: float = 25, max_simulation_eps_len=100
     ):
         """Constructor.
 
@@ -23,7 +23,7 @@ class MCTS:
             max_depth (int, optional): _description_. Defaults to 5.
             discount_factor (float, optional): _description_. Defaults to 0.99.
             c (float, optional): the exploration-exploitation balancing factor. Defaults to 10.
-            max_simulation_eps_len (float, optional): max episode length during simulation. Defaults to 50.
+            max_simulation_eps_len (float, optional): max episode length during simulation. Defaults to 100.
         """
         self.env = env
         self.max_depth = max_depth
@@ -37,9 +37,8 @@ class MCTS:
         For MCTS, this should be called online.
 
         Args:
-            env (MDPEnv): the env.
-            max_depth (int, optional): maximum serach depth. Defaults to 5.
-            discount_factor (float, optional): the discount factor for future reward. Defaults to 0.99.
+            state (state, optional): current state.
+            max_planning_time (float, optional): maximum planning time
 
         Returns:
             best_action (tuple): best action found
