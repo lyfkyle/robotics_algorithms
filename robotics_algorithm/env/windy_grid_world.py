@@ -27,10 +27,12 @@ class WindyGridWorld(MDPEnv):
         """
         super().__init__()
 
+        # Define spaces
         self.state_space = [(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)]
         self.action_space = [0, 1, 2, 3]  # action, 0: up, 1: right, 2: down, 3: left
         self.action_space_size = len(self.action_space)
         self.state_space_size = len(self.state_space)
+
         self.start_state = start
         self.cur_state = start
         self.goal_state = goal
