@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from robotics_algorithm.env.two_d_maze import TwoDMazeOmni
-from robotics_algorithm.planning import RRTConnect
+from robotics_algorithm.planning import RRT
 
 # Initialize environment
 env = TwoDMazeOmni()
@@ -38,7 +38,7 @@ env.reset(random_env=not FIX_MAZE)
 env.render()
 
 # initialize planner
-planner = RRTConnect(env, sample_func, vertex_expand_func, num_of_samples=500)
+planner = RRT(env, sample_func, vertex_expand_func, num_of_samples=500)
 
 # run path planner
 start = env.start_state

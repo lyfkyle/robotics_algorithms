@@ -1,112 +1,147 @@
-from sklearn.neighbors import NearestNeighbors
-from collections import defaultdict
-import numpy as np
+from typing import Any, Callable
 
-from .dijkstra import Dirkstra
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
+import networkx as nx
+
+from robotics_algorithm.env.base_env import ContinuousEnv
 
 
 class ProbabilisticRoadmap(object):
-    def __init__(self, number_of_vertices, K):
-        self.number_of_vertices = number_of_vertices
-        self.K = K
-        self._path_finder = Dirkstra()
+    def __init__(
+        self,
+        env: ContinuousEnv,
+        sample_func: Callable,
+        state_col_check_func: Callable,
+        edge_col_check_func: Callable,
+        num_of_samples: int,
+        num_neighbors: int,
+    ):
+        """_summary_
 
-    def compute_roadmap(self, sample_vertex, check_clear, check_link):
+        Args:
+            env (ContinuousEnv): the env
+            sample_func (Callable): the sampling function, returns a random point in space.
+            state_col_check_func (Callable): a function that takes in a random point and returns whether it is in
+                collision.
+            edge_col_check_func (Callable): a function that takes in two points and returns whether there is a
+                collision-free simple path between them.
+            num_of_samples (int): maximum of samples drawn during planning.
+            num_neighbors (int): number of closest neighbors to attempt connection.
         """
-        Offline computation of roadmap by sampling points
-        @param, sample_vertex, the sampling function, returns a random point in space
-        @param, check_clear, a function that takes in a random point and returns whether
-            it is in collision
-        @param, check_link, a function that takes in two points and returns whether
-            there is a collision-free simple path between them
-        @return, None
+        self.env = env
+        self._sample_func = sample_func
+        self._state_col_check_func = state_col_check_func
+        self._edge_col_check_func = edge_col_check_func
+        self.num_of_samples = num_of_samples
+        self.num_neighbors = num_neighbors
+
+    def compute_roadmap(self):
         """
-        self.V = []
-        self.adj_list = defaultdict(dict)
-        while len(self.V) < self.number_of_vertices:
+        Offline computation of roadmap by sampling points.
+        """
+        self.all_samples = []
+        self.roadmap = nx.Graph()
+        while len(self.all_samples) < self.num_of_samples:
             collision_free = False
             while not collision_free:
-                v = sample_vertex()
-                collision_free = check_clear(v)
+                v = self._sample_func(self.env)
+                collision_free = self._state_col_check_func(self.env, v)
 
-            v_x, v_y = v
-            self.V.append([v_x, v_y])
+            self.all_samples.append(v)
 
-        print(
-            "PRM/compute_roadmap: finished adding {} of vertices".format(
-                self.number_of_vertices
-            )
-        )
+        print("PRM/compute_roadmap: finished adding {} of vertices".format(self.num_of_samples))
         # print(self.V)
 
-        for v in self.V:
-            neighbours = self.get_K_closest_neighbour(self.V, v, self.K)
+        for v in self.all_samples:
+            neighbors = self.get_nearest_neighbors(self.all_samples, v, self.num_neighbors)
             # print("neighbours {}".format(neighbours))
-            for neighbour in neighbours:
-                can_link, length = check_link(v, neighbour)
+            for neighbor in neighbors:
+                can_link, length = self._edge_col_check_func(self.env, v, neighbor)
                 if can_link:
-                    self.adj_list[tuple(v)][tuple(neighbour)] = length
-                    self.adj_list[tuple(neighbour)][tuple(v)] = length
+                    self.roadmap.add_edge(tuple(v), tuple(neighbor), weight=length)
 
-    def get_K_closest_neighbour(self, V, v, K):
+    def get_nearest_neighbors(self, all_vertices: list[tuple], v: tuple, n_neighbors: int = 1) -> list[tuple]:
         """
-        return K closest neighbors of v in V
-        @param V, a list of vertices, must be a 2D numpy array
-        @param v, the target vertices, must be a 2D numpy array
-        @param K, number of neighbors to get
-        @return, list, the list of nearest neighbours
-        """
+        return the closest neighbors of v in all_vertices.
 
-        nbrs = NearestNeighbors(n_neighbors=K, algorithm="ball_tree").fit(np.array(V))
-        distances, indices = nbrs.kneighbors(np.array(v).reshape(1, 2))
+        Args:
+            all_vertices (list[tuple]): a list of vertices
+            v (tuple): the target vertex.
+            n_neighbors (int): number of nearby neighbors.
+
+        Returns:
+            (list[tuple]): a list of nearby vertices
+        """
+        n_neighbors = min(n_neighbors, len(all_vertices))
+
+        all_vertices = np.array(all_vertices)
+        v = np.array(v).reshape(1, -1)
+
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
+        distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        return np.take(np.array(V), indices.ravel(), axis=0).tolist()
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).tolist()
+        nbr_vertices = [tuple(v) for v in nbr_vertices]
+        return nbr_vertices
 
-    def get_path(self, source, goal, check_link):
+    def get_path(self, start: list, goal: list) -> tuple[bool, list[tuple], float]:
         """
-        Online computation of path
-        @param, source, the source point
-        @param, goal, the goal point
-        @param, check_link, a function that takes in two points and returns whether
-            there is a collision-free simple path between them
-        @return, boolean, return true if a path is found, return false otherwise
-                 shortest_path, a list of vertices if shortest path is found
-                 shortest_path_len, the length of shortest path if found.
+        Online computation of path.
+
+        Args:
+            start (tuple): the start state.
+            goal (tuple): the goal state.
+
+        Returns:
+            success (boolean): return true if a path is found, return false otherwise
+            shortest_path (list[tuple]): a list of vertices if shortest path is found
+            shortest_path_len (float): the length of shortest path if found.
         """
-        source_neighbours = self.get_K_closest_neighbour(self.V, source, self.K)
-        for neighbour in source_neighbours:
-            can_link, length = check_link(source, neighbour)
+        start = tuple(start)
+        goal = tuple(goal)
+
+        source_neighbors = self.get_nearest_neighbors(self.all_samples, start, self.num_neighbors)
+        for neighbor in source_neighbors:
+            can_link, length = self._edge_col_check_func(self.env, start, neighbor)
             if can_link:
-                self.adj_list[tuple(source)][tuple(neighbour)] = length
-                self.adj_list[tuple(neighbour)][tuple(source)] = length
+                self.roadmap.add_edge(start, tuple(neighbor), weight=length)
                 break
         else:
-            print("can't connect source to roadmap!!!")
+            print("can't connect start to roadmap!!!")
             return False, None, None
 
-        goal_neighbours = self.get_K_closest_neighbour(self.V, goal, self.K)
-        for neighbour in goal_neighbours:
-            can_link, length = check_link(goal, neighbour)
+        goal_neighbors = self.get_nearest_neighbors(self.all_samples, goal, self.num_neighbors)
+        for neighbor in goal_neighbors:
+            can_link, length = self._edge_col_check_func(self.env, goal, neighbor)
             if can_link:
-                self.adj_list[tuple(goal)][tuple(neighbour)] = length
-                self.adj_list[tuple(neighbour)][tuple(goal)] = length
+                self.roadmap.add_edge(goal, tuple(neighbor), weight=length)
                 break
         else:
             print("can't connect goal to roadmap!!!")
             return False, None, None
 
-        path_exist, shortest_path, path_len = self._path_finder.run(
-            self.adj_list, source, goal
-        )
-        if not path_exist:
-            print("No path is found, this should not happen!!!")
-            return False, None, None
-        else:
-            return True, shortest_path, path_len
+        # path_exist, shortest_path, path_len = self._path_finder.run(self.adj_list, start, goal)
+        path = nx.shortest_path(self.roadmap, start, goal, weight="weight")
+        path_len = nx.shortest_path_length(self.roadmap, start, goal, weight="weight")
+        print(path, path_len)
+        return True, path, path_len
 
-    def run(self, graph, source, goal, sample_vertex, check_clear, check_link):
-        self.compute_roadmap(sample_vertex, check_clear, check_link)
-        return self.get_path(source, goal, check_link)
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+        """
+        Run algorithm.
+
+        Args:
+            start (tuple): the start state.
+            goal (tuple): the goal state.
+
+        Returns:
+            success (boolean): return true if a path is found, return false otherwise.
+            shortest_path (list[tuple]): a list of vertices if shortest path is found.
+            shortest_path_len (float): the length of shortest path if found.
+        """
+        self.compute_roadmap()
+        return self.get_path(start, goal)
 
     def get_roadmap(self):
-        return self.adj_list
+        return self.roadmap
