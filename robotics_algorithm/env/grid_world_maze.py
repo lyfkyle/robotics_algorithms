@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from .base_env import DiscreteEnv
+from .base_env import DeterministicEnv, StochasticEnv
 
 DEFAULT_MAZE_OBSTACLES = [
     (0, 0),
@@ -514,7 +514,8 @@ DEFAULT_MAZE_OBSTACLES = [
 DEFAULT_START = (0, 49)
 DEFAULT_GOAL = (49, 0)
 
-class GridWorldMaze(DiscreteEnv):
+
+class GridWorldMaze(DeterministicEnv):
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -541,14 +542,14 @@ class GridWorldMaze(DiscreteEnv):
         ]
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
-        # Available actions are left, right, top and bottom
-        self.all_actions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
         # Get all indices inside the 2D grid
         indices = np.indices((size, size))
         all_states = np.stack(indices, axis=-1).reshape(-1, 2).tolist()
-        self.all_states = [tuple(s) for s in all_states]
-        # print(self.all_states)
+
+        self.state_space = [tuple(s) for s in all_states]
+        self.action_space = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # left, right, top and bottom
+        self.state_space_size = len(self.state_space)
+        self.action_space_size = len(self.action_space)
 
     @override
     def reset(self, random_env=True):
@@ -575,8 +576,9 @@ class GridWorldMaze(DiscreteEnv):
 
         return tuple(new_state), 1, False, False, {}
 
+    @override
     def get_available_actions(self, state: tuple) -> list[tuple]:
-        return self.all_actions
+        return self.action_space
 
     def random_valid_state(self) -> tuple:
         valid = False
@@ -637,7 +639,7 @@ class GridWorldMaze(DiscreteEnv):
         # ax.axis('off')
         plt.tick_params(axis="both", labelsize=5, length=0)
 
-        # fig.set_size_inches((8.5, 11), forward=False)
+        # fig.setsize_inches((8.5, 11), forward=False)
         plt.show()
 
     def get_random_free_point(self):
