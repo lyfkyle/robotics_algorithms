@@ -37,6 +37,8 @@ class TwoDLocalizationWithFeature(object):
                            [0, meas_noise[1], 0],
                            [0, 0, meas_noise[2]]], dtype=np.float32)
 
+        self.meas_correspondence = True
+
     def control(self, control):
         '''
         Run control on agent in simulation.
@@ -52,10 +54,13 @@ class TwoDLocalizationWithFeature(object):
         '''
         meas = []
         for i in range(self.num_of_features):
-            feature = self.features[i]
-            meas_feature = np.array([math.sqrt((feature['pos'][0] - self.state[0]) ** 2 + (feature['pos'][1] - self.state[1]) ** 2),
-                                     math.atan2(feature['pos'][1] - self.state[1], feature['pos'][0] - self.state[0]) - self.state[2],
-                                     feature['ind']])
+            # feature = self.features[i]
+
+            meas_feature = self.measurement_func_each_feature(self.state, i)
+            # meas_feature = np.array([math.sqrt((feature['pos'][0] - self.state[0]) ** 2 + (feature['pos'][1] - self.state[1]) ** 2),
+            #                          math.atan2(feature['pos'][1] - self.state[1], feature['pos'][0] - self.state[0]) - self.state[2],
+            #                          feature['ind']])
+
             # add random noise
             meas_feature += np.array([randn() * self.meas_noise[0],
                                       randn() * self.meas_noise[1],
@@ -108,9 +113,14 @@ class TwoDLocalizationWithFeature(object):
         '''
         feature = self.features[feature_idx]
 
-        meas = np.array([math.sqrt((feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2),
-                         math.atan2(feature['pos'][1] - state[1], feature['pos'][0] - state[0]) - state[2],
-                         feature['ind']])
+        if self.meas_correspondence:
+            meas = np.array([math.sqrt((feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2),
+                             math.atan2(feature['pos'][1] - state[1], feature['pos'][0] - state[0]) - state[2],
+                             feature['ind']])
+        else:
+            meas = np.array([math.sqrt((feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2),
+                             math.atan2(feature['pos'][1] - state[1], feature['pos'][0] - state[0]) - state[2],
+                             -1])
 
         return meas
 
