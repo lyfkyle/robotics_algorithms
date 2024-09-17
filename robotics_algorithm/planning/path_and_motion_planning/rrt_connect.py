@@ -1,112 +1,134 @@
 from sklearn.neighbors import NearestNeighbors
 from collections import defaultdict
 import numpy as np
+import networkx as nx
+import random
 
-from .dijkstra import Dirkstra
 
 class RRT(object):
     TRAPPED = 0
     REACHED = 1
-    ADVANCED = 2
 
-    def __init__(self):
-        self.V = []  # vertice list
-        self.adj_list = defaultdict(dict)
+    def __init__(self, env, sample_func, vertex_expand_func):
+        self.env = env
+        self._sample_func = sample_func
+        self._vertex_expand_func = vertex_expand_func
+        self.tree = nx.Graph()
 
-    def initialize_tree(self, initial_vertice_list):
-        self.V = initial_vertice_list
+        self.goal_bias = 0.2
 
-    def extend(self, v_goal, expand_func, delta):
-        '''
-        extend towards v one step
-        '''
-        nearest_neighbour = self.get_nearest_neighbour(np.array(self.V), np.array(v_goal).reshape(1, 2))
+    def initialize_tree(self, start_state):
+        self.tree.add_node(tuple(start_state))
 
-        v_source = tuple(nearest_neighbour[0])
-        v = expand_func(v_source, v_goal, delta)
-        if v is not None:
-            self.V.append(list(v))
-            self.adj_list[v][v_source] = delta
-            self.adj_list[v_source][v] = delta
+    def extend(self, v_target):
+        """Extend towards v_target."""
 
-        if v is None:
-            return RRT.TRAPPED, None
-        elif v == v_goal:
-            return RRT.REACHED, v
+        # RRT finds the nearest node in tree to v_target
+        cur_node = list(self.tree.nodes)
+        nearest_neighbors = self.get_nearest_neighbour(cur_node, np.array(v_target).reshape(1, 2))
+        v_cur = tuple(nearest_neighbors[0])
+
+        # Expand towards v_target
+        v_new, dist = self._vertex_expand_func(self.env, v_cur, v_target)
+        print(v_cur, v_target, v_new)
+        if tuple(v_new) != tuple(v_cur):
+            self.tree.add_edge(tuple(v_cur), tuple(v_new), weight=dist)
+
+        if tuple(v_new) == tuple(v_target):
+            return RRT.REACHED, tuple(v_new)
         else:
-            return RRT.ADVANCED, v
-
-    def connect(self, v_goal, expand_func, delta):
-        '''
-        extend towards v
-        '''
-        res = RRT.ADVANCED
-        while res == RRT.ADVANCED:
-            res, _ = self.extend(v_goal, expand_func, delta)
-
-        return res
+            return RRT.TRAPPED, tuple(v_new)
 
     def get_nearest_neighbour(self, V, v):
-        '''
+        """
         return the closest neighbours of v in V
         @param V, a list of vertices, must be a 2D numpy array
         @param v, the target vertice, must be a 2D numpy array
         @return, list, the nearest neighbours
-        '''
+        """
 
-        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(V)
+        nbrs = NearestNeighbors(n_neighbors=1, algorithm="ball_tree").fit(V)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
         return np.take(np.array(V), indices.ravel(), axis=0).tolist()
 
+    def run(self, start, goal):
+        start = tuple(start)
+        goal = tuple(goal)
+
+        self.initialize_tree(start)
+
+        path_exist = False
+        for i in range(self.N):
+            if i % 100 == 0:
+                print("RRTConnect/run, iteration {}".format(i))
+
+            if random.uniform(0, 1) > self.goal_bias:
+                v_target = self._sample_func(self.env)
+            else:
+                v_target = goal
+
+            self.extend(v_target)
+
+            if goal in self.tree:
+                path_exist = True
+                break
+
+        if path_exist:
+            path = nx.shortest_path(self.tree, start, goal, weight="weight")
+            path_len = nx.shortest_path_length(self.tree, start, goal, weight="weight")
+            print(path, path_len)
+            return True, path, path_len
+        else:
+            return False, None, None
+
 
 class RRTConnect(object):
-    def __init__(self, number_of_samples):
+    def __init__(self, env, sample_func, vertex_expand_func, number_of_samples):
         self.N = number_of_samples
-        self._path_finder = Dirkstra()
-        self.source_rrt = RRT()
-        self.goal_rrt = RRT()
-        self.adj_list = defaultdict(dict)
+        self.start_rrt = RRT(env, None, vertex_expand_func)
+        self.goal_rrt = RRT(env, None, vertex_expand_func)
+        self.tree = nx.Graph()
 
-    def run(self, source, goal, sample_vertex_func, expand_func, delta):
-        self.source_rrt.initialize_tree([source])
-        self.goal_rrt.initialize_tree([goal])
+        self.env = env
+        self._sample_func = sample_func
 
-        rrt1 = self.source_rrt
+    def run(self, start, goal):
+        # Initialize two trees, one at start, and the other at goal.
+        self.start_rrt.initialize_tree(start)
+        self.goal_rrt.initialize_tree(goal)
+
+        # Iteratively expand each tree.
+        rrt1 = self.start_rrt
         rrt2 = self.goal_rrt
         for i in range(self.N):
             if i % 100 == 0:
                 print("RRTConnect/run, iteration {}".format(i))
 
-            v_new = sample_vertex_func()
-            res, v = rrt1.extend(v_new, expand_func, delta)
+            v_target = self._sample_func(self.env)
+            res, v = rrt1.extend(v_target)
             if res != RRT.TRAPPED:
-                res = rrt2.connect(v, expand_func, delta)
+                res, _ = rrt2.extend(v)
                 if res == RRT.REACHED:
-                    return self.get_path(source, goal)
+                    return self.get_path(start, goal)
 
             rrt1, rrt2 = rrt2, rrt1
 
         return False, None, None
 
-    def get_path(self, source, goal):
-        adj_list = self.get_tree()
+    def get_path(self, start, goal):
+        self.combined_tree = self.get_tree()
+        start = tuple(start)
+        goal = tuple(goal)
 
-        # call dijkstra to find the path
-        path_exist, shortest_path, path_len = self._path_finder.run(adj_list, source, goal)
-        if not path_exist:
-            print("RRTConnect/get_path: No path is found, this should not happen!!!")
-            return False, None, None
-        else:
-            return True, shortest_path, path_len
+        path = nx.shortest_path(self.combined_tree, start, goal, weight="weight")
+        path_len = nx.shortest_path_length(self.combined_tree, start, goal, weight="weight")
+        print(path, path_len)
+        return True, path, path_len
 
     def get_tree(self):
-        # merge adj_list from two rrt
-        adj_list = self.source_rrt.adj_list.copy()
-        for key in self.goal_rrt.adj_list:
-            for key1, val1 in self.goal_rrt.adj_list[key].items():
-                adj_list[key][key1] = val1
-        self.adj_list = adj_list
+        combined = nx.Graph()
+        combined.add_edges_from(list(self.start_rrt.tree.edges(data=True)) + list(self.goal_rrt.tree.edges(data=True)))
+        combined.add_nodes_from(list(self.start_rrt.tree.nodes(data=True)) + list(self.goal_rrt.tree.nodes(data=True)))
 
-        return self.adj_list
-
+        return combined
