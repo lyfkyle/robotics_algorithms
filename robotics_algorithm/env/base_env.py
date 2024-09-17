@@ -104,14 +104,16 @@ class BaseEnv(object):
         """Calculate the possible observations for a given state."""
         raise NotImplementedError()
 
-    def reward_func(self, state: Any, new_state: Any = None) -> float:
+    def reward_func(self, state: Any, action: Any = None, new_state: Any = None) -> float:
         """Calculate the reward of apply action at a state.
 
-        NOTE: Following the gym convention, reward is defined as R(s, s') instead of R(s, a)
+        Reward function is normally defined as R(s, a). However, in the gym convention, reward is defined as R(s, s').
+        This base function supports both.
 
         Args:
             state (Any): the state
             action (Any, optional): the action to apply. Defaults to None.
+            new_state (Any, optional): the new_state after transition. Defaults to None.
 
         Returns:
             float: reward
@@ -197,11 +199,11 @@ class ContinuousEnv(BaseEnv):
 
     @override
     def sample_state(self):
-        return np.random.choice(np.array(self.state_space))
+        return np.random.uniform(self.state_space[0], self.state_space[1])
 
     @override
     def sample_action(self):
-        return np.random.choice(np.array(self.action_space))
+        return np.random.uniform(self.action_space[0], self.action_space[1])
 
 
 class DeterministicEnv(BaseEnv):

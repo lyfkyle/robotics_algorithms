@@ -1,11 +1,11 @@
 import time
 import numpy as np
 
-from robotics_algorithm.env.two_d_maze import TwoDMazeOmni
+from robotics_algorithm.env.two_d_world import TwoDWorldOmni
 from robotics_algorithm.planning import ProbabilisticRoadmap
 
 # Initialize environment
-env = TwoDMazeOmni()
+env = TwoDWorldOmni()
 
 # -------- Settings ------------
 FIX_MAZE = True
@@ -59,7 +59,7 @@ if not res:
     print("TestPRM, no path is available!")
 else:
     # visualize path
-    env.add_path(shortest_path)
+    env.add_action_path(shortest_path)
     print("TestPRM, found path of len {}".format(shortest_path_len))
 
 env.render()
