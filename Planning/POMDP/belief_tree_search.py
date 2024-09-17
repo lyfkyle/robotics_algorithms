@@ -31,13 +31,13 @@ class BeliefTreeSearch():
             obs_llh = obs_probs[idx]
 
             new_belief[state_idx] = prior * obs_llh
-        
+
         new_belief /= new_belief.sum()
-        
+
         return new_belief
 
-    def get_p_z_ba(self, env, belief, action, obs):
-        p_z_ba = 0
+    def get_p_obs_ba(self, env, belief, action, obs):
+        p_obs_ba = 0
         for state_idx, state in enumerate(env.states):
             # Step 1: calculate prior
             prior = 0.0
@@ -58,29 +58,33 @@ class BeliefTreeSearch():
             idx = possible_obs.index(obs)
             obs_llh = obs_probs[idx]
 
-            p_z_ba += prior * obs_llh
+            p_obs_ba += prior * obs_llh
 
-        return p_z_ba
+        return p_obs_ba
 
     def get_belief_value(self, env, belief, cur_depth):
-        q_b = np.zeros(env.action_space_size) 
+        q_b = np.zeros(env.action_space_size)
 
         if cur_depth <= self.max_depth:
+            # sample action
             for action_idx, action in enumerate(env.actions):
-                
+
+                # reward of applying action
                 r_ba = 0
                 for state_idx, state in enumerate(env.states):
                     r_ba += belief[state_idx] * env.reward_func(state, action)
 
+                # sample observation
                 future_reward = 0
                 for obs in env.observations:
                     new_belief = self.belief_update(env, belief, action, obs)
 
-                    p_z_ba = self.get_p_z_ba(env, belief, action, obs)
+                    # p(obs | b, a)
+                    p_obs_ba = self.get_p_obs_ba(env, belief, action, obs)
 
-                    _, value = self.get_belief_value(env, belief, cur_depth + 1)
-                    future_reward += p_z_ba * value
-                
+                    _, value = self.get_belief_value(env, new_belief, cur_depth + 1)
+                    future_reward += p_obs_ba * value
+
                 q_b[action_idx] = r_ba + self.discount_factor * future_reward
 
         belief_value = q_b.max()
