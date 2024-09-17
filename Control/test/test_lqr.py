@@ -15,13 +15,13 @@ from lqr import LQR
 env = OneDLocalizationContinuous()
 
 # -------- Settings ------------
-NUM_OF_TIMESTAMP = 10
+NUM_OF_TIMESTAMP = 50
 
 # -------- Main Code ----------
 pos_setpoint = 5
 vel_setpoint = 0
 Q = np.array([[1, 0],
-              [0, 20]]) # controls how much state difference cost
+              [0, 1]]) # controls how much state difference cost
 R = 0.01 # controls how much control cost.
 
 state_setpoint = np.array([[pos_setpoint], [vel_setpoint]])
@@ -35,7 +35,7 @@ print('gain: {}'.format(gain))
 true_state = [env.state]
 accel_cmd = [0]
 
-for i in range(10):
+for i in range(NUM_OF_TIMESTAMP):
     accel = np.dot(gain, (state_setpoint - env.state))[0, 0]
     meas = env.control_and_sense(accel)
 
