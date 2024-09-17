@@ -1,22 +1,22 @@
-from typing import Callable, Any
+from typing import Callable
 import heapq
 
 from robotics_algorithm.env.base_env import DeterministicEnv
 
 
-class AStar(object):
+class AStar:
     def __init__(self, env: DeterministicEnv, heuristic_func: Callable):
         """Constructor.
 
         Args:
             env (DeterministicEnv): A planning env.
-            heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal
+            heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal.
         """
         self.env = env
         self._heuristic_func = heuristic_func
 
     def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
-        """Run Astar.
+        """Run algorithm.
 
         Args:
             start (tuple): the start state
@@ -27,8 +27,10 @@ class AStar(object):
             shortest_path (list[tuple]): a list of state if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
+        # Astar gist: for every state, f[v] = g(s, v) + h(v, g)
+
         # initialize
-        # for every state, f[v] = g(s, v) + h(v, g)
+
         unvisited_states = set()  # OPEN set. Nodes not in this set is in CLOSE set
         priority_q = []
         shortest_path = []
@@ -42,7 +44,7 @@ class AStar(object):
             f[state] = float("inf")
             unvisited_states.add(state)  # All states are unvisited
 
-        g[start] = 0    # distance to source is 0
+        g[start] = 0  # distance to source is 0
         f[start] = self._heuristic_func(start, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
         heapq.heappush(priority_q, (f[start], start))
 
@@ -51,8 +53,10 @@ class AStar(object):
         while len(priority_q) > 0:
             # pop the best state found so far.
             _, best_state = heapq.heappop(priority_q)
+
+            # filter out state visited before. This may happen if multiple path leads to the same state with
+            # different values.
             if best_state not in unvisited_states:
-                print("Here!!")
                 continue
 
             # path to goal is found
@@ -78,6 +82,9 @@ class AStar(object):
                     if g_new_state < g[new_state]:
                         g[new_state] = g_new_state
                         f[new_state] = g_new_state + h_new_state
+                        # NOTE: here we do not need to remove the the previous stored new_state with old best-to-come
+                        #       value because of new_state will be marked as visited when first poped with the best
+                        #       cost-to-come value.
                         heapq.heappush(priority_q, (f[new_state], new_state))
                         prev_state_dict[new_state] = best_state
 
