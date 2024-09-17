@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from .base_env import DiscretePlanningEnv
+from .base_env import DiscreteEnv
 
 DEFAULT_MAZE_OBSTACLES = [
     (0, 0),
@@ -513,7 +513,7 @@ DEFAULT_MAZE_OBSTACLES = [
 ]
 
 
-class GridWorldMaze(DiscretePlanningEnv):
+class GridWorldMaze(DiscreteEnv):
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -563,9 +563,9 @@ class GridWorldMaze(DiscretePlanningEnv):
         new_state[1] = max(min(new_state[1], self.size - 1), 0)
 
         if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
-            return state, 0
+            return state, 0, False, False, {}
 
-        return tuple(new_state), 1
+        return tuple(new_state), 1, False, False, {}
 
     def get_available_actions(self, state: tuple) -> list[tuple]:
         return self.all_actions

@@ -52,13 +52,11 @@ env.add_start(start)
 env.add_goal(goal)
 
 # initialize planner
-my_path_planner = AStar()
+my_path_planner = AStar(env, heuristic_func)
 
 # run path planner
 start_time = time.time()
-res, shortest_path, shortest_path_len = my_path_planner.run(
-    env, start, goal, heuristic_func
-)
+res, shortest_path, shortest_path_len = my_path_planner.run(start, goal)
 end_time = time.time()
 print("TestAStar, takes {} seconds".format(end_time - start_time))
 

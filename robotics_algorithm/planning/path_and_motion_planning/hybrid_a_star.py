@@ -1,75 +1,114 @@
-class HybridAStar(object):
-    def __init__(self):
-        pass
+from typing import Callable, Any
+import heapq
 
-    def run(self, graph, source, goal, heuristic_func):
+from robotics_algorithm.env.base_env import ContinuousEnv
+
+
+class HybridAStar(object):
+    def __init__(self, env: ContinuousEnv, heuristic_func: Callable, state_key_func: Callable):
+        """_summary_
+
+        Args:
+            env (ContinuousEnv): A planning env.
+            heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal
+            transform_func (Callable): _description_
         """
-        @param, graph, represented by adjacency list
-        @param, source, the source vertex
-        @param, goal, the goal vertex
-        @param, heuristic_func, a function to return estimated cost to go from a vertex to goal
-        @return, boolean, return true if a path is found, return false otherwise
-                 shortest_path, a list of vertice if shortest path is found
-                 shortest_path_len, the length of shortest path if found.
+        self._env = env
+        self._heuristic_func = heuristic_func
+        self._state_key_func = state_key_func
+
+    def run(self, start: Any, goal: Any) -> tuple[bool, list[Any], float]:
+        """Run Hybrid A star.
+
+        Args:
+            start (Any): the start state
+            goal (Any): the goal state
+
+        Returns:
+            res (bool): return true if a path is found, return false otherwise.
+            shortest_path (list[Any]): a list of state if shortest path is found.
+            shortest_path_len (float): the length of shortest path if found.
         """
 
         # initialize
-        # for every vertex, dist[v] = g(s, v) + h(v, g)
-        unvisited_vertices_set = set()  # OPEN set. Nodes not in this set is in CLOSE set
+        # for every state, f[v] = g(s, v) + h(v, g)
+        priority_q = []
         shortest_path = []
         shortest_path_len = 0
-        g = {}  # cost from source to v
-        dist = {}
-        prev = {}  # used to extract shortest path
+        g = {}  # cost-to-come from start to a state
+        f = {}  # cost-to-come + heuristic cost-to-go
+        prev_state_dict = {}  # used to extract shortest path
+        state_dict = {}  # key is some discreate state key, value is the actual continous state.
 
-        for v in graph:
-            g[v] = float("inf")
-            dist[v] = float("inf")
-            unvisited_vertices_set.add(v)
-        g[source] = 0
-        dist[source] = heuristic_func(source, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
+        start_key = self._state_key_func(start)
+        goal_key = self._state_key_func(goal)
+
+        g[start_key] = 0
+        f[start_key] = self._heuristic_func(start, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
+        heapq.heappush(priority_q, (f[start_key], start))
+        open_set = set()
+        close_set = set()
+        open_set.add(start_key)
 
         # run algorithm
-        path_exist = True
-        while len(unvisited_vertices_set) > 0:
-            min_dist = float("inf")
-            for v in unvisited_vertices_set:
-                if dist[v] < min_dist:
-                    min_dist = dist[v]
-                    min_v = v
+        path_exist = False
+        while True:
+            if not open_set:
+                print("Error: Cannot find path, No open set")
+                return []
 
-            # print("mid_dist: {}".format(min_dist))
-            # there is no path
-            if min_dist == float("inf"):
-                path_exist = False
+            # pop the best state found so far.
+            _, best_state = heapq.heappop(priority_q)
+            best_state_key = self._state_key_func(best_state)
+            if best_state_key in open_set:
+                open_set.remove(best_state_key)
+                close_set.add(best_state_key)
+            else:
+                continue  # If best_state in close_set, just continue
+
+            if best_state_key == goal_key:
+                path_exist = True
                 break
 
-            # path to goal is found
-            if min_v == goal:
-                break
+            # Find possible transitions from best_state, and add them to queue ranked by heuristics.
+            available_actions = self._env.get_available_actions(best_state)
+            for action in available_actions:
+                new_state, cost, term, _, info = self._env.state_transition_func(best_state, action)
+                # print(new_state, best_state, action)
+                g_new_state = g[best_state_key] + cost  # cost-to-come
+                new_state_key = self._state_key_func(new_state)
 
-            unvisited_vertices_set.remove(min_v)
+                # skip actions that result in failures
+                if term and not info["success"]:
+                    continue
 
-            for v, edge_length in graph[min_v].items():
-                if v in unvisited_vertices_set:
-                    g_v = g[min_v] + edge_length
-                    h_v = heuristic_func(v, goal)
-                    if g_v < g[v]:
-                        g[v] = g_v
-                        dist[v] = g_v + h_v
-                        prev[v] = min_v
+                # if new_state has not been visited, or a shorter path to new_state has been found.
+                if new_state_key not in open_set or g_new_state < g[new_state_key]:
+                    h_new_state = self._heuristic_func(new_state, goal)  # cost-to-go
+                    print(new_state_key, h_new_state)
+                    f[new_state_key] = g_new_state + h_new_state
+                    g[new_state_key] = g_new_state
+                    heapq.heappush(priority_q, (f[new_state_key], new_state))
+                    state_dict[new_state_key] = new_state
+                    prev_state_dict[tuple(new_state)] = tuple(best_state), action
+                    open_set.add(new_state_key)
+
+                    # print("adding ", new_state_tup, new_action, self.heuristic(new_state))
+                    # debug.append([new_action, new_state_tup])
+
+            # print(debug)
 
         if path_exist:
             # extract shortest path:
-            shortest_path.insert(0, goal)
-            v = goal
-            prev_v = prev[v]
-            while prev_v != -1 and prev_v != source:
-                shortest_path.insert(0, prev_v)
-                prev_v = prev[prev_v]
+            shortest_path = []
+            state = tuple(state_dict[goal_key])
+            while state in prev_state_dict:
+                prev_state, prev_action = prev_state_dict[state]
+                shortest_path.append(prev_action)
+                state = prev_state
 
-            shortest_path.insert(0, source)
-            shortest_path_len = dist[goal]
+            shortest_path = reversed(shortest_path)
+            shortest_path_len = f[goal_key]
             return (True, shortest_path, shortest_path_len)
         else:
             return (False, None, None)
