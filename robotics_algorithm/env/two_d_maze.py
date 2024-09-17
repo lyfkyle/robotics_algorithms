@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from robotics_algorithm.env.base_env import DeterministicEnv
+from robotics_algorithm.env.base_env import DeterministicEnv, ContinuousEnv, FullyObservableEnv
 from robotics_algorithm.robot.differential_drive import DiffDrive
 
 
@@ -17,7 +17,7 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class TwoDMazeDiffDrive(DeterministicEnv):
+class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
@@ -105,12 +105,6 @@ class TwoDMazeDiffDrive(DeterministicEnv):
     def get_available_actions(self, state: Any) -> list[Any]:
         return self._sample_actions
 
-    def _random_obstacles(self, num_of_obstacles=5):
-        self.obstacles = []
-        for _ in range(num_of_obstacles):
-            obstacle = np.random.uniform([0, 0, 0.1], [self.size, self.size, 1])
-            self.obstacles.append(obstacle.tolist())
-
     @override
     def is_state_valid(self, state):
         for obstacle in self.obstacles:
@@ -118,6 +112,12 @@ class TwoDMazeDiffDrive(DeterministicEnv):
                 return False
 
         return True
+
+    def _random_obstacles(self, num_of_obstacles=5):
+        self.obstacles = []
+        for _ in range(num_of_obstacles):
+            obstacle = np.random.uniform([0, 0, 0.1], [self.size, self.size, 1])
+            self.obstacles.append(obstacle.tolist())
 
     def _random_valid_state(self):
         while True:
@@ -215,13 +215,8 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
             self.goal_state = DEFAULT_GOAL[:2]
 
     @override
-    def get_available_actions(self, state: Any) -> list[Any]:
-        raise NotImplementedError(
-            "TwoDMazeOmni does not support get_available_actions, " "use sample_available_actions instead!!"
-        )
-
-    def sample_available_actions(self, state: Any, num_to_sample=1) -> list[Any]:
-        return np.random.sample(self.state_space[0], self.state_space[1], num_to_sample)
+    def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
+        return np.random.sample(self.state_space[0], self.state_space[1], num_samples)
 
     @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
@@ -256,7 +251,7 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
 
         return path
 
-    def is_edge_valid(self, state1, state2, step_size=0.1):
+    def is_state_transition_valid(self, state1, state2, step_size=0.1):
         path = self.extend(state1, state2, step_size)
         res = self.is_equal(path[-1], state2)
         return res, np.linalg.norm(np.array(state2) - np.array(state1))
