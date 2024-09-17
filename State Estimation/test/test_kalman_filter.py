@@ -37,11 +37,11 @@ for i in range(10):
 # plot result
 t = np.arange(10)
 
-plt.figure()
-plt.subplot(211)
-plt.plot(t, [true_state[i][0, 0] for i in range(10)], 'bo', t, [filter_state[i][0, 0] for i in range(10)], 'k')
-plt.ylabel('position')
-plt.subplot(212)
-plt.plot(t, [true_state[i][1, 0] for i in range(10)], 'bo', t, [filter_state[i][1, 0] for i in range(10)], 'k')
-plt.ylabel('velocity')
+fig, (ax1, ax2) = plt.subplots(nrows = 2, ncols = 1)
+ax1.plot(t, [true_state[i][0, 0] for i in range(10)], 'k')
+ax1.plot(t, [filter_state[i][0, 0] for i in range(10)], 'bo')
+ax1.set_ylabel('position')
+ax2.plot(t, [true_state[i][1, 0] for i in range(10)], 'k')
+ax2.plot(t, [filter_state[i][1, 0] for i in range(10)], 'bo')
+ax2.set_ylabel('velocity')
 plt.show()
