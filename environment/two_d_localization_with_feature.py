@@ -15,20 +15,20 @@ class TwoDLocalizationWithFeature(object):
     Measurement: a list of size 4, each entry consists measurement to a feature. Each measurement has format
                  [[distance to feature], [bearing angle of feature](the amount agent must rotate to face feature), [feature index]]
     '''
-    def __init__(self, initial_state=[[5], [5], [0]], control_noise=[0.01, 0.01], meas_noise=[0.01, 0.01, 1e-10]):
+    def __init__(self, size = 10, initial_state=[[5], [5], [0]], control_noise=[0.1, 0.1], meas_noise=[0.1, 0.1, 1e-10]):
         '''
         @param initial_state, initial_state of agent, in [x, y, theta] format
         @param control_noise, noise associated with control signal
         @param meas_noise, noise associated with measurement signal
         '''
-
+        self.size = size
         self.state = np.array(initial_state)
         self.dt = 1
         self.num_of_features = 4
         self.features = [{'pos': [0, 0], 'theta': 0, 'ind': 0},
-                         {'pos': [0, 10], 'theta': 0, 'ind': 1},
-                         {'pos': [10, 10], 'theta': 0, 'ind': 2},
-                         {'pos': [10, 0], 'theta': 0, 'ind': 3}]
+                         {'pos': [0, self.size], 'theta': 0, 'ind': 1},
+                         {'pos': [self.size, self.size], 'theta': 0, 'ind': 2},
+                         {'pos': [self.size, 0], 'theta': 0, 'ind': 3}]
         self.control_noise = control_noise
         self.meas_noise = meas_noise
         self.R = np.array([[control_noise[0], 0],
@@ -84,7 +84,7 @@ class TwoDLocalizationWithFeature(object):
         # add gaussian noise to velocity and ang_vel
         true_vel = vel + randn() * self.control_noise[0]
         true_ang_vel = ang_vel + randn() * self.control_noise[1]
-        theta = self.state[2, 0]
+        theta = state[2, 0]
 
         # calculate new state
         if true_ang_vel != 0:
@@ -93,8 +93,8 @@ class TwoDLocalizationWithFeature(object):
                                           [temp * math.cos(theta) - temp * math.cos(theta + true_ang_vel * self.dt)],
                                           [true_ang_vel * self.dt]])
         else:
-            new_state = state + np.array([[true_vel * math.cos(theta)],
-                                          [true_vel * math.sin(theta)],
+            new_state = state + np.array([[true_vel * math.cos(theta) * self.dt],
+                                          [true_vel * math.sin(theta) * self.dt],
                                           [0]])
 
         return new_state

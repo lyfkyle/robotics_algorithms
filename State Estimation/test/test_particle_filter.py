@@ -13,20 +13,27 @@ from scipy.stats import norm
 from two_d_localization_with_feature import TwoDLocalizationWithFeature
 from particle_filter import ParticleFilter
 
-
 # -------- Settings ------------
 NUM_OF_TIMESTAMP = 10
 
+NUM_OF_PARTICLES = 500
+NUM_OF_PARTICLES_AT_TRUE_POS = 250
+
 # -------- Helper Functions -------------
-def get_filter_state(particle_filter):
-    # use gaussion to fit particles. Return filter state as the mean of fitted gaussion
-    filter_x = [particle_filter.particles[i][0, 0] for i in range(particle_filter.num_of_particles)]
-    filter_y = [particle_filter.particles[i][1, 0] for i in range(particle_filter.num_of_particles)]
-    filter_theta = [particle_filter.particles[i][2, 0] for i in range(particle_filter.num_of_particles)]
-    mean_x, std = norm.fit(filter_x)
-    mean_y, std = norm.fit(filter_y)
-    mean_theta, std = norm.fit(filter_theta)
-    filter_state = np.array([[mean_x], [mean_y], [mean_theta]])
+def get_filter_state(particle_filter, method = "gaussian"):
+    # Option 1: use gaussion to fit particles. Return filter state as the mean of fitted gaussion
+    if method == "gaussian":
+        filter_x = [particle_filter.particles[i][0, 0] for i in range(particle_filter.num_of_particles)]
+        filter_y = [particle_filter.particles[i][1, 0] for i in range(particle_filter.num_of_particles)]
+        filter_theta = [particle_filter.particles[i][2, 0] for i in range(particle_filter.num_of_particles)]
+        mean_x, std = norm.fit(filter_x)
+        mean_y, std = norm.fit(filter_y)
+        mean_theta, std = norm.fit(filter_theta)
+        filter_state = np.array([[mean_x], [mean_y], [mean_theta]])
+
+    # Option 2: simply average
+    elif method == "average":
+        filter_state = np.mean(np.array(particle_filter.particles), axis = 0)
     return filter_state
 
 # -------- Main Code ----------
@@ -36,16 +43,16 @@ env = TwoDLocalizationWithFeature()
 
 # Initialize filter
 # construct particles
-num_of_particles = 500
+num_of_particles = NUM_OF_PARTICLES
 initial_particles = []
-# half of the particle is at the true initial pos
-for _ in range(400):
+# NUM_OF_PARTICLES_AT_TRUE_POS of the particle is at the true initial pos
+for _ in range(NUM_OF_PARTICLES_AT_TRUE_POS):
     particle = env.state
     initial_particles.append(particle)
-# half is randomly distributed
-for _ in range(100):
-    particle = np.array([[random.uniform(0.0, 10.0)],
-                         [random.uniform(0.0, 10.0)],
+# the rest is randomly distributed
+for _ in range(NUM_OF_PARTICLES - NUM_OF_PARTICLES_AT_TRUE_POS):
+    particle = np.array([[random.uniform(0.0, env.size)],
+                         [random.uniform(0.0, env.size)],
                          [random.uniform(-math.pi, math.pi)]])
     initial_particles.append(particle)
 
@@ -56,6 +63,10 @@ true_states = []
 filter_states = []
 true_states.append(env.state)
 filter_states.append(get_filter_state(my_filter))
+
+# sanity check
+# meas = env.measure()
+# print("meas: {}".format(meas))
 
 # Run test
 for i in range(NUM_OF_TIMESTAMP):
@@ -74,7 +85,6 @@ for i in range(NUM_OF_TIMESTAMP):
 
     true_states.append(env.state)
     filter_states.append(get_filter_state(my_filter))
-
 
 # plot result
 NUM_OF_TIMESTAMP += 1
