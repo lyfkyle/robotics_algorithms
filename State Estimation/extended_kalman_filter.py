@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 class ExtendedKalmanFilter:
-    def __init__(self, initial_state, initial_covariance, transition_func, compute_jacobian_A, compute_R, compute_jacobian_H, Q):
+    def __init__(self, initial_state, initial_covariance, transition_func, compute_jacobian_A, compute_R, measurement_func, compute_jacobian_H, Q):
         '''
         State Transition: X = AX + BU + sigma
         Measurement Z = HX + delta
@@ -19,7 +19,7 @@ class ExtendedKalmanFilter:
         self._compute_R = compute_R
 
         # measurement function z = f(x)
-        # self._measurement_func = measurement_func
+        self._measurement_func = measurement_func
         self._compute_jacobian_H = compute_jacobian_H # jacobian of measurement_func
         self.Q = Q
 
@@ -38,9 +38,9 @@ class ExtendedKalmanFilter:
         '''
         @param measurement, measurement
         '''
-        H = self._compute_jacobian_H(self.state)
+        H = self._compute_jacobian_H(self.state, measurement)
         K = self.covariance @ H.transpose() @ np.linalg.inv(H @ self.covariance @ H.transpose() + self.Q)
-        new_state = self.state + K @ (measurement - H @ self.state)
+        new_state = self.state + K @ (measurement - self._measurement_func(self.state, measurement))
         tmp_matrix = K @ H
         new_covariance = (np.eye(tmp_matrix.shape[0]) - tmp_matrix) @ self.covariance
 
