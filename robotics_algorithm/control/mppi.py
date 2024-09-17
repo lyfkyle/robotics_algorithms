@@ -1,8 +1,5 @@
-
-
 import math
 import numpy as np
-from typing import Tuple
 
 from robotics_algorithm.env.base_env import BaseEnv
 
@@ -18,24 +15,25 @@ class MPPI(object):
     The final optimal trajectory is computed as the weighted average of all sampled trajectories with weight being
     exp(-cost). This has the effect of minimizing KL divergence between optimal trajectory and sampled trajectory.
     """
+
     def __init__(
         self,
         env: BaseEnv,
-        num_samples=250,
-        sample_traj_len=20,
-        action_mean=0.0,
-        action_std=1.0,
-        param_lambda=0.8,
-        filter_window_size=5,
+        num_traj_samples: int = 250,
+        sample_traj_len: int = 20,
+        action_mean: float | list = 0.0,
+        action_std: float | list = 1.0,
+        param_lambda: float = 0.8,
+        filter_window_size: int = 5,
     ):
         """Constructor
 
         Args:
             env (BaseEnv): The env
-            num_samples (int, optional): num of samples to sample. Defaults to 250.
+            num_traj_samples (int, optional): num of trajectories to sample. Defaults to 250.
             sample_traj_len (int, optional): the lookahead distance. Defaults to 20.
-            action_mean (float, optional): the mean of sampled action. Also form the nominal action. Defaults to 0.0.
-            action_std (float, optional): the std of sampled action. Defaults to 1.0.
+            action_mean (float | list, optional): the mean of sampled action. Also form the nominal action. Defaults to 0.0.
+            action_std (float| list, optional): the std of sampled action. Defaults to 1.0.
             param_lambda (float, optional): controls how much we weigh trajectory cost. Smaller value means we favour
                 low cost trajectories more. Defaults to 0.8.
             filter_window_size (int, optional): window size of moving average filter to smooth final computed control
@@ -44,7 +42,7 @@ class MPPI(object):
         self.env = env
 
         self.sample_traj_len = sample_traj_len
-        self.num_samples = num_samples
+        self.num_samples = num_traj_samples
         self.uniform_control_bias = 0.1
         self.action_mean = np.array(action_mean)
         self.action_std = np.array(action_std)

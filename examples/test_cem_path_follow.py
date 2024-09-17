@@ -2,7 +2,7 @@ import time
 import math
 
 from robotics_algorithm.env.two_d_world import TwoDWorldDiffDrive
-from robotics_algorithm.control.mppi import MPPI
+from robotics_algorithm.control.cem_mpc import CEMMPC
 
 # This path is computed using Hybrid A*
 PATH_DT = 0.1
@@ -265,7 +265,8 @@ env = TwoDWorldDiffDrive(action_dt=PATH_DT)
 env.reset(random_env=False)
 env.add_ref_path(shortest_path)
 
-controller = MPPI(env, action_mean=[0.25, 0], action_std=[0.25, math.radians(30)])
+controller = CEMMPC(env, action_mean=[0.25, 0], action_std=[0.25, math.radians(30)])
+
 # debug
 env.interactive_viz = True
 
@@ -277,7 +278,7 @@ while True:
 
     # debug
     state_samples = [state]
-    best_actions = controller.prev_actions.tolist()  # debug
+    best_actions = controller.best_traj.tolist()  # debug
     new_state = env.sample_state_transition(state, action)[0]
     for future_action in best_actions:
         new_state = env.sample_state_transition(new_state, future_action)[0]

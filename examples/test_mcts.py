@@ -18,10 +18,7 @@ while True:
     action = planner.run(state)
     new_state, reward, term, trunc, info = env.step(action)
 
-    print(state)
-    print(action)
-    print(reward)
-    print(new_state)
+    print(state, action, new_state, reward)
 
     env.render()
 

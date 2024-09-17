@@ -88,6 +88,10 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         self.y_cost_weight = 50
         self.yaw_cost_weight = 1.0
 
+        # others
+        self.interactive_viz = False  # Interactive viz
+        self._fig_created = False
+
     @override
     def reset(self, random_env=True):
         if random_env:
@@ -251,7 +255,15 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         self.path = path
 
     def render(self):
-        plt.figure(figsize=(10, 10), dpi=100)
+        if self.interactive_viz:
+            if not self._fig_created:
+                plt.ion()
+                plt.figure(figsize=(10, 10), dpi=100)
+                self._fig_created = True
+        else:
+            plt.figure(figsize=(10, 10), dpi=100)
+
+        plt.clf()
         s = 1000 / self.size / 2
         for obstacle in self.obstacles:
             x, y, r = obstacle
@@ -320,7 +332,11 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         plt.xticks(np.arange(self.size))
         plt.ylim(0, self.size)
         plt.yticks(np.arange(self.size))
-        plt.show()
+
+        if self.interactive_viz:
+            plt.pause(0.01)
+        else:
+            plt.show()
 
     def _get_nearest_waypoint_to_state(self, state: list):
         """search the closest waypoint to the vehicle on the reference path"""

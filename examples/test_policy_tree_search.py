@@ -19,9 +19,7 @@ while True:
     next_state, reward, term, trunc, info = env.step(action)
     env.render()
 
-    print(state)
-    print(action)
-    print(reward)
+    print(state, action, next_state, reward)
 
     path.append(state)
     state = next_state
