@@ -15,7 +15,7 @@ class TwoDLocalizationWithFeature(object):
     Measurement: a list of size 4, each entry consists measurement to a feature. Each measurement has format
                  [[distance to feature], [bearing angle of feature](the amount agent must rotate to face feature), [feature index]]
     '''
-    def __init__(self, size = 10, initial_state=[[5], [5], [0]], control_noise=[0.1, 0.1], meas_noise=[0.1, 0.1, 1e-10]):
+    def __init__(self, size = 10, initial_state=[5, 5, 0], control_noise=[0.1, 0.1], meas_noise=[0.1, 0.1, 1e-10]):
         '''
         @param initial_state, initial_state of agent, in [x, y, theta] format
         @param control_noise, noise associated with control signal
@@ -23,7 +23,7 @@ class TwoDLocalizationWithFeature(object):
         '''
         self.size = size
         self.state = np.array(initial_state)
-        self.dt = 1
+        self.dt = 0.1
         self.num_of_features = 4
         self.features = [{'pos': [0, 0], 'theta': 0, 'ind': 0},
                          {'pos': [0, self.size], 'theta': 0, 'ind': 1},
@@ -53,13 +53,13 @@ class TwoDLocalizationWithFeature(object):
         meas = []
         for i in range(self.num_of_features):
             feature = self.features[i]
-            meas_feature = np.array([[math.sqrt((feature['pos'][0] - self.state[0, 0]) ** 2 + (feature['pos'][1] - self.state[1, 0]) ** 2)],
-                                     [math.atan2(feature['pos'][1] - self.state[1, 0], feature['pos'][0] - self.state[0, 0]) - self.state[2, 0]],
-                                     [feature['ind']]])
+            meas_feature = np.array([math.sqrt((feature['pos'][0] - self.state[0]) ** 2 + (feature['pos'][1] - self.state[1]) ** 2),
+                                     math.atan2(feature['pos'][1] - self.state[1], feature['pos'][0] - self.state[0]) - self.state[2],
+                                     feature['ind']])
             # add random noise
-            meas_feature += np.array([[randn() * self.meas_noise[0]],
-                                      [randn() * self.meas_noise[1]],
-                                      [0]])
+            meas_feature += np.array([randn() * self.meas_noise[0],
+                                      randn() * self.meas_noise[1],
+                                      0])
             meas.append(meas_feature)
 
         return meas
@@ -84,18 +84,18 @@ class TwoDLocalizationWithFeature(object):
         # add gaussian noise to velocity and ang_vel
         true_vel = vel + randn() * self.control_noise[0]
         true_ang_vel = ang_vel + randn() * self.control_noise[1]
-        theta = state[2, 0]
+        theta = state[2]
 
         # calculate new state
         if true_ang_vel != 0:
             temp = true_vel / true_ang_vel
-            new_state = state + np.array([[-temp * math.sin(theta) + temp * math.sin(theta + true_ang_vel * self.dt)],
-                                          [temp * math.cos(theta) - temp * math.cos(theta + true_ang_vel * self.dt)],
-                                          [true_ang_vel * self.dt]])
+            new_state = state + np.array([-temp * math.sin(theta) + temp * math.sin(theta + true_ang_vel * self.dt),
+                                          temp * math.cos(theta) - temp * math.cos(theta + true_ang_vel * self.dt),
+                                          true_ang_vel * self.dt])
         else:
-            new_state = state + np.array([[true_vel * math.cos(theta) * self.dt],
-                                          [true_vel * math.sin(theta) * self.dt],
-                                          [0]])
+            new_state = state + np.array([true_vel * math.cos(theta) * self.dt,
+                                          true_vel * math.sin(theta) * self.dt,
+                                          0])
 
         return new_state
 
@@ -108,9 +108,9 @@ class TwoDLocalizationWithFeature(object):
         '''
         feature = self.features[feature_idx]
 
-        meas = np.array([[math.sqrt((feature['pos'][0] - state[0, 0]) ** 2 + (feature['pos'][1] - state[1, 0]) ** 2)],
-                         [math.atan2(feature['pos'][1] - state[1, 0], feature['pos'][0] - state[0, 0]) - state[2, 0]],
-                         [feature['ind']]])
+        meas = np.array([math.sqrt((feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2),
+                         math.atan2(feature['pos'][1] - state[1], feature['pos'][0] - state[0]) - state[2],
+                         feature['ind']])
 
         return meas
 
@@ -134,14 +134,14 @@ class TwoDLocalizationWithFeature(object):
         @param meas_feature, measurement to a feature.
         @return the probability of getting that measurement in state
         '''
-        feature = self.features[int(meas_feature[2, 0])]
+        feature = self.features[int(meas_feature[2])]
 
-        meas = np.array([[math.sqrt((feature['pos'][0] - state[0, 0]) ** 2 + (feature['pos'][1] - state[1, 0]) ** 2)],
-                         [math.atan2(feature['pos'][1] - state[1, 0], feature['pos'][0] - state[0, 0]) - state[2, 0]],
-                         [feature['ind']]])
+        meas = np.array([math.sqrt((feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2),
+                         math.atan2(feature['pos'][1] - state[1], feature['pos'][0] - state[0]) - state[2],
+                         feature['ind']])
 
-        error_1 = meas_feature[0, 0] - meas[0, 0]
-        error_2 = meas_feature[1, 0] - meas[1, 0]
+        error_1 = meas_feature[0] - meas[0]
+        error_2 = meas_feature[1] - meas[1]
         # meas_prob_1 = scipy.stats.norm(loc=0, scale=math.sqrt(self.meas_noise[0]))
         # meas_prob_2 = scipy.stats.norm(loc=0, scale=math.sqrt(self.meas_noise[1]))
         # prob = meas_prob_1.pdf(meas_feature[0, 0] - meas[0, 0]) * meas_prob_2.pdf(meas_feature[1, 0] - meas[1, 0]) # ignore prob of ind. Assume ind is always correct
@@ -164,7 +164,7 @@ class TwoDLocalizationWithFeature(object):
 
     def control_jacobian(self, state, control):
         '''
-        Return jocobian matrix of transition function
+        Return jocobian matrix of transition function wrt state at control
         @state, state
         @control, control
         @return A, jacobian matrix
@@ -172,7 +172,7 @@ class TwoDLocalizationWithFeature(object):
 
         vel = control[0]
         ang_vel = control[1]
-        theta = state[2, 0]
+        theta = state[2]
 
         temp = vel / ang_vel
         self.A = np.array([[1, 0, -temp * math.cos(theta) + temp * math.sin(theta + ang_vel * self.dt)],
@@ -182,7 +182,7 @@ class TwoDLocalizationWithFeature(object):
 
     def process_noise_jacobian(self, state, control):
         '''
-        Return process_noise_jocobian matrix.
+        Return process_noise_jocobian matrix. state wrt control at state
         Note that process noise is defined in control space, this jacobian matrix can be used to transform process noise into state space
         @state, state
         @control, control
@@ -190,7 +190,7 @@ class TwoDLocalizationWithFeature(object):
         '''
         vel = control[0]
         ang_vel = control[1]
-        theta = state[2, 0]
+        theta = state[2]
 
         self.V = np.array([[(-math.sin(theta) + math.sin(theta + ang_vel * self.dt)) / ang_vel, vel * (math.sin(theta) - math.sin(theta + ang_vel * self.dt)) / (ang_vel ** 2) + vel * math.cos(theta + ang_vel * self.dt) * self.dt / ang_vel],
                            [(math.cos(theta) - math.cos(theta + ang_vel * self.dt)) / ang_vel, -vel * (math.cos(theta) - math.cos(theta + ang_vel * self.dt)) / (ang_vel ** 2) + vel * math.sin(theta + ang_vel * self.dt) * self.dt / ang_vel],
@@ -207,9 +207,9 @@ class TwoDLocalizationWithFeature(object):
         '''
         H_list = []
         for feature in self.features:
-            temp = (feature['pos'][0] - state[0, 0]) ** 2 + (feature['pos'][1] - state[1, 0]) ** 2
-            H = np.array([[-(feature['pos'][0] - state[0, 0]) / math.sqrt(temp), -(feature['pos'][1] - state[1, 0]) / math.sqrt(temp), 0],
-                            [(feature['pos'][1] - state[1, 0]) / temp, -(feature['pos'][0] - state[0, 0]) / math.sqrt(temp), -1],
+            temp = (feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2
+            H = np.array([[-(feature['pos'][0] - state[0]) / math.sqrt(temp), -(feature['pos'][1] - state[1]) / math.sqrt(temp), 0],
+                            [(feature['pos'][1] - state[1]) / temp, -(feature['pos'][0] - state[0]) / math.sqrt(temp), -1],
                             [0, 0, 0]])
             H_list.append(H)
 
@@ -225,9 +225,9 @@ class TwoDLocalizationWithFeature(object):
         # print(meas_feature)
         feature = self.features[feature_idx]
 
-        temp = (feature['pos'][0] - state[0, 0]) ** 2 + (feature['pos'][1] - state[1, 0]) ** 2
-        H = np.array([[-(feature['pos'][0] - state[0, 0]) / math.sqrt(temp), -(feature['pos'][1] - state[1, 0]) / math.sqrt(temp), 0],
-                        [(feature['pos'][1] - state[1, 0]) / temp, -(feature['pos'][0] - state[0, 0]) / math.sqrt(temp), -1],
+        temp = (feature['pos'][0] - state[0]) ** 2 + (feature['pos'][1] - state[1]) ** 2
+        H = np.array([[-(feature['pos'][0] - state[0]) / math.sqrt(temp), -(feature['pos'][1] - state[1]) / math.sqrt(temp), 0],
+                        [(feature['pos'][1] - state[1]) / temp, -(feature['pos'][0] - state[0]) / math.sqrt(temp), -1],
                         [0, 0, 0]])
 
         return H

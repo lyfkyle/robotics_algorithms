@@ -1,8 +1,10 @@
-from dijkstra import Dirkstra
+
 from sklearn.neighbors import NearestNeighbors
 from collections import defaultdict
 import numpy as np
 import math
+
+from .dijkstra import Dirkstra
 
 class RRTStar(object):
     TRAPPED = 0

@@ -1,6 +1,6 @@
 import sys
-sys.path.append('../../environment/')
-sys.path.append('../')
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -9,8 +9,8 @@ import random
 import time
 import math
 
-from two_d_maze import TwoDMaze
-from rrt_connect import RRTConnect
+from env.two_d_maze import TwoDMaze
+from planning.path_and_motion_planning.rrt_connect import RRTConnect
 
 # Initialize environment
 env = TwoDMaze()
