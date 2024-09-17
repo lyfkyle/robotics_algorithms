@@ -11,11 +11,11 @@ import numpy as np
 import pygame
 from pygame import gfxdraw
 
-from robotics_algorithm.env.base_env import ContinuousEnv, DeterministicEnv, FullyObservableEnv
+from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv
 from robotics_algorithm.robot.cartpole import Cartpole
 
 
-class CartPoleEnv(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
+class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
     """
     ## Description
 
@@ -102,8 +102,8 @@ class CartPoleEnv(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
             dtype=np.float32,
         )
 
-        self.action_space = [[-10], [10]]
-        self.state_space = [-high, high]
+        self.action_space = ContinuousSpace(low=[-10], high=[10])
+        self.state_space = ContinuousSpace(low=-high, high=high)
 
         self.screen_width = 600
         self.screen_height = 400

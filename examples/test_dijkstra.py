@@ -1,5 +1,4 @@
 import time
-import math
 
 from robotics_algorithm.env.grid_world_maze import GridWorldMaze
 from robotics_algorithm.planning import Dijkstra
@@ -13,6 +12,9 @@ FIX_MAZE = True
 
 
 # -------- Helper Functions -------------
+def state_key_func(state):
+    return tuple(state)
+
 
 # -------- Main Code ----------
 
@@ -21,7 +23,7 @@ env.reset(random_env=not FIX_MAZE)
 env.render()
 
 # initialize planner
-planner = Dijkstra(env)
+planner = Dijkstra(env, state_key_func)
 
 # run path planner
 start = env.start_state

@@ -3,7 +3,7 @@ from typing_extensions import override
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .base_env import MDPEnv
+from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace
 
 
 class FrozenLake(MDPEnv):
@@ -37,8 +37,8 @@ class FrozenLake(MDPEnv):
         all_states = np.stack(indices, axis=-1).reshape(-1, 2).tolist()
 
         # Define spaces
-        self.state_space = [tuple(s) for s in all_states]
-        self.action_space = [0, 1, 2, 3]  #  0: up, 1: right, 2: down, 3: left
+        self.state_space = DiscreteSpace([tuple(s) for s in all_states])
+        self.action_space = DiscreteSpace([0, 1, 2, 3])  #  0: up, 1: right, 2: down, 3: left
 
     @override
     def reset(self, random_env=True) -> tuple:

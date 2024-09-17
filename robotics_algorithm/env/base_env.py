@@ -7,12 +7,15 @@ from numpy.random import choice
 
 
 class EnvType(Enum):
+    DETERMINISTIC = 0
+    STOCHASTIC = 1
+    FULLY_OBSERVABLE = 2
+    PARTIALLY_OBSERVABLE = 3
+
+
+class SpaceType(Enum):
     DISCRETE = 0
     CONTINUOUS = 1
-    DETERMINISTIC = 2
-    STOCHASTIC = 3
-    FULLY_OBSERVABLE = 4
-    PARTIALLY_OBSERVABLE = 5
 
 
 class FunctionType(Enum):
@@ -40,14 +43,14 @@ class BaseEnv(object):
         # For discrete env, this is a list of all states
         self.state_space = None
         self.action_space = None
+        self.observation_space = None
 
         # Env characteristic
-        self.space_type = None
         self.state_transition_type = None
         self.observability = None
 
         # Function type
-        self.state_transition_type = FunctionType.GENERAL.value
+        self.state_transition_func_type = FunctionType.GENERAL.value
         self.reward_func_type = FunctionType.GENERAL.value
 
         # Noise type
@@ -84,18 +87,18 @@ class BaseEnv(object):
 
     def sample_state(self) -> Any:
         """Sample a state"""
-        raise NotImplementedError()
+        return self.state_space.sample()
 
     def sample_action(self) -> Any:
         """Sample an action"""
-        raise NotImplementedError()
-
-    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
-        """Sample a transition."""
-        raise NotImplementedError()
+        return self.action_space.sample()
 
     def sample_observation(self, state) -> Any:
         """Sample an observation for the state."""
+        return self.observation_space.sample()
+
+    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+        """Sample a transition."""
         raise NotImplementedError()
 
     def state_transition_func(self, state: Any, action: Any) -> Any:
@@ -148,64 +151,54 @@ class BaseEnv(object):
             "trunc": False,
         }
 
+    def _is_action_valid(self, action) -> bool:
+        res = False
+        if self.action_space.type == SpaceType.DISCRETE.value:
+            res = action in self.action_space.space
+        elif self.action_space.type == SpaceType.CONTINUOUS.value:
+            res = (
+                (np.array(action) >= np.array(self.action_space.space[0])).all()
+                and (np.array(action) <= np.array(self.action_space.space[1])).all()
+            )
 
-class DiscreteEnv(BaseEnv):
-    def __init__(self):
-        super().__init__()
-        self.space_type = EnvType.DISCRETE.value
+        return res
+
+
+class DiscreteSpace(object):
+    def __init__(self, values):
+        self.type = SpaceType.DISCRETE.value
+        self.space = values
 
     @property
-    def state_space_size(self):
-        return len(self.state_space)
+    def size(self):
+        return len(self.space)
 
-    @property
-    def action_space_size(self):
-        return len(self.action_space)
+    def get_all(self):
+        return self.space
 
-    def get_available_actions(self, state: Any) -> list[Any]:
-        """Get available actions in the current state.
-
-        Args:
-            state (Any): the state
-
-        Returns:
-            list[Any]: a list of available actions for the given state.
-        """
-        raise NotImplementedError()
-
-    @override
-    def sample_state(self):
-        return np.random.choice(np.array(self.state_space))
-
-    @override
-    def sample_action(self):
-        return np.random.choice(np.array(self.action_space))
+    def sample(self):
+        return np.random.choice(np.array(self.space))
 
 
-class ContinuousEnv(BaseEnv):
-    def __init__(self):
-        super().__init__()
-        self.space_type = EnvType.CONTINUOUS.value
+class ContinuousSpace(object):
+    def __init__(self, low, high):
+        self.type = SpaceType.CONTINUOUS.value
+        self.space = [low, high]
 
-    def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
-        """Sample an available action in the current state.
+    # def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
+    #     """Sample an available action in the current state.
 
-        Args:
-            state (Any): the state
-            num_samples (int): the number of samples
+    #     Args:
+    #         state (Any): the state
+    #         num_samples (int): the number of samples
 
-        Returns:
-            list[Any]: a list of available actions for the given state.
-        """
-        raise NotImplementedError()
+    #     Returns:
+    #         list[Any]: a list of available actions for the given state.
+    #     """
+    #     raise NotImplementedError()
 
-    @override
-    def sample_state(self):
-        return np.random.uniform(np.nan_to_num(self.state_space[0]), np.nan_to_num(self.state_space[1])).tolist()
-
-    @override
-    def sample_action(self):
-        return np.random.uniform(np.nan_to_num(self.action_space[0]), np.nan_to_num(self.action_space[1])).tolist()
+    def sample(self):
+        return np.random.uniform(np.nan_to_num(self.space[0]), np.nan_to_num(self.space[1])).tolist()
 
 
 class DeterministicEnv(BaseEnv):
@@ -222,6 +215,10 @@ class DeterministicEnv(BaseEnv):
 
     @override
     def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+        # Skip invalid action
+        if not self._is_action_valid(action):
+            raise Exception(f"action {action} is not within valid range!")
+
         return self.state_transition_func(state, action)
 
     @override
@@ -251,7 +248,10 @@ class StochasticEnv(DeterministicEnv):
 
     @override
     def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
-        assert self.space_type == EnvType.DISCRETE.value
+        # Skip invalid action
+        if not self._is_action_valid(action):
+            raise Exception(f"action {action} is not within valid range!")
+
         results, probs = self.state_transition_func(state, action)
         idx = choice(np.arange(len(results)), 1, p=probs)[
             0
@@ -339,14 +339,14 @@ class PartiallyObservableEnv(BaseEnv):
         raise NotImplementedError()
 
 
-class MDPEnv(DiscreteEnv, StochasticEnv, FullyObservableEnv):
+class MDPEnv(StochasticEnv, FullyObservableEnv):
     """Markov Decision Process environments."""
 
     def __init__(self):
         super().__init__()
 
 
-class POMDPEnv(DiscreteEnv, StochasticEnv, PartiallyObservableEnv):
+class POMDPEnv(StochasticEnv, PartiallyObservableEnv):
     """Partially Observable Markov Decision Process environments."""
 
     def __init__(self):

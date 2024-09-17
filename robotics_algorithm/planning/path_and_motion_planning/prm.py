@@ -4,13 +4,13 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
 
-from robotics_algorithm.env.base_env import DeterministicEnv
+from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
 class ProbabilisticRoadmap(object):
     def __init__(
         self,
-        env: DeterministicEnv,
+        env: BaseEnv,
         sample_func: Callable,
         state_col_check_func: Callable,
         edge_col_check_func: Callable,
@@ -20,7 +20,7 @@ class ProbabilisticRoadmap(object):
         """_summary_
 
         Args:
-            env (ContinuousEnv): the env
+            env (BaseEnv): the env
             sample_func (Callable): the sampling function, returns a random point in space.
             state_col_check_func (Callable): a function that takes in a random point and returns whether it is in
                 collision.
@@ -29,6 +29,11 @@ class ProbabilisticRoadmap(object):
             num_of_samples (int): maximum of samples drawn during planning.
             num_neighbors (int): number of closest neighbors to attempt connection.
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+        assert env.state_transition_type == EnvType.DETERMINISTIC.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
+
         self.env = env
         self._sample_func = sample_func
         self._state_col_check_func = state_col_check_func

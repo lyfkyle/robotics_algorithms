@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from typing_extensions import override
 
-from robotics_algorithm.env.base_env import MDPEnv
+from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 9
@@ -43,8 +43,8 @@ class CliffWalking(MDPEnv):
         super().__init__()
 
         # Define spaces
-        self.state_space = [(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)]
-        self.action_space = [0, 1, 2, 3]  # action, 0: up, 1: right, 2: down, 3: left)
+        self.state_space = DiscreteSpace([(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)])
+        self.action_space = DiscreteSpace([0, 1, 2, 3])  # action, 0: up, 1: right, 2: down, 3: left)
 
         self.start_state = start
         self.cur_state = start
@@ -53,7 +53,7 @@ class CliffWalking(MDPEnv):
         self.step_reward = -1
         self.obstacle_reward = -100
         self.goal_reward = 100
-        self.sol_path = []
+        self.path = []
         self.dense_reward = dense_reward
 
     @override
@@ -123,12 +123,12 @@ class CliffWalking(MDPEnv):
         return reward
 
     @override
-    def reset(self, random_env=False):
+    def reset(self):
         self.cur_state = self.start_state
         return self.cur_state, {}
 
     def add_path(self, path):
-        self.sol_path = path
+        self.path = path
 
     @override
     def render(self):
@@ -141,8 +141,8 @@ class CliffWalking(MDPEnv):
         self.gridworld[GRID_HEIGHT - self.start_state[1] - 1][self.start_state[0]] = 2
         self.gridworld[GRID_HEIGHT - self.goal_state[1] - 1][self.goal_state[0]] = 3
 
-        if len(self.sol_path) > 0:
-            for state in self.sol_path:
+        if len(self.path) > 0:
+            for state in self.path:
                 self.gridworld[GRID_HEIGHT - state[1] - 1][state[0]] = 4
         else:
             self.gridworld[GRID_HEIGHT - self.cur_state[1] - 1][self.cur_state[0]] = 4

@@ -5,12 +5,16 @@ from typing import Callable
 
 import numpy as np
 
-from robotics_algorithm.env.base_env import MDPEnv
+from robotics_algorithm.env.base_env import MDPEnv, SpaceType, EnvType
 
 
 class PolicyIteration:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, env: MDPEnv) -> None:
+        assert env.state_space.type == SpaceType.DISCRETE.value
+        assert env.action_space.type == SpaceType.DISCRETE.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
+
+        self.env = env
 
     def make_greedy_policy(self, Q, num_actions):
         """
@@ -33,11 +37,10 @@ class PolicyIteration:
 
         return policy_fn
 
-    def run(self, env: MDPEnv, discount_factor: float = 0.99) -> tuple[dict, Callable]:
+    def run(self, discount_factor: float = 0.99) -> tuple[dict, Callable]:
         """Run algorithm.
 
         Args:
-            env (MDPEnv): the env.
             discount_factor (float, optional): discount factor for future reward. Defaults to 0.99.
 
         Returns:
@@ -47,16 +50,16 @@ class PolicyIteration:
         print("PolicyIteration: plan!!")
 
         # random init Q
-        Q = defaultdict(lambda: np.zeros(env.action_space_size))
+        Q = defaultdict(lambda: np.zeros(self.env.action_space.size))
 
         iter = 0
         policy_converged = False
         while not policy_converged:
             print("PolicyIteration, iter {},".format(iter))
             prev_Q = copy.deepcopy(Q)
-            prev_policy = self.make_greedy_policy(prev_Q, env.action_space_size)
-            Q, policy_converged = self.policy_evaluation(env, Q, prev_policy, discount_factor)
-            policy = self.policy_improvement(env, Q)
+            prev_policy = self.make_greedy_policy(prev_Q, self.env.action_space.size)
+            Q, policy_converged = self.policy_evaluation(self.env, Q, prev_policy, discount_factor)
+            policy = self.policy_improvement(self.env, Q)
             iter += 1
 
         return Q, policy
@@ -69,8 +72,8 @@ class PolicyIteration:
         # Q_pi(s, a) = sum_s' [p(s' | s) * (R(s, s') +  discount * V_pi(s'))]
         # V_pi(s) = sum_a [pi(a | s) * Q_pi(s, a)]
 
-        states = env.state_space
-        actions = env.action_space
+        states = env.state_space.get_all()
+        actions = env.action_space.get_all()
 
         v_state = defaultdict(float)
 
@@ -113,5 +116,5 @@ class PolicyIteration:
         return Q, max_change < diff_threshold
 
     def policy_improvement(self, env, Q):
-        policy = self.make_greedy_policy(Q, env.action_space_size)
+        policy = self.make_greedy_policy(Q, env.action_space.size)
         return policy

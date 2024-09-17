@@ -12,7 +12,7 @@ env = CartPoleEnv()
 env.reset()
 
 # These gains are tuned using Ziegler–Nichols method
-controller = PID(env, goal_state=env.goal_state[2], Kp=16.0, Kd=1.5)  # we only control theta
+controller = PID(env, goal_state=env.goal_state[2], Kp=16.0, Kd=1.8)  # we only control theta
 
 # run controller
 state = env.cur_state

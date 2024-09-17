@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
 
-from robotics_algorithm.env.base_env import DeterministicEnv
+from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
 class RRTStar(object):
@@ -15,7 +15,7 @@ class RRTStar(object):
 
     def __init__(
         self,
-        env: DeterministicEnv,
+        env: BaseEnv,
         sample_func: Callable,
         vertex_expand_func: Callable,
         edge_col_check_func: Callable,
@@ -25,13 +25,18 @@ class RRTStar(object):
         """Constructor.
 
         Args:
-            env (ContinuousEnv): env
+            env (BaseEnv): env
             sample_func (Callable): a function to obtain a state sample from env.
             vertex_expand_func (Callable): a function to expand one state towards another.
             edge_col_check_func (Callable): a function to check whether two states are connectable
             distance_func (Callable): a function to calculate distance between two states.
             num_of_samples (int): maximum of number of samples. Defaults to 1.
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+        assert env.state_transition_type == EnvType.DETERMINISTIC.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
+
         self.env = env
         self._sample_func = sample_func
         self._vertex_expand_func = vertex_expand_func

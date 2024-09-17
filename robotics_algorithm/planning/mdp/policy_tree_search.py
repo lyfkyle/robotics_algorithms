@@ -2,7 +2,7 @@ from typing import Any
 
 import numpy as np
 
-from robotics_algorithm.env.base_env import MDPEnv
+from robotics_algorithm.env.base_env import MDPEnv, SpaceType, EnvType
 
 
 class PolicyTreeSearch:
@@ -14,6 +14,9 @@ class PolicyTreeSearch:
             max_depth (int, optional): maximum serach depth. Defaults to 5.
             discount_factor (float, optional): the discount factor for future reward. Defaults to 0.99.
         """
+        assert env.state_space.type == SpaceType.DISCRETE.value
+        assert env.action_space.type == SpaceType.DISCRETE.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
 
         self.env = env
         self.max_depth = max_depth
@@ -30,14 +33,16 @@ class PolicyTreeSearch:
         """
         q, _ = self._compute_state_value(self.env, state, 0)
         print(q)
-        return self.env.action_space[q.argmax()]
+        actions = self.env.action_space.get_all()
+        return actions[q.argmax()]
 
     def _compute_state_value(self, env, state, cur_depth):
-        q = np.zeros(env.action_space_size)
+        q = np.zeros(env.action_space.size)
 
         # If maximum depth is not reached, recurse deeper
         if cur_depth <= self.max_depth:
-            for action_idx, action in enumerate(env.action_space):
+            actions = env.action_space.get_all()
+            for action_idx, action in enumerate(actions):
                 results, probs = env.state_transition_func(state, action)
 
                 # calculate Q values

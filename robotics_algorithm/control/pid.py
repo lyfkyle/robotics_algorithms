@@ -1,6 +1,6 @@
 import numpy as np
 
-from robotics_algorithm.env.base_env import BaseEnv
+from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 
 
 class PID(object):
@@ -14,6 +14,9 @@ class PID(object):
         """
         State transition:
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+
         self.env = env
         if goal_state is None:
             self.goal_state = np.array(env.goal_state, dtype=np.float32)

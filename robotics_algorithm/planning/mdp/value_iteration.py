@@ -5,12 +5,16 @@ from typing import Callable
 
 import numpy as np
 
-from robotics_algorithm.env.base_env import MDPEnv
+from robotics_algorithm.env.base_env import MDPEnv, SpaceType, EnvType
 
 
 class ValueIteration:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, env: MDPEnv) -> None:
+        assert env.state_space.type == SpaceType.DISCRETE.value
+        assert env.action_space.type == SpaceType.DISCRETE.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
+
+        self.env = env
 
     def make_greedy_policy(self, Q, num_actions):
         """
@@ -33,11 +37,10 @@ class ValueIteration:
 
         return policy_fn
 
-    def run(self, env: MDPEnv, discount_factor: float = 0.99, diff_threshold: float = 0.01) -> tuple[dict, Callable]:
+    def run(self, discount_factor: float = 0.99, diff_threshold: float = 0.01) -> tuple[dict, Callable]:
         """Run algorithm.
 
         Args:
-            env (MDPEnv): the env.
             discount_factor (float, optional): discount factor for future reward. Defaults to 0.99.
 
         Returns:
@@ -46,11 +49,11 @@ class ValueIteration:
         """
         print("ValueIteration: plan!!")
 
-        states = env.state_space
-        actions = env.action_space
+        states = self.env.state_space.get_all()
+        actions = self.env.action_space.get_all()
 
         v_state = defaultdict(float)
-        Q = defaultdict(lambda: np.zeros(env.action_space_size))
+        Q = defaultdict(lambda: np.zeros(self.env.action_space.size))
 
         # Iterate until convergence.
         # Value iteration operates on Bellman optimality equation
@@ -71,7 +74,7 @@ class ValueIteration:
             max_change = -np.inf
             for state in states:
                 for action in actions:
-                    results, probs = env.state_transition_func(state, action)
+                    results, probs = self.env.state_transition_func(state, action)
 
                     # calculate Q values
                     q_sa = 0
@@ -92,6 +95,6 @@ class ValueIteration:
 
             v_state = v_state_new
 
-        policy = self.make_greedy_policy(Q, env.action_space_size)
+        policy = self.make_greedy_policy(Q, self.env.action_space.size)
 
         return Q, policy

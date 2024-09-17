@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-from robotics_algorithm.env.base_env import BaseEnv
+from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 
 
 class MPPI(object):
@@ -39,6 +39,9 @@ class MPPI(object):
             filter_window_size (int, optional): window size of moving average filter to smooth final computed control
                 trajectory. Defaults to 5.
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+
         self.env = env
 
         self.sample_traj_len = sample_traj_len
@@ -78,6 +81,8 @@ class MPPI(object):
                 else:
                     sampled_action = self.prev_actions[t] + noise
 
+                sampled_action = np.clip(sampled_action, self.env.action_space.space[0], self.env.action_space.space[1])
+
                 # Simulate state transitions forward (the model predictive part)
                 new_state, reward, term, trunc, _ = self.env.sample_state_transition(cur_state, sampled_action.tolist())
                 cost = -reward
@@ -107,6 +112,7 @@ class MPPI(object):
 
         # Construct final optimal action trajectory by adding optimal noise
         actions = self.prev_actions + w_epsilon
+        actions = np.clip(actions, self.env.action_space.space[0], self.env.action_space.space[1])
 
         # update previous control sequence, shift 1 step to the left
         self.prev_actions[:-1] = actions[1:]

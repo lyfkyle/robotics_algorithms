@@ -5,7 +5,7 @@ from robotics_algorithm.env.two_d_world import TwoDWorldDiffDrive
 from robotics_algorithm.planning import HybridAStar
 
 # Initialize environment
-env = TwoDWorldDiffDrive()
+env = TwoDWorldDiffDrive(discrete_action=True)  # use discrete action for Hybrid A*
 
 # -------- Settings ------------
 FIX_MAZE = True

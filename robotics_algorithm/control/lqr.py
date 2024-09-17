@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 import scipy.linalg
 
-from robotics_algorithm.env.base_env import BaseEnv, FunctionType
+from robotics_algorithm.env.base_env import BaseEnv, FunctionType, SpaceType
 
 
 class LQR(object):
@@ -19,6 +19,8 @@ class LQR(object):
         y = x (full state feedback)
         J = sum_over_time(X_T*Q*X + U_T*R*U)
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
         assert env.state_transition_type == FunctionType.LINEAR.value
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 

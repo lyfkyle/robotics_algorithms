@@ -6,26 +6,29 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
 
-from robotics_algorithm.env.base_env import DeterministicEnv
+from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
 class RRT(object):
     TRAPPED = 0
     REACHED = 1
 
-    def __init__(
-        self, env: DeterministicEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int = 1
-    ):
+    def __init__(self, env: BaseEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int = 1):
         """Constructor.
 
         Args:
-            env (ContinuousEnv): env
+            env (BaseEnv): env
             sample_func (Callable): a function to obtain a state sample from env.
             vertex_expand_func (Callable): a function to expand one state towards another.
             num_of_samples (int, optional): maximum of number of samples. Defaults to 1.
         """
-        self.num_of_samples = num_of_samples
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+        assert env.state_transition_type == EnvType.DETERMINISTIC.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
+
         self.env = env
+        self.num_of_samples = num_of_samples
         self._sample_func = sample_func
         self._vertex_expand_func = vertex_expand_func
         self.tree = nx.Graph()
@@ -134,21 +137,25 @@ class RRT(object):
 
 
 class RRTConnect(object):
-    def __init__(self, env: DeterministicEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int):
+    def __init__(self, env: BaseEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int):
         """Constructor.
 
         Args:
-            env (ContinuousEnv): env
+            env (BaseEnv): env
             sample_func (Callable): a function to obtain a state sample from env.
             vertex_expand_func (Callable): a function to expand one state towards another.
             num_of_samples (int): maximum of number of samples. Defaults to 1.
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+        assert env.state_transition_type == EnvType.DETERMINISTIC.value
+        assert env.observability == EnvType.FULLY_OBSERVABLE.value
+
+        self.env = env
         self.num_of_samples = num_of_samples
         self.start_rrt = RRT(env, None, vertex_expand_func)
         self.goal_rrt = RRT(env, None, vertex_expand_func)
         self.tree = nx.Graph()
-
-        self.env = env
         self._sample_func = sample_func
 
     def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:

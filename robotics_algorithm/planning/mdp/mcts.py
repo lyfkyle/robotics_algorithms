@@ -6,7 +6,7 @@ import copy
 from numpy.random import choice
 import numpy as np
 
-from robotics_algorithm.env.base_env import MDPEnv
+from robotics_algorithm.env.base_env import MDPEnv, SpaceType
 from robotics_algorithm.utils.tree import Tree, TreeNode
 
 
@@ -25,6 +25,9 @@ class MCTS:
             c (float, optional): the exploration-exploitation balancing factor. Defaults to 10.
             max_simulation_eps_len (float, optional): max episode length during simulation. Defaults to 100.
         """
+        assert env.state_space.type == SpaceType.DISCRETE.value
+        assert env.action_space.type == SpaceType.DISCRETE.value
+
         self.env = env
         self.max_depth = max_depth
         self.discount_factor = discount_factor
@@ -62,7 +65,7 @@ class MCTS:
         # Retrieve the best action from estimated q values
         best_action_val = float("-inf")
         best_action = None
-        for action in self.env.action_space:
+        for action in self.env.action_space.get_all():
             action_value = self._get_q_value(state, action)
             if action_value > best_action_val:
                 best_action_val = action_value
@@ -84,7 +87,8 @@ class MCTS:
         state = node.attr["state"]
 
         ucb_action_values = []
-        for action in self.env.action_space:
+        actions = self.env.action_space.get_all()
+        for action in actions:
             # if there is unexplored action, use it to sample a new state, return it
             if self.state_action_visit_cnt[state][action] == 0:
                 result, prob = self._sample_step(state, action)
@@ -107,7 +111,7 @@ class MCTS:
         # Select action according to UCB
         # print(state, ucb_action_values)
         best_action_idx = np.argmax(np.array(ucb_action_values))
-        best_action = self.env.action_space[best_action_idx]
+        best_action = actions[best_action_idx]
 
         # Sample next state following best action
         result, prob = self._sample_step(state, best_action)
@@ -148,7 +152,7 @@ class MCTS:
 
         current_discount_factor = self.discount_factor
         for _ in range(self.max_simulation_eps_len):
-            random_action = np.random.choice(self.env.action_space)
+            random_action = self.env.sample_action()
             result, _ = self._sample_step(state, random_action)
             new_state, reward, term, trunc, info = result
 

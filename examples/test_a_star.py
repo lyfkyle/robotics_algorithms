@@ -19,6 +19,10 @@ def heuristic_func(v, goal):
     return math.sqrt((goal_x - v_x) ** 2 + (goal_y - v_y) ** 2)
 
 
+def state_key_func(state):
+    return tuple(state)
+
+
 # -------- Main Code ----------
 
 # add random obstacle to environment
@@ -27,7 +31,7 @@ env.render()
 
 
 # initialize planner
-planner = AStar(env, heuristic_func)
+planner = AStar(env, heuristic_func, state_key_func)
 
 # run path planner
 start = env.start_state

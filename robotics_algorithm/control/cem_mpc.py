@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import truncnorm
 
-from robotics_algorithm.env.base_env import BaseEnv
+from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 
 
 class CEMMPC(object):
@@ -38,6 +38,9 @@ class CEMMPC(object):
             alpha (float, optional): the low pass filter gain for updating mean and std in each optimization iteration.
                 Defaults to 0.1.
         """
+        assert env.state_space.type == SpaceType.CONTINUOUS.value
+        assert env.action_space.type == SpaceType.CONTINUOUS.value
+
         self.env = env
         self.num_traj_samples = num_traj_samples
         self.num_elites = num_elites
@@ -108,12 +111,14 @@ class CEMMPC(object):
         m = self.action_seq_mean[None, :]
         s = self.action_seq_std[None, :]
         samples = truncnorm.rvs(
-            self.env.action_space[0],
-            self.env.action_space[1],
+            self.env.action_space.space[0],
+            self.env.action_space.space[1],
             loc=m,
             scale=s,
             size=(self.num_traj_samples, *self.action_seq_mean.shape),
         )
+        # NOTE: truncnorm may still violate the bounds a little bit.
+        samples = np.clip(samples, self.env.action_space.space[0], self.env.action_space.space[1])
         return samples  # shape: [K, N, Action_dim]
 
     def _update_distribution(self, all_traj_rollouts: np.ndarray, all_costs: np.ndarray):

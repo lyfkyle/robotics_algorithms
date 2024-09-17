@@ -13,7 +13,7 @@ FIX_MAZE = True
 
 # -------- Helper Functions -------------
 def sample_func(env):
-    random_state = np.random.uniform(env.state_space[0], env.state_space[1]).tolist()
+    random_state = env.sample_state()
     return tuple(random_state)
 
 

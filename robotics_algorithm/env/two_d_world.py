@@ -1,5 +1,3 @@
-import random
-from collections import defaultdict
 from typing import Any
 from typing_extensions import override
 import math
@@ -8,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from robotics_algorithm.env.base_env import DeterministicEnv, ContinuousEnv, FullyObservableEnv
+from robotics_algorithm.env.base_env import DeterministicEnv, FullyObservableEnv, ContinuousSpace, DiscreteSpace
 from robotics_algorithm.robot.differential_drive import DiffDrive
 from robotics_algorithm.utils import math_utils
 
@@ -18,7 +16,7 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
+class TwoDWorldDiffDrive(DeterministicEnv, FullyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
@@ -44,16 +42,24 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
     WAYPOINT = 5
     MAX_POINT_TYPE = 6
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
         super().__init__()
 
         self.size = size
         self.maze = np.full((size, size), TwoDWorldDiffDrive.FREE_SPACE)
 
-        self.state_space = (np.array([0, 0, -math.pi]), np.array([self.size, self.size, math.pi]))
-        self.action_space = (np.array([0, -math.radians(30)]), np.array([0.5, math.radians(30)]))  # lin_vel, ang_vel
-        self.state_space_size = self.state_space[1] - self.state_space[0]
-        self.action_space_size = self.action_space[1] - self.action_space[0]
+        self.state_space = ContinuousSpace(low=[0, 0, -math.pi], high=[self.size, self.size, math.pi])
+        if not discrete_action:
+            self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
+        else:
+            self.action_space = DiscreteSpace([
+                (0.5, 0),
+                (0.5, math.radians(30)),
+                (0.5, -math.radians(30)),
+                (0.25, 0),
+                (0.25, math.radians(30)),
+                (0.25, -math.radians(30)),
+            ])
 
         self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
         bounds = [
@@ -68,14 +74,6 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
         self.robot_model = DiffDrive(wheel_dist=0.2, wheel_radius=0.05)
-        self._sample_actions = [
-            (0.5, 0),
-            (0.5, math.radians(30)),
-            (0.5, -math.radians(30)),
-            (0.25, 0),
-            (0.25, math.radians(30)),
-            (0.25, -math.radians(30)),
-        ]
         self.robot_radius = robot_radius
         self.action_dt = action_dt
 
@@ -121,7 +119,6 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
     @override
     def state_transition_func(self, state: list, action: list) -> tuple[Any, float, bool, bool, dict]:
         # compute next state
-        action = np.clip(np.array(action), self.action_space[0], self.action_space[1]).tolist()
         new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
 
         # Compute reward
@@ -186,10 +183,6 @@ class TwoDWorldDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
             progress_cost = 0.1 / (nearest_idx - prev_idx + 1)
 
             return -(path_cost + progress_cost)
-
-    @override
-    def get_available_actions(self, state: Any) -> list[Any]:
-        return self._sample_actions
 
     @override
     def is_state_valid(self, state):
@@ -371,8 +364,8 @@ class TwoDWorldOmni(TwoDWorldDiffDrive):
     def __init__(self, size=10):
         super().__init__(size)
 
-        self.state_space = (np.array([0, 0]), np.array([self.size, self.size]))
-        self.action_space = (np.array([0, 0]), np.array([self.size, self.size]))
+        self.state_space = ContinuousSpace(low=np.array([0, 0]), high=np.array([self.size, self.size]))
+        self.action_space = ContinuousSpace(low=np.array([0, 0]), high=np.array([self.size, self.size]))
         self.robot_model = None
 
     @override

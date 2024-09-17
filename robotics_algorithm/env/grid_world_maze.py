@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from .base_env import DeterministicEnv, DiscreteEnv, FullyObservableEnv
+from .base_env import DeterministicEnv, FullyObservableEnv, DiscreteSpace
 
 DEFAULT_MAZE_OBSTACLES = [
     (0, 0),
@@ -515,7 +515,7 @@ DEFAULT_START = (0, 49)
 DEFAULT_GOAL = (49, 0)
 
 
-class GridWorldMaze(DiscreteEnv, DeterministicEnv, FullyObservableEnv):
+class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -546,8 +546,8 @@ class GridWorldMaze(DiscreteEnv, DeterministicEnv, FullyObservableEnv):
         indices = np.indices((size, size))
         all_states = np.stack(indices, axis=-1).reshape(-1, 2).tolist()
 
-        self.state_space = [tuple(s) for s in all_states]
-        self.action_space = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # left, right, top and bottom
+        self.state_space = DiscreteSpace(values=[tuple(s) for s in all_states])
+        self.action_space = DiscreteSpace(values=[(0, 1), (0, -1), (1, 0), (-1, 0)])  # left, right, top and bottom
 
     @override
     def reset(self, random_env=True):
@@ -575,7 +575,7 @@ class GridWorldMaze(DiscreteEnv, DeterministicEnv, FullyObservableEnv):
         if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
             return state, 0, False, False, {}
 
-        return tuple(new_state), 1, False, False, {}
+        return tuple(new_state), -1, False, False, {}
 
     @override
     def get_available_actions(self, state: tuple) -> list[tuple]:

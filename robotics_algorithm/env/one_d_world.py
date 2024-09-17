@@ -9,7 +9,7 @@ from numpy.random import randn
 
 from robotics_algorithm.robot.double_integrator import DoubleIntegrator
 from robotics_algorithm.env.base_env import (
-    ContinuousEnv,
+    ContinuousSpace,
     StochasticEnv,
     PartiallyObservableEnv,
     FunctionType,
@@ -17,7 +17,7 @@ from robotics_algorithm.env.base_env import (
 )
 
 
-class DoubleIntegratorEnv(ContinuousEnv, StochasticEnv, PartiallyObservableEnv):
+class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     """A DoubleIntegrator robot is tasked to stop at the goal state which is at zero position  with zero velocity.
 
     State: [pos, vel]
@@ -40,12 +40,12 @@ class DoubleIntegratorEnv(ContinuousEnv, StochasticEnv, PartiallyObservableEnv):
         self.size = size
 
         self.robot_model = DoubleIntegrator(use_discrete_time_model=use_discrete_time_model)
-        self.state_space = [[-self.size / 2, float("-inf")], [self.size / 2, float("inf")]]  # pos and vel
-        self.action_space = [float("-inf"), float("inf")]  # accel
+        self.state_space = ContinuousSpace(low=[-self.size / 2, -1e10], high=[self.size / 2, 1e10])  # pos and vel
+        self.action_space = ContinuousSpace(low=[-1e10], high=[1e10])  # accel
 
         # declare linear state transition
         # x_dot = Ax + Bu
-        self.state_transition_type = FunctionType.LINEAR.value
+        self.state_transition_func_type = FunctionType.LINEAR.value
         self.A = self.robot_model.A
         self.B = self.robot_model.B
 
@@ -70,7 +70,8 @@ class DoubleIntegratorEnv(ContinuousEnv, StochasticEnv, PartiallyObservableEnv):
 
     @override
     def reset(self):
-        self.start_state = [random.uniform(self.state_space[0][0], self.state_space[1][0]), 0]
+        self.start_state = self.sample_state()
+        self.start_state[1] = 0.0  # zero velocity
         self.goal_state = [0, 0]  # fixed
         self.cur_state = self.start_state.copy()
 
@@ -84,10 +85,10 @@ class DoubleIntegratorEnv(ContinuousEnv, StochasticEnv, PartiallyObservableEnv):
 
         # Check bounds
         if (
-            new_state[0] <= self.state_space[0][0]
-            or new_state[0] >= self.state_space[1][0]
-            or new_state[1] <= self.state_space[0][1]
-            or new_state[1] >= self.state_space[1][1]
+            new_state[0] <= self.state_space.space[0][0]
+            or new_state[0] >= self.state_space.space[1][0]
+            or new_state[1] <= self.state_space.space[0][1]
+            or new_state[1] >= self.state_space.space[1][1]
         ):
             return state, -100, True, False, {"success": False}
 
