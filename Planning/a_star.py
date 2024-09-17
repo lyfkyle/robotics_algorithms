@@ -14,6 +14,7 @@ class AStar(object):
         '''
 
         # initialzie
+        # for every vertex, dist[v] = g(s, v) + h(v, g)
         unvisited_vertices_set = set()
         shortest_path = []
         shortest_path_len = 0
@@ -26,7 +27,7 @@ class AStar(object):
             dist[v] = float('inf')
             unvisited_vertices_set.add(v)
         g[source] = 0
-        dist[source] = heuristic_func(source, goal) # cost from source to goal = 0 + h(s, v)
+        dist[source] = heuristic_func(source, goal) # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
 
         # run algorithm
         path_exist = True
