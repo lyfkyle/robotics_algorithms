@@ -46,7 +46,7 @@ class ProbabilisticRoadmap(object):
         @param V, a list of vertices, must be a 2D numpy array
         @param v, the target vertice, must be a 2D numpy array
         @param K, number of neighbours to get
-        @return, 2D numpy array, the list of nearest neighbours
+        @return, list, the list of nearest neighbours
         '''
 
         nbrs = NearestNeighbors(n_neighbors=K, algorithm='ball_tree').fit(np.array(V))

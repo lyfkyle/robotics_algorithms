@@ -23,7 +23,7 @@ class TwoDMaze(object):
         self.maze = np.full((size, size), TwoDMaze.FREE_SPACE)
         self.adjacency_list = self.compute_adjacency_list()
         self.colour_map = colors.ListedColormap(['white', 'black', 'red', 'blue', 'green', 'yellow'])
-        bounds = [TwoDMaze.FREE_SPACE, TwoDMaze.OBSTACLE, TwoDMaze.SOURCE, TwoDMaze.GOAL, TwoDMaze.PATH, TwoDMaze.WAYPOINT]
+        bounds = [TwoDMaze.FREE_SPACE, TwoDMaze.OBSTACLE, TwoDMaze.SOURCE, TwoDMaze.GOAL, TwoDMaze.PATH, TwoDMaze.WAYPOINT, TwoDMaze.MAX_POINT_TYPE]
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
     def compute_adjacency_list(self):
@@ -68,13 +68,15 @@ class TwoDMaze(object):
 
     def plot(self):
         fig, ax = plt.subplots()
-        ax.imshow(self.maze, cmap=self.colour_map)
+        ax.imshow(self.maze, cmap=self.colour_map, norm=self.norm)
         # draw gridlines
         ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=1)
         ax.set_xticks(np.arange(0.5, self.size, 1))
+        ax.set_xticklabels(np.array([str(i) for i in range(self.size)]))
         ax.set_yticks(np.arange(0.5, self.size, 1))
+        ax.set_yticklabels(np.array([str(i) for i in range(self.size)]))
         # ax.axis('off')
-        plt.tick_params(axis='both', labelsize=0, length = 0)
+        plt.tick_params(axis='both', labelsize=5, length = 0)
 
         # fig.set_size_inches((8.5, 11), forward=False)
         plt.show()
@@ -129,6 +131,9 @@ class TwoDMaze(object):
         return self.add_goal(goal)
 
     def add_path(self, path, only_change_free_space=False):
+        '''
+        @param, a path that includes source and goal
+        '''
         for x, y in path[1:-1]:
             if only_change_free_space:
                 if self.maze[x, y] == TwoDMaze.FREE_SPACE:
