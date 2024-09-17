@@ -55,10 +55,10 @@ class ValueIteration:
         # Iterate until convergence.
         # Value iteration operates on Bellman optimality equation
         # For state-action reward:
-        # Q*(s, a) = r(s, a) + discount * sum_s' [p(s' | s) * V*(s')]
-        # For state reward:
-        # Q*(s, a) = sum_s' [p(s' | s) * (r(s') +  discount * V*(s'))]
-        # Note: r(s, a) = sum_s' [p(s' | s) * (r(s')]
+        # Q*(s, a) = R(s, a) + discount * sum_s' [p(s' | s) * V*(s')]
+        # For state-state reward:
+        # Q*(s, a) = sum_s' [p(s' | s) * (R(s, s') +  discount * V*(s'))]
+        # Note: R(s, a) = sum_s' [p(s' | s) * (R(s, s')]
         # V*(s) = max_a Q*(s, a)
 
         max_change = np.inf

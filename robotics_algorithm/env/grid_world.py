@@ -13,12 +13,13 @@ class GridWorld(StochasticEnv):
     FREE = 0
     OBSTACLE = 1
 
-    def __init__(self, size=5, num_of_obstacles=None):
+    def __init__(self, size=5, num_of_obstacles=None, max_eps_len=50):
         self.size = size
         self.num_of_obstacles = size if num_of_obstacles is None else num_of_obstacles
         self.map = np.zeros((size, size), dtype=np.int8)
         self.obstacles = []
         self.cur_state = None
+        self.max_eps_len = 50
 
         # Get all indices inside the 2D grid
         indices = np.indices((size, size))
@@ -47,6 +48,10 @@ class GridWorld(StochasticEnv):
 
     @override
     def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:
+        # sanity check
+        info = self._get_state_info(state)
+        assert not info["term"]
+
         i, j = state
 
         next_states = []
@@ -96,7 +101,11 @@ class GridWorld(StochasticEnv):
         return info
 
     @override
-    def reward_func(self, state: tuple, action: tuple | None = None) -> float:
+    def reward_func(self, state: tuple, new_state: tuple | None = None) -> float:
+        # R(s, s')
+        # Transition to goal state gives goal reward.
+        # Transition to obstacle gives obstacle reward.
+        # Transition to free gives step reward.
         if state == self.goal_state:
             reward = 100
         elif state in self.obstacles:
@@ -104,7 +113,7 @@ class GridWorld(StochasticEnv):
         else:
             # Negative of dist as penalty.
             # This encourages moving to goal.
-            reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1]))
+            reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1])) * 0.1
 
         return reward
 

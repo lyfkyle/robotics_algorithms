@@ -64,9 +64,9 @@ class PolicyIteration:
     def policy_evaluation(self, env, Q, policy, discount_factor=0.99, max_steps=10, diff_threshold=0.01):
         # Value iteration operates on Bellman expectation equation
         # For state-action reward:
-        # Q_pi(s, a) <- reward + discount * sum_s' [p(s' | s) * V_pi(s')]
-        # For state reward:
-        # Q_pi(s, a) = sum_s' [p(s' | s) * (r(s') +  discount * V_pi(s'))]
+        # Q_pi(s, a) <- R(s, a) + discount * sum_s' [p(s' | s) * V_pi(s')]
+        # For state-state reward:
+        # Q_pi(s, a) = sum_s' [p(s' | s) * (R(s, s') +  discount * V_pi(s'))]
         # V_pi(s) = sum_a [pi(a | s) * Q_pi(s, a)]
 
         states = env.state_space
