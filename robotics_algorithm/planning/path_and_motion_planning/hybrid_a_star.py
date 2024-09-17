@@ -38,7 +38,7 @@ class HybridAStar(object):
         g = {}  # cost-to-come from start to a state
         f = {}  # cost-to-come + heuristic cost-to-go
         prev_state_dict = {}  # used to extract shortest path
-        state_dict = {}  # key is some discreate state key, value is the actual continous state.
+        state_dict = {}  # key is some discrete state key, value is the actual continous state.
 
         start_key = self._state_key_func(start)
         goal_key = self._state_key_func(goal)
@@ -66,14 +66,17 @@ class HybridAStar(object):
             else:
                 continue  # If best_state in close_set, just continue
 
+            # If goal state has been added.
             if best_state_key == goal_key:
                 path_exist = True
                 break
 
+            print(best_state, best_state_key, g[best_state_key])
             # Find possible transitions from best_state, and add them to queue ranked by heuristics.
             available_actions = self.env.get_available_actions(best_state)
             for action in available_actions:
-                new_state, cost, term, _, info = self.env.state_transition_func(best_state, action)
+                new_state, reward, term, _, info = self.env.state_transition_func(best_state, action)
+                cost = -reward
                 # print(new_state, best_state, action)
                 g_new_state = g[best_state_key] + cost  # cost-to-come
                 new_state_key = self._state_key_func(new_state)
@@ -83,17 +86,18 @@ class HybridAStar(object):
                     continue
 
                 # if new_state has not been visited, or a shorter path to new_state has been found.
-                if new_state_key not in open_set or g_new_state < g[new_state_key]:
-                    h_new_state = self._heuristic_func(new_state, goal)  # cost-to-go
-                    print(new_state_key, h_new_state)
-                    f[new_state_key] = g_new_state + h_new_state
-                    g[new_state_key] = g_new_state
-                    heapq.heappush(priority_q, (f[new_state_key], new_state))
-                    state_dict[new_state_key] = new_state
-                    prev_state_dict[tuple(new_state)] = tuple(best_state), action
-                    open_set.add(new_state_key)
+                if new_state_key not in close_set:
+                    if (new_state_key not in open_set or g_new_state < g[new_state_key]):
+                        h_new_state = self._heuristic_func(new_state, goal)  # cost-to-go
+                        # print(new_state_key, h_new_state)
+                        f[new_state_key] = g_new_state + h_new_state
+                        g[new_state_key] = g_new_state
+                        heapq.heappush(priority_q, (f[new_state_key], new_state))
+                        state_dict[new_state_key] = new_state
+                        prev_state_dict[tuple(new_state)] = tuple(best_state), action
+                        open_set.add(new_state_key)
 
-                    # print("adding ", new_state_tup, new_action, self.heuristic(new_state))
+                        # print("adding ", best_state, action, new_state, new_state_key, h_new_state)
                     # debug.append([new_action, new_state_tup])
 
             # print(debug)

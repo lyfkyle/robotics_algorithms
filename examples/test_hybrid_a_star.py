@@ -20,7 +20,7 @@ def heuristic_func(state, goal):
 
 
 def state_key_func(state):
-    return (int(state[0] // 0.25), int(state[1] // 0.25), int(state[2] // math.radians(30)))
+    return env.calc_state_key(state)
 
 
 # -------- Main Code ----------

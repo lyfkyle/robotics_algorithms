@@ -10,6 +10,7 @@ from matplotlib import colors
 
 from robotics_algorithm.env.base_env import DeterministicEnv, ContinuousEnv, FullyObservableEnv
 from robotics_algorithm.robot.differential_drive import DiffDrive
+from robotics_algorithm.utils import math_utils
 
 
 DEFAULT_OBSTACLES = [[2, 2, 0.5], [5, 5, 1], [3, 8, 0.5], [8, 3, 1]]
@@ -28,6 +29,7 @@ class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
     Deterministic transition.
     Fully observable.
     """
+
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -36,7 +38,7 @@ class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
     WAYPOINT = 5
     MAX_POINT_TYPE = 6
 
-    def __init__(self, size=10):
+    def __init__(self, size=10, ref_path=None):
         super().__init__()
 
         self.size = size
@@ -69,9 +71,16 @@ class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
             (0.25, -math.radians(30)),
         ]
         self.robot_radius = 0.2
+        self.action_dt = 1.0
 
         self.path = None
         self.state_samples = None
+
+        # Path following weights
+        self.ref_path = ref_path
+        self.x_cost_weight = 50
+        self.y_cost_weight = 50
+        self.yaw_cost_weight = 1.0
 
     @override
     def reset(self, random_env=True):
@@ -84,22 +93,60 @@ class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
             self.start_state = DEFAULT_START
             self.goal_state = DEFAULT_GOAL
 
+    def set_ref_path(self, ref_path):
+        self.ref_path = ref_path
+
     @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
-        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=1.0)
+        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
 
-        if new_state[0] <= 0 or new_state[1] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
-            return state, 0, True, False, {"success": False}
+        term = False
+        info = {}
+        if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
+            term = True
+            info = {"success": False}
 
         if not self.is_state_valid(new_state):
-            return state, 0, True, False, {"success": False}
+            term = True
+            info = {"success": False}
 
         # Check goal state reached for termination
-        term = False
-        if np.allclose(np.array(new_state), np.array(self.goal_state), atol=1e-4):
+        if self.is_state_similar(new_state, self.goal_state):
             term = True
+            info = {"success": True}
 
-        return new_state, 1, term, False, {}
+        reward = self.reward_func(state, new_state=new_state)
+
+        return new_state, reward, term, False, info
+
+    @override
+    def reward_func(self, state, action=None, new_state=None):
+        if self.ref_path is None:
+            if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
+                return -100
+
+            if not self.is_state_valid(new_state):
+                return -100
+
+            if self.is_state_similar(new_state, self.goal_state):
+                return 0
+
+            return -1
+
+        else:
+            x, y, yaw = new_state
+            yaw = math_utils.normalize_angle(yaw)  # normalize theta to [0, 2*pi]
+
+            # calculate stage cost
+            ref_x, ref_y, ref_yaw = self._get_nearest_waypoint(x, y)
+            yaw_diff = math_utils.normalize_angle(yaw - ref_yaw)
+            path_cost = (
+                self.x_cost_weight * (x - ref_x) ** 2
+                + self.y_cost_weight * (y - ref_y) ** 2
+                + self.yaw_cost_weight * yaw_diff ** 2
+            )
+
+            return -path_cost
 
     @override
     def get_available_actions(self, state: Any) -> list[Any]:
@@ -112,6 +159,12 @@ class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
                 return False
 
         return True
+
+    def is_state_similar(self, state1, state2):
+        return self.calc_state_key(state1) == self.calc_state_key(state2)
+
+    def calc_state_key(self, state):
+        return (round(state[0] / 0.25), round(state[1] / 0.25), round((state[2] + math.pi) / math.radians(30)))
 
     def _random_obstacles(self, num_of_obstacles=5):
         self.obstacles = []
@@ -193,6 +246,28 @@ class TwoDMazeDiffDrive(ContinuousEnv, DeterministicEnv, FullyObservableEnv):
         plt.ylim(0, self.size)
         plt.yticks(np.arange(self.size))
         plt.show()
+
+    def _get_nearest_waypoint(self, x: float, y: float, update_prev_idx: bool = False):
+        """search the closest waypoint to the vehicle on the reference path"""
+
+        SEARCH_IDX_LEN = 200 # [points] forward search range
+        prev_idx = self.prev_waypoints_idx
+        dx = [x - ref_x for ref_x in self.ref_path[prev_idx:(prev_idx + SEARCH_IDX_LEN), 0]]
+        dy = [y - ref_y for ref_y in self.ref_path[prev_idx:(prev_idx + SEARCH_IDX_LEN), 1]]
+        d = [idx ** 2 + idy ** 2 for (idx, idy) in zip(dx, dy)]
+        min_d = min(d)
+        nearest_idx = d.index(min_d) + prev_idx
+
+        # get reference values of the nearest waypoint
+        ref_x = self.ref_path[nearest_idx,0]
+        ref_y = self.ref_path[nearest_idx,1]
+        ref_yaw = self.ref_path[nearest_idx,2]
+
+        # update nearest waypoint index if necessary
+        if update_prev_idx:
+            self.prev_waypoints_idx = nearest_idx
+
+        return ref_x, ref_y, ref_yaw
 
 
 class TwoDMazeOmni(TwoDMazeDiffDrive):
@@ -278,5 +353,3 @@ class TwoDMazeOmni(TwoDMazeDiffDrive):
         if self.state_samples is None:
             self.state_samples = []
         self.state_samples.append(state)
-
-
