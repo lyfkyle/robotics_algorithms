@@ -1,12 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from robotics_algorithm.utils import math_utils
+
 
 class DiffDrive:
     def __init__(self, wheel_radius: float, wheel_dist: float):
         # Robot parameters
         self.wheel_radius = 0.05  # meters
         self.wheel_dist = 0.2  # meters
+        self.time_res = 0.05
 
     def control_wheel_speed(self, state: list, control: list, dt: float) -> list:
         """_summary_
@@ -40,22 +43,28 @@ class DiffDrive:
         """
         x, y, theta = state
 
-        # Update the state
-        x_new = x + lin_vel * np.cos(theta) * dt
-        y_new = y + lin_vel * np.sin(theta) * dt
-        theta_new = theta + ang_vel * dt
+        t = 0
+        while t < dt:
+            # Update the state
+            x_new = x + lin_vel * np.cos(theta) * self.time_res
+            y_new = y + lin_vel * np.sin(theta) * self.time_res
+            theta_new = theta + ang_vel * self.time_res
+            theta_new = math_utils.normalize_angle(theta_new)
 
-        return [x_new, y_new, theta_new]
+            t += self.time_res
+            x, y, theta = x_new, y_new, theta_new
+
+        return [x_new.item(), y_new.item(), theta_new]
 
 
 if __name__ == "__main__":
     # Simulation parameters
-    dt = 0.1  # time step
+    dt = 1.0  # time step
     total_time = 10.0  # total simulation time
     num_steps = int(total_time / dt)
 
     # Initial state [x, y, theta]
-    state = np.array([0.0, 0.0, 0.0])
+    state = [0.0, 0.0, 0.0]
 
     # Control inputs (left and right wheel velocities)
     control_inputs = [0.2, 0.5]  # constant velocities
@@ -67,8 +76,14 @@ if __name__ == "__main__":
 
     # Run simulation
     for _ in range(num_steps):
-        state = diff_drive_system.control_wheel_speed(state, control_inputs, dt)
-        state_history.append(state)
+        state1 = diff_drive_system.control_wheel_speed(state, control_inputs, dt)
+
+        num_sub_steps = int(dt / diff_drive_system.time_res)
+        for _ in range(num_sub_steps):
+            state = diff_drive_system.control_wheel_speed(state, control_inputs, dt=diff_drive_system.time_res)
+            state_history.append(state)
+
+        assert np.allclose(np.array(state1), np.array(state))
 
     # Convert state history to numpy array for easier indexing
     state_history = np.array(state_history)

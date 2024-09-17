@@ -8,8 +8,8 @@ from robotics_algorithm.env.base_env import BaseEnv, FunctionType
 class LQR(object):
     """Implements Linear-quadratic regulator.
 
-    # Given a system with linear state transition function and quadratic cost function.
-    # the optimal control strategy is u = -Kx
+    # Given a system with linear state transition function and quadratic cost function, the optimal control strategy
+    # can be computed analytically and has the form: u = -Kx
     """
 
     def __init__(self, env: BaseEnv, discrete_time=True, horizon=float("inf"), solve_by_iteration=False):

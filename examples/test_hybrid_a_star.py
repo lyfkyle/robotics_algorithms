@@ -1,11 +1,11 @@
 import time
 import math
 
-from robotics_algorithm.env.two_d_maze import TwoDMazeDiffDrive
+from robotics_algorithm.env.two_d_world import TwoDWorldDiffDrive
 from robotics_algorithm.planning import HybridAStar
 
 # Initialize environment
-env = TwoDMazeDiffDrive()
+env = TwoDWorldDiffDrive()
 
 # -------- Settings ------------
 FIX_MAZE = True
@@ -47,6 +47,6 @@ else:
     for v in shortest_path:
         path.append(v)
 
-    env.add_path(path)
+    env.add_action_path(path)
 
 env.render()
