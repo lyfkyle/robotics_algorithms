@@ -8,7 +8,7 @@ TRANSITION_PROB = [0.15, 0.7, 0.15]
 MEASUREMENT_PROB = [0.15, 0.7, 0.15]
 
 
-class OneDLocalization(object):
+class OneDLocalizationDiscrete(object):
 
     def __init__(self, max_pos = 20, transition_prob=TRANSITION_PROB, meas_prob=MEASUREMENT_PROB):
         self.max_pos = max_pos
