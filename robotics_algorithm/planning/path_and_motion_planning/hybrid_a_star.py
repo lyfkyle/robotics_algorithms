@@ -1,11 +1,11 @@
 from typing import Callable, Any
 import heapq
 
-from robotics_algorithm.env.base_env import ContinuousEnv
+from robotics_algorithm.env.base_env import DeterministicEnv
 
 
 class HybridAStar(object):
-    def __init__(self, env: ContinuousEnv, heuristic_func: Callable, state_key_func: Callable):
+    def __init__(self, env: DeterministicEnv, heuristic_func: Callable, state_key_func: Callable):
         """_summary_
 
         Args:

@@ -4,13 +4,13 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
 
-from robotics_algorithm.env.base_env import ContinuousEnv
+from robotics_algorithm.env.base_env import DeterministicEnv
 
 
 class ProbabilisticRoadmap(object):
     def __init__(
         self,
-        env: ContinuousEnv,
+        env: DeterministicEnv,
         sample_func: Callable,
         state_col_check_func: Callable,
         edge_col_check_func: Callable,
