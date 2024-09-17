@@ -18,6 +18,16 @@ DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
 class TwoDMazeDiffDrive(DeterministicEnv):
+    """A differential drive robot must reach goal state in a 2d maze with obstacles.
+
+    State: [x, y, theta]
+    Action: [lin_vel, ang_vel]
+
+    Continuous state space.
+    Continuous action space.
+    Deterministic transition.
+    Fully observable.
+    """
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -76,7 +86,7 @@ class TwoDMazeDiffDrive(DeterministicEnv):
 
     @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
-        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=1.0).tolist()
+        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=1.0)
 
         if new_state[0] <= 0 or new_state[1] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
             return state, 0, True, False, {"success": False}
@@ -84,7 +94,12 @@ class TwoDMazeDiffDrive(DeterministicEnv):
         if not self.is_state_valid(new_state):
             return state, 0, True, False, {"success": False}
 
-        return tuple(new_state), 1, False, False, {}
+        # Check goal state reached for termination
+        term = False
+        if np.allclose(np.array(new_state), np.array(self.goal_state), atol=1e-4):
+            term = True
+
+        return new_state, 1, term, False, {}
 
     @override
     def get_available_actions(self, state: Any) -> list[Any]:
@@ -110,7 +125,7 @@ class TwoDMazeDiffDrive(DeterministicEnv):
             if self.is_state_valid(robot_pos):
                 break
 
-        return robot_pos
+        return robot_pos.tolist()
 
     def add_path(self, path):
         interpolated_path = [self.start_state]

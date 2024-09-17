@@ -3,31 +3,41 @@ import matplotlib.pyplot as plt
 
 
 class DoubleIntegrator:
-    def __init__(self):
+    def __init__(self, continuous_time=True, dt=0.01):
         # Robot parameters
 
         # x = [q, q_dot]
         # x_dot = [q_dot, q_dot_dot] = Ax + Bu
-        self.A = np.array([[0, 1], [0, 0]])
-        self.B = np.array([[0, 1]]).T
+        if continuous_time:
+            self.A = np.array([[0, 1], [0, 0]])
+            self.B = np.array([[0, 1]]).T
+        else:
+            self.A = np.array([[1, dt], [0, 1]])
+            self.B = np.array([[0.5 * dt * dt], [dt]])
 
-    def control(self, state: np.ndarray, control: list, dt: float) -> np.ndarray:
+        self.continuous_time = continuous_time
+
+    def control(self, state: list, control: list, dt: float) -> list:
         """Compute the end state given then current state and control.
 
         Args:
-            state (np.ndarray): [x, y, theta] robot's current state
-            control (list): [v_l, v_r] left and right wheel velocities in radians
+            state (list): [q, q_dot] robot's current state
+            control (list): left and right wheel velocities in radians
             dt (float): time step
 
         Returns:
-            new state [x, y, theta]
+            new state [q, q_dot]
         """
-        x_dot = self.A @ state + self.B @ np.array(control)
+        state = np.array(state)
+        control = np.array(control)
+
+        x_dot = self.A @ state + self.B @ control
 
         # discretize using zero order hold, assuming dt is small enough
-        new_state = state + x_dot * dt
+        if self.continuous_time:
+            new_state = state + x_dot * dt
 
-        return new_state
+        return new_state.tolist()
 
 
 if __name__ == "__main__":

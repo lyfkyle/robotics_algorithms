@@ -15,6 +15,14 @@ class CliffWalking(MDPEnv):
     A player is placed in grid world. The player should move from start to goal. If the player reaches the goal the
     episode ends. If the player moves to a cliff location the episode terminates with failure.
     During each move, the player has a chance of ending up in the left or right of the target grid.
+
+    State: [x, y]
+    Action: [up, down, left, right]
+
+    Discrete state space.
+    Discrete action space.
+    Stochastic transition.
+    Fully observable.
     """
 
     def __init__(

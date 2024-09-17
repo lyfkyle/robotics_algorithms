@@ -24,6 +24,9 @@ class DeterministicEnv:
         self.state_space_size = None
         self.action_space_size = None
 
+        self.state_transition_type = "general"
+        self.reward_func_type = "general"
+
     def reset(self):
         """Reset env."""
         self.cur_state = None
