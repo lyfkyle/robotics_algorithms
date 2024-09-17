@@ -8,7 +8,7 @@ class DiffDrive:
         self.wheel_radius = 0.05  # meters
         self.wheel_dist = 0.2  # meters
 
-    def control_wheel_speed(self, state: np.ndarray, control: list, dt: float):
+    def control_wheel_speed(self, state: np.ndarray, control: list, dt: float) -> np.ndarray:
         """_summary_
 
         Args:
@@ -25,7 +25,7 @@ class DiffDrive:
 
         return self.control_velocity(state, lin_vel, ang_vel, dt)
 
-    def control_velocity(self, state: np.ndarray, lin_vel: float, ang_vel: float, dt: float):
+    def control_velocity(self, state: np.ndarray, lin_vel: float, ang_vel: float, dt: float) -> np.ndarray:
         """
         Update the robot state based on the differential drive kinematics.
 
