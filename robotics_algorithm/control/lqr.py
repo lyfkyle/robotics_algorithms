@@ -1,10 +1,14 @@
 import numpy as np
 
-# Given a model governed by state-space equation and a cost function that is quadratic to action and state,
-# the optimal control strategy is u = -Kx
+
 
 class LQR(object):
-    def __init__(self, A, B, Q, R):
+    """Implements Linear-quadratic regulator.
+
+    # Given a system with linear state transition function and quadratic cost function.
+    # the optimal control strategy is u = -Kx
+    """
+    def __init__(self, env):
         '''
         State transition:
         x_dot = A * X + B * U
