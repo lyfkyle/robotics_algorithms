@@ -8,20 +8,24 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-from one_d_localization_continuous import OneDLocalizationContinuous
-from kalman_filter import KalmanFilter
+from two_d_localization_with_feature import TwoDLocalizationWithFeature
+from extended_kalman_filter import ExtendedKalmanFilter
 
-env = OneDLocalizationContinuous()
+env = TwoDLocalizationWithFeature()
 
-initial_covariance = np.eye(2)
+initial_covariance = np.eye(3)
 
-my_filter = KalmanFilter(env.state, initial_covariance, env.A, env.B, env.R, env.H, env.Q)
+def compute_R(state, control):
+    V = env.process_noise_jacobian(state, control)
+    return V @ env.R @ V.transpose()
+
+my_filter = ExtendedKalmanFilter(env.state, initial_covariance, env.control, env.control_jacobian, compute_R, env.meas_jacobian, env.Q)
 
 true_state = []
 filter_state = []
 
 for i in range(10):
-    accel = random.uniform(-1.0, 1.0)
+    control = random.uniform(-1.0, 1.0)
     meas = env.control_and_sense(accel)
 
     my_filter.predict(np.array([[accel]]))
