@@ -17,11 +17,11 @@ class AStar(object):
         unvisited_vertices_set = set()
         shortest_path = []
         shortest_path_len = 0
-        g = [0] * len(graph) # cost from source to v
-        dist = [0] * len(graph)
-        prev = [-1] * len(graph) # used to extract shortest path
+        g = {} # cost from source to v
+        dist = {}
+        prev = {} # used to extract shortest path
 
-        for v in range(len(graph)):
+        for v in graph:
             g[v] = float('inf')
             dist[v] = float('inf')
             unvisited_vertices_set.add(v)
@@ -49,7 +49,7 @@ class AStar(object):
 
             unvisited_vertices_set.remove(min_v)
 
-            for v, edge_length in graph[min_v]:
+            for v, edge_length in graph[min_v].items():
                 if v in unvisited_vertices_set:
                     g_v = g[min_v] + edge_length
                     h_v = heuristic_func(v, goal)
@@ -60,12 +60,14 @@ class AStar(object):
 
         if path_exist:
             # extract shortest path:
+            shortest_path.insert(0, goal)
             v = goal
             prev_v = prev[v]
             while prev_v != -1 and prev_v != source:
                 shortest_path.insert(0, prev_v)
                 prev_v= prev[prev_v]
 
+            shortest_path.insert(0, source)
             shortest_path_len = dist[goal]
             return (True, shortest_path, shortest_path_len)
         else:
