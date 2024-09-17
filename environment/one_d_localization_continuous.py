@@ -28,6 +28,7 @@ class OneDLocalizationContinuous(object):
     def control(self, accel):
         '''
         Compute new position and velocity of agent assume accel is applied for dt time
+        xt+1 = Axt + But
         '''
         # compute new position based on acceleration. Add in some process noise
         new_state = self.A @ self.state + np.dot(self.B, accel) + np.array([[randn() * self.process_noise], [randn() * self.process_noise]])
