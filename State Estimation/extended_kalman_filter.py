@@ -4,8 +4,8 @@ import numpy as np
 class ExtendedKalmanFilter:
     def __init__(self, initial_state, initial_covariance, transition_func, compute_jacobian_A, compute_R, measurement_func, compute_jacobian_H, Q):
         '''
-        State Transition: X = AX + BU + sigma
-        Measurement Z = HX + delta
+        State Transition: X = transition_func(x, u) + sigma
+        Measurement Z = measurement_func(x) + delta
         R: Process covariance matrix from sigma
         Q. Measurement covariance matrix from delta
         '''
@@ -38,9 +38,9 @@ class ExtendedKalmanFilter:
         '''
         @param measurement, measurement
         '''
-        H = self._compute_jacobian_H(self.state, measurement)
+        H = self._compute_jacobian_H(self.state)
         K = self.covariance @ H.transpose() @ np.linalg.inv(H @ self.covariance @ H.transpose() + self.Q)
-        new_state = self.state + K @ (measurement - self._measurement_func(self.state, measurement))
+        new_state = self.state + K @ (measurement - self._measurement_func(self.state))
         tmp_matrix = K @ H
         new_covariance = (np.eye(tmp_matrix.shape[0]) - tmp_matrix) @ self.covariance
 
