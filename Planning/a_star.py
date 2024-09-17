@@ -14,25 +14,25 @@ class AStar(object):
         '''
 
         # initialzie
-        unvisited_vertex_set = set()
+        unvisited_vertices_set = set()
         shortest_path = []
         shortest_path_len = 0
-        g = [0] * len(graph) # cost from source to v
-        dist = [0] * len(graph)
-        prev = [-1] * len(graph) # used to extract shortest path
+        g = {} # cost from source to v
+        dist = {}
+        prev = {} # used to extract shortest path
 
-        for v in range(len(graph)):
+        for v in graph:
             g[v] = float('inf')
             dist[v] = float('inf')
-            unvisited_vertex_set.add(v)
+            unvisited_vertices_set.add(v)
         g[source] = 0
         dist[source] = heuristic_func(source, goal) # cost from source to goal = 0 + h(s, v)
 
         # run algorithm
         path_exist = True
-        while len(unvisited_vertex_set) > 0:
+        while len(unvisited_vertices_set) > 0:
             min_dist = float('inf')
-            for v in unvisited_vertex_set:
+            for v in unvisited_vertices_set:
                 if dist[v] < min_dist:
                     min_dist = dist[v]
                     min_v = v
@@ -47,10 +47,10 @@ class AStar(object):
             if min_v == goal:
                 break
 
-            unvisited_vertex_set.remove(min_v)
+            unvisited_vertices_set.remove(min_v)
 
-            for v, edge_length in graph[min_v]:
-                if v in unvisited_vertex_set:
+            for v, edge_length in graph[min_v].items():
+                if v in unvisited_vertices_set:
                     g_v = g[min_v] + edge_length
                     h_v = heuristic_func(v, goal)
                     if g_v < g[v]:
@@ -60,12 +60,14 @@ class AStar(object):
 
         if path_exist:
             # extract shortest path:
+            shortest_path.insert(0, goal)
             v = goal
             prev_v = prev[v]
             while prev_v != -1 and prev_v != source:
                 shortest_path.insert(0, prev_v)
                 prev_v= prev[prev_v]
 
+            shortest_path.insert(0, source)
             shortest_path_len = dist[goal]
             return (True, shortest_path, shortest_path_len)
         else:
