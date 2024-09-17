@@ -55,7 +55,7 @@ class HybridAStar(object):
         while True:
             if not open_set:
                 print("Error: Cannot find path, No open set")
-                return []
+                break
 
             # pop the best state found so far.
             _, best_state = heapq.heappop(priority_q)

@@ -2,11 +2,11 @@
 import time
 import math
 
-from robotics_algorithm.env.two_d_maze import TwoDMaze
+from robotics_algorithm.env.two_d_maze import TwoDMazeDiffDrive
 from robotics_algorithm.planning import HybridAStar
 
 # Initialize environment
-env = TwoDMaze()
+env = TwoDMazeDiffDrive()
 
 # -------- Settings ------------
 FIX_MAZE = True

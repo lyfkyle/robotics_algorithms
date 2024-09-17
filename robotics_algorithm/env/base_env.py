@@ -15,8 +15,8 @@ class ContinuousEnv:
     """
 
     def __init__(self):
-        self._state_space = None
-        self._action_space = None
+        self.state_space = None
+        self.action_space = None
 
     def reset(self):
         """Reset env."""
@@ -50,7 +50,7 @@ class ContinuousEnv:
             trunc (bool): whether the transition truncates the episode
             info (dict): additional info
         """
-        pass
+        raise NotImplementedError()
 
     def _get_state_info(self, state: Any) -> dict:
         """retrieve information about the state.
@@ -76,7 +76,18 @@ class ContinuousEnv:
         Returns:
             list[Any]: a list of available actions for the given state.
         """
-        pass
+        raise NotImplementedError()
+
+    def is_state_valid(self, state: Any) -> bool:
+        """Check whether a state is valid
+
+        Args:
+            state (Any): state
+
+        Returns:
+            bool: return True if valid
+        """
+        raise NotImplementedError()
 
 
 class DiscreteEnv(ContinuousEnv):
@@ -100,15 +111,15 @@ class StochasticEnv(ContinuousEnv):
             new_state (any): new state
         """
         transition_results, probs = self.state_transition_func(self._cur_state, action)
-        idx = choice(np.arange(len(transition_results)), 1, probs)  # choose new state according to the transition probability.
+        idx = choice(
+            np.arange(len(transition_results)), 1, probs
+        )  # choose new state according to the transition probability.
 
         # Conform to gymnasium env
         return transition_results[idx]
 
     @override
-    def state_transition_func(
-        self, state: Any, action: Any
-    ) -> tuple[list[Any], list[float]]:
+    def state_transition_func(self, state: Any, action: Any) -> tuple[list[Any], list[float]]:
         """State transition function.
 
         Models both stochastic and deterministic transition.
