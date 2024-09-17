@@ -10,8 +10,8 @@ learning.
 
 ## How to use
 
-Run `pip install -e .`
-Run various scripts inside examples folder.
+- Run `pip install -e .`
+- Run various scripts inside examples folder.
 
 ## Status
 This repository is undergoing significant development. Here is the status checklist.
