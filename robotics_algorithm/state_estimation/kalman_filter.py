@@ -22,7 +22,7 @@ class KalmanFilter:
         assert env.state_transition_noise_type == NoiseType.GAUSSIAN.value
         assert env.observation_noise_type == NoiseType.GAUSSIAN.value
 
-        # state_transition_func: x = Ax + Bu + epsilon
+        # state_transition_func: x = Ax + Bu + sigma
         self.A = env.A
         self.B = env.B
         self.R = env.state_transition_covariance_matrix
