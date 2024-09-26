@@ -11,5 +11,4 @@ setup(
     maintainer_email='luyunfan44@gmail.com',
     description= 'A collection of robotics algorithms',
     tests_require=['pytest'],
-
 )

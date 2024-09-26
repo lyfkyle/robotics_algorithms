@@ -1,6 +1,6 @@
 import time
 
-from robotics_algorithm.env.grid_world_maze import GridWorldMaze
+from robotics_algorithm.env.discrete_world_2d import GridWorldMaze
 from robotics_algorithm.planning import Dijkstra
 
 

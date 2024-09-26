@@ -52,6 +52,7 @@ class BaseEnv(object):
         # Function type
         self.state_transition_func_type = FunctionType.GENERAL.value
         self.reward_func_type = FunctionType.GENERAL.value
+        self.observation_func_type = FunctionType.GENERAL.value
 
         # Noise type
         self.state_transition_noise_type = NoiseType.GAUSSIAN.value

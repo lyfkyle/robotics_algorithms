@@ -1,11 +1,11 @@
-from robotics_algorithm.env.one_d_world import DoubleIntegratorEnv
+from robotics_algorithm.env.continuous_world_1d import DoubleIntegratorEnv
 from robotics_algorithm.control.lqr import LQR
 
 # Test 1
 # Continuous time model
-#  - Since we have not incorporated state estimation, set noises to small value as if the env is determistic and
+#  - Since we have not incorporated state estimation, set noises to small value as if the env is deterministic and
 #    fully-observable
-env = DoubleIntegratorEnv(use_discrete_time_model=False, observation_noise_std=0, state_transition_noise_std=0)
+env = DoubleIntegratorEnv(use_discrete_time_model=False, observation_noise_std=1e-5, state_transition_noise_std=1e-5)
 
 env.reset()
 print("cur_state: ", env.start_state)
