@@ -2,8 +2,11 @@
 
 ![logo](/doc/logo.jpg "logo")
 
-This repository contains algorithms related to robotics for personal learning purpose. The motivation is to have
-a single source of truth with clear documentation.
+This repository contains pure-python implementation for essential robotics algorithms. 
+
+The main benefits are:
+1. Have a single source of truth of various algorithms with clear explanation.
+2. Implemented with clear separation between dynamics, environment and algorithm, emphasizing that a lot of algorithms, e.g planing under uncertainties, optimal control, share the same underlying problem formulation，eg. MDP. 
 
 ## Scope
 
