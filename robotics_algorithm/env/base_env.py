@@ -62,7 +62,7 @@ class BaseEnv(object):
         """Reset env."""
         self.cur_state = None
 
-        return self.cur_state, {}
+        return self.sample_observation(self.cur_state), {}
 
     def render(self) -> None:
         """Visualize env."""
@@ -174,11 +174,16 @@ class DiscreteSpace(object):
     def size(self):
         return len(self.space)
 
+    @property
+    def state_size(self):
+        return len(self.space[0])
+
     def get_all(self):
         return self.space
 
     def sample(self):
-        return np.random.choice(np.array(self.space))
+        idx = np.random.randint(len(self.space))
+        return self.space[idx]
 
 
 class ContinuousSpace(object):
@@ -186,17 +191,9 @@ class ContinuousSpace(object):
         self.type = SpaceType.CONTINUOUS.value
         self.space = [low, high]
 
-    # def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
-    #     """Sample an available action in the current state.
-
-    #     Args:
-    #         state (Any): the state
-    #         num_samples (int): the number of samples
-
-    #     Returns:
-    #         list[Any]: a list of available actions for the given state.
-    #     """
-    #     raise NotImplementedError()
+    @property
+    def state_size(self):
+        return len(self.space[0])
 
     def sample(self):
         return np.random.uniform(np.nan_to_num(self.space[0]), np.nan_to_num(self.space[1])).tolist()
@@ -242,7 +239,7 @@ class DeterministicEnv(BaseEnv):
         raise NotImplementedError()
 
 
-class StochasticEnv(DeterministicEnv):
+class StochasticEnv(BaseEnv):
     def __init__(self):
         super().__init__()
         self.state_transition_type = EnvType.STOCHASTIC.value
@@ -253,12 +250,15 @@ class StochasticEnv(DeterministicEnv):
         if not self._is_action_valid(action):
             raise Exception(f"action {action} is not within valid range!")
 
-        results, probs = self.state_transition_func(state, action)
-        idx = choice(np.arange(len(results)), 1, p=probs)[
-            0
-        ]  # choose new state according to the transition probability.
+        if self.state_space.type == SpaceType.DISCRETE.value:
+            results, probs = self.state_transition_func(state, action)
+            idx = choice(np.arange(len(results)), 1, p=probs)[
+                0
+            ]  # choose new state according to the transition probability.
 
-        return results[idx]
+            return results[idx]
+        else:
+            raise NotImplementedError()
 
     @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[list[tuple], list[float]]:
@@ -276,7 +276,7 @@ class StochasticEnv(DeterministicEnv):
                 trunc and info.
             probs (list[float]): the probabilities of transitioning to new states.
         """
-        pass
+        raise NotImplementedError()
 
 
 class FullyObservableEnv(BaseEnv):
@@ -315,12 +315,15 @@ class PartiallyObservableEnv(BaseEnv):
         # Define an additional observation space
         self.observation_space = None
 
-    def sample_observation_discrete(self, state) -> Any:
-        assert self.space_type == EnvType.DISCRETE.value
-
-        obss, obs_prob = self.observation_func(state)
-        obs = choice(obss, 1, obs_prob)  # choose new observation according to the transition probability.
-        return obs
+    def sample_observation(self, state) -> Any:
+        if self.observation_space.type == SpaceType.DISCRETE.value:
+            obss, obs_prob = self.observation_func(state)
+            idx = choice(np.arange(len(obss)), 1, p=obs_prob)[
+                0
+            ]  # choose observation according to the observation probability.
+            return obss[idx]
+        else:
+            raise NotImplementedError()
 
     @override
     def observation_func(self, state: Any) -> tuple[list[Any], list[float]]:

@@ -27,7 +27,7 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] Quadrotor
   - [ ] Quadruped
 - [ ] State Estimation
-  - [ ] Discrete bayes filter
+  - [x] Discrete bayes filter
   - [x] Kalman filter
   - [ ] Extended Kalman filter
   - [ ] Particle filter

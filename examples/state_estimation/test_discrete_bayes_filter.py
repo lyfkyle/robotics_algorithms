@@ -1,17 +1,16 @@
-import numpy as np
-import random
 import matplotlib.pyplot as plt
+import numpy as np
 
-from robotics_algorithm.env.continuous_world_1d import DoubleIntegratorEnv
-from robotics_algorithm.state_estimation.kalman_filter import KalmanFilter
+from robotics_algorithm.env.discrete_world_1d import DiscreteWorld1D
+from robotics_algorithm.state_estimation.discrete_bayes_filter import DiscreteBayesFilter
 
-# Env
-env = DoubleIntegratorEnv(observation_noise_std=0.1, state_transition_noise_std=0.1)
+# env
+env = DiscreteWorld1D()
 obs, _ = env.reset()
 env.render()
 
-# Create filter
-filter = KalmanFilter(env)
+# filter
+filter = DiscreteBayesFilter(env)
 filter.set_initial_state(env.cur_state)
 
 # Step env with random actions
@@ -23,7 +22,7 @@ filter_states.append(filter.get_state())
 obss.append(obs)
 max_steps = 100
 for i in range(max_steps):
-    action = [random.uniform(-1.0, 1.0)]
+    action = env.action_space.sample()
     new_obs, reward, term, trunc, info = env.step(action)
 
     filter.run(action, new_obs)

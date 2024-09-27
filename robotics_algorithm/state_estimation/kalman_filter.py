@@ -31,14 +31,16 @@ class KalmanFilter:
         self.H = env.H
         self.Q = env.observation_covariance_matrix
 
+        self.state = np.array(env.cur_state)
+        self.covariance = np.eye(env.state_space.state_size)
+
     def set_initial_state(self, state: list):
         """
-        Set the initial state of the Kalman filter.
+        Set the initial state of filter.
 
         @param state, initial state
         """
         self.state = np.array(state)
-        self.covariance = np.eye(len(state))
 
     def get_state(self):
         return self.state.tolist()

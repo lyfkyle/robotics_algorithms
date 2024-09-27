@@ -1,11 +1,7 @@
 from typing_extensions import override
 
 import matplotlib.pyplot as plt
-import random
 import numpy as np
-import math
-import numpy as np
-from numpy.random import randn
 
 from robotics_algorithm.robot.double_integrator import DoubleIntegrator
 from robotics_algorithm.env.base_env import (
@@ -25,8 +21,8 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
 
     Continuous state space.
     Continuous action space.
-    Deterministic transition.
-    Fully observable.
+    Stochastic transition.
+    Partially observable.
 
     Linear state transition function.
     Quadratic cost.
@@ -92,7 +88,7 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         self.goal_state = [0, 0]  # fixed
         self.cur_state = self.start_state.copy()
 
-        return self.cur_state, {}
+        return self.sample_observation(self.cur_state), {}
 
     @override
     def sample_state_transition(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
@@ -124,9 +120,12 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     def sample_observation(self, state):
         # simulate measuring the position with noise
         state = np.array(state).reshape(-1, 1)
+
+        # noisy observation
         obs = self.H @ state + np.random.multivariate_normal(
             mean=[0, 0], cov=self.observation_covariance_matrix
-        ).reshape(2, 1)  # add noise
+        ).reshape(2, 1)
+
         return obs.reshape(-1).tolist()
 
     @override
