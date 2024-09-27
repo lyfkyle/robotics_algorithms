@@ -42,10 +42,10 @@ class KalmanFilter:
         """
         self.state = np.array(state)
 
-    def get_state(self):
+    def get_state(self) -> list:
         return self.state.tolist()
 
-    def run(self, action, obs):
+    def run(self, action: list, obs: list):
         """
         Run one iteration of the Kalman filter.
 
@@ -55,27 +55,26 @@ class KalmanFilter:
         self.predict(action)
         self.update(obs)
 
-    def predict(self, control):
+    def predict(self, action: list):
         """
         Predict the state of the Kalman filter.
 
-        @param control, control
+        @param action, applied action
         """
-        new_state = self.A @ self.state + self.B @ control
+        new_state = self.A @ self.state + self.B @ action
         new_covariance = self.A @ self.covariance @ self.A.transpose() + self.R
 
         self.state = new_state
         self.covariance = new_covariance
 
-    def update(self, measurement):
+    def update(self, obs: list):
         """
         Update the state of the Kalman filter.
 
-        @param measurement, measurement
+        @param obs, obtained observation.
         """
-
         K = self.covariance @ self.H.transpose() @ np.linalg.inv(self.H @ self.covariance @ self.H.transpose() + self.Q)
-        new_state = self.state + K @ (measurement - self.H @ self.state)
+        new_state = self.state + K @ (obs - self.H @ self.state)
         tmp_matrix = K @ self.H
         new_covariance = (np.eye(tmp_matrix.shape[0]) - tmp_matrix) @ self.covariance
 
