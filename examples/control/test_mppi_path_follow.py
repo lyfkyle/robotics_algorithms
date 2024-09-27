@@ -1,7 +1,7 @@
 import time
 import math
 
-from robotics_algorithm.env.two_d_world import TwoDWorldDiffDrive
+from robotics_algorithm.env.continuous_world_2d import TwoDWorldDiffDrive
 from robotics_algorithm.control.mppi import MPPI
 
 # This path is computed using Hybrid A*

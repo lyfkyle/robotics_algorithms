@@ -18,7 +18,7 @@ from robotics_algorithm.env.base_env import (
 
 
 class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
-    """A DoubleIntegrator robot is tasked to stop at the goal state which is at zero position  with zero velocity.
+    """A DoubleIntegrator robot is tasked to stop at the goal state which is at zero position with zero velocity.
 
     State: [pos, vel]
     Action: [acceleration]
@@ -52,19 +52,36 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         # declare quadratic cost
         # L = x.T @ Q @ x + u.T @ R @ u
         self.reward_func_type = FunctionType.QUADRATIC.value
-        self.Q = np.array([[1, 0], [0, 1]])
-        self.R = np.array([[1]])
+        self.Q = np.array([[1, 0], [0, 1]])  # state cost matrix
+        self.R = np.array([[1]])  # control cost matrix
+
+        # declare linear observation
+        self.observation_func_type = FunctionType.LINEAR.value
+        self.H = np.eye(2, dtype=np.float32)
 
         # state transition noise model
         self.state_transition_noise_type = NoiseType.GAUSSIAN.value
         self.state_transition_noise_std = state_transition_noise_std
+        var = state_transition_noise_std * state_transition_noise_std
+        self.state_transition_covariance_matrix = np.array(
+            [
+                [var, 0],  # only have noise on position
+                [0, 1e-10],
+            ],
+            dtype=np.float32,
+        )
 
-        # Measurement noise model
-        # self.R = np.array([[process_var, 0], [0, process_var]], dtype=np.float32)
+        # observation noise model
         self.observation_noise_type = NoiseType.GAUSSIAN.value
         self.observation_noise_std = observation_noise_std
-        self.H = np.eye(2, dtype=np.float32)
-        # self.Q = np.array([[observation_noise_std]], dtype=np.float32)
+        var = observation_noise_std * observation_noise_std
+        self.observation_covariance_matrix = np.array(
+            [
+                [var, 0],  # only have noise on position
+                [0, 1e-10],
+            ],
+            dtype=np.float32,
+        )
 
         self.path = None
 
@@ -80,7 +97,9 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     @override
     def sample_state_transition(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
         new_state = np.array(self.robot_model.control(state, action, dt=0.01))
-        new_state = new_state + self.state_transition_noise_std * np.random.randn(*new_state.shape)  # add noise
+        new_state = new_state + np.random.multivariate_normal(
+            mean=[0, 0], cov=self.state_transition_covariance_matrix
+        )  # add noise
         new_state = new_state.reshape(-1).tolist()
 
         # Check bounds
@@ -105,8 +124,10 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     def sample_observation(self, state):
         # simulate measuring the position with noise
         state = np.array(state).reshape(-1, 1)
-        meas = self.H @ state + self.observation_noise_std * np.random.randn(*state.shape)
-        return meas.reshape(-1).tolist()
+        obs = self.H @ state + np.random.multivariate_normal(
+            mean=[0, 0], cov=self.observation_covariance_matrix
+        ).reshape(2, 1)  # add noise
+        return obs.reshape(-1).tolist()
 
     @override
     def reward_func(self, state: list, action: list | None = None) -> float:

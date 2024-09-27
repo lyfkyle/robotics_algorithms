@@ -1,33 +1,64 @@
 import math
 import numpy as np
 
+from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, NoiseType
+
 
 class KalmanFilter:
-    def __init__(self, initial_state, initial_covariance, A, B, R, H, Q):
+    def __init__(self, env: BaseEnv):
         """
+        Kalman filter.
+
+        When environment has linear state transtion and linear observation function with Gaussian noise, bayesian
+        filter rule can be simplified.
+
         State Transition: X = AX + BU + sigma
         Measurement Z = HX + delta
-        R: Process covariance matrix from sigma
-        Q. Measurement covariance matrix from delta
         """
+        assert env.state_transition_type == EnvType.STOCHASTIC.value
+        assert env.observability == EnvType.PARTIALLY_OBSERVABLE.value
+        assert env.state_transition_func_type == FunctionType.LINEAR.value
+        assert env.observation_func_type == FunctionType.LINEAR.value
+        assert env.state_transition_noise_type == NoiseType.GAUSSIAN.value
+        assert env.observation_noise_type == NoiseType.GAUSSIAN.value
 
-        self.state = initial_state
-        self.covariance = initial_covariance
-
-        # state_transition_func: x = Ax + bu + epsilon
-        self.A = A
-        self.B = B
-        self.R = R
+        # state_transition_func: x = Ax + Bu + sigma
+        self.A = env.A
+        self.B = env.B
+        self.R = env.state_transition_covariance_matrix
 
         # measurement function z = Hx + delta
-        self.H = H
-        self.Q = Q
+        self.H = env.H
+        self.Q = env.observation_covariance_matrix
+
+    def set_initial_state(self, state: list):
+        """
+        Set the initial state of the Kalman filter.
+
+        @param state, initial state
+        """
+        self.state = np.array(state)
+        self.covariance = np.eye(len(state))
+
+    def get_state(self):
+        return self.state.tolist()
+
+    def run(self, action, obs):
+        """
+        Run one iteration of the Kalman filter.
+
+        @param action, control
+        @param obs, observation
+        """
+        self.predict(action)
+        self.update(obs)
 
     def predict(self, control):
         """
+        Predict the state of the Kalman filter.
+
         @param control, control
         """
-
         new_state = self.A @ self.state + self.B @ control
         new_covariance = self.A @ self.covariance @ self.A.transpose() + self.R
 
@@ -36,6 +67,8 @@ class KalmanFilter:
 
     def update(self, measurement):
         """
+        Update the state of the Kalman filter.
+
         @param measurement, measurement
         """
 

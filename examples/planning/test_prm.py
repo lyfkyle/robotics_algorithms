@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from robotics_algorithm.env.two_d_world import TwoDWorldOmni
+from robotics_algorithm.env.continuous_world_2d import TwoDWorldOmni
 from robotics_algorithm.planning import ProbabilisticRoadmap
 
 # Initialize environment

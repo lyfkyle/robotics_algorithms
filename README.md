@@ -22,7 +22,15 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] Differential drive
   - [x] Cartpole
   - [x] Double Integrator
+  - [ ] Arm
+  - [ ] Car
+  - [ ] Quadrotor
+  - [ ] Quadruped
 - [ ] State Estimation
+  - [ ] Discrete bayes filter
+  - [x] Kalman filter
+  - [ ] Extended Kalman filter
+  - [ ] Particle filter
 - [ ] Planing
   - [x] Discrete Planning
     - [x] Dijkstra

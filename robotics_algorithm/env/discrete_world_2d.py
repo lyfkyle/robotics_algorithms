@@ -516,6 +516,16 @@ DEFAULT_GOAL = (49, 0)
 
 
 class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
+    """A 2D grid world where the robot must move from start to goal without hitting obstacles.
+
+    State: [x, y]
+    Action: [up, down, left, right]
+
+    Discrete state space.
+    Discrete action space.
+    Deterministic transition.
+    Fully observable.
+    """
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
