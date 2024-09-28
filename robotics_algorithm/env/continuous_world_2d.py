@@ -6,7 +6,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from robotics_algorithm.env.base_env import DeterministicEnv, FullyObservableEnv, ContinuousSpace, DiscreteSpace
+from robotics_algorithm.env.base_env import (
+    DeterministicEnv,
+    FullyObservableEnv,
+    ContinuousSpace,
+    DiscreteSpace,
+    StochasticEnv,
+    PartiallyObservableEnv,
+    NoiseType,
+)
 from robotics_algorithm.robot.differential_drive import DiffDrive
 from robotics_algorithm.utils import math_utils
 
@@ -16,16 +24,11 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class TwoDWorldDiffDrive(DeterministicEnv, FullyObservableEnv):
+class DiffDrive2DEnv:
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
     Action: [lin_vel, ang_vel]
-
-    Continuous state space.
-    Continuous action space.
-    Deterministic transition.
-    Fully observable.
 
     There are two modes.
     If user does not set a reference path, the reward only encourages robot to reach goal as fast as possible. This
@@ -46,30 +49,32 @@ class TwoDWorldDiffDrive(DeterministicEnv, FullyObservableEnv):
         super().__init__()
 
         self.size = size
-        self.maze = np.full((size, size), TwoDWorldDiffDrive.FREE_SPACE)
+        self.maze = np.full((size, size), DiffDrive2DEnvSimple.FREE_SPACE)
 
         self.state_space = ContinuousSpace(low=[0, 0, -math.pi], high=[self.size, self.size, math.pi])
         if not discrete_action:
             self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
         else:
-            self.action_space = DiscreteSpace([
-                (0.5, 0),
-                (0.5, math.radians(30)),
-                (0.5, -math.radians(30)),
-                (0.25, 0),
-                (0.25, math.radians(30)),
-                (0.25, -math.radians(30)),
-            ])
+            self.action_space = DiscreteSpace(
+                [
+                    (0.5, 0),
+                    (0.5, math.radians(30)),
+                    (0.5, -math.radians(30)),
+                    (0.25, 0),
+                    (0.25, math.radians(30)),
+                    (0.25, -math.radians(30)),
+                ]
+            )
 
         self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
         bounds = [
-            TwoDWorldDiffDrive.FREE_SPACE,
-            TwoDWorldDiffDrive.OBSTACLE,
-            TwoDWorldDiffDrive.START,
-            TwoDWorldDiffDrive.GOAL,
-            TwoDWorldDiffDrive.PATH,
-            TwoDWorldDiffDrive.WAYPOINT,
-            TwoDWorldDiffDrive.MAX_POINT_TYPE,
+            DiffDrive2DEnvSimple.FREE_SPACE,
+            DiffDrive2DEnvSimple.OBSTACLE,
+            DiffDrive2DEnvSimple.START,
+            DiffDrive2DEnvSimple.GOAL,
+            DiffDrive2DEnvSimple.PATH,
+            DiffDrive2DEnvSimple.WAYPOINT,
+            DiffDrive2DEnvSimple.MAX_POINT_TYPE,
         ]
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
@@ -125,22 +130,28 @@ class TwoDWorldDiffDrive(DeterministicEnv, FullyObservableEnv):
         reward = self.reward_func(state, new_state=new_state)
 
         # Compute term and info
+        term, trunc, info = self._get_state_info(new_state)
+
+        return new_state, reward, term, trunc, info
+
+    def _get_state_info(self, state):
+        # Compute term and info
         term = False
         info = {}
-        if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
+        if state[0] <= 0 or state[0] >= self.size or state[1] <= 0 or state[1] >= self.size:
             term = True
             info = {"success": False}
 
-        if not self.is_state_valid(new_state):
+        if not self.is_state_valid(state):
             term = True
             info = {"success": False}
 
         # Check goal state reached for termination
-        if self.is_state_similar(new_state, self.goal_state):
+        if self.is_state_similar(state, self.goal_state):
             term = True
             info = {"success": True}
 
-        return new_state, reward, term, False, info
+        return term, False, info
 
     @override
     def reward_func(self, state, action=None, new_state=None):
@@ -360,7 +371,127 @@ class TwoDWorldDiffDrive(DeterministicEnv, FullyObservableEnv):
         return nearest_idx
 
 
-class TwoDWorldOmni(TwoDWorldDiffDrive):
+class DiffDrive2DEnvSimple(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
+    """A differential drive robot must reach goal state in a 2d maze with obstacles.
+
+    State: [x, y, theta]
+    Action: [lin_vel, ang_vel]
+
+    Continuous state space.
+    Continuous action space.
+    Deterministic transition.
+    Fully observable.
+
+    There are two modes.
+    If user does not set a reference path, the reward only encourages robot to reach goal as fast as possible. This
+    environment hence behaves like a path planning environment.
+    If user sets a reference path, the reward will encourage the robot to track the path to reach the goal. Hence, the
+    environment behaves like a path following (control) environment.
+    """
+
+    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
+        DeterministicEnv.__init__(self)
+        FullyObservableEnv.__init__(self)
+
+
+class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEnv):
+    """A differential drive robot must reach goal state in a 2d maze with obstacles.
+
+    State: [x, y, theta]
+    Action: [lin_vel, ang_vel]
+
+    Continuous state space.
+    Continuous action space.
+    Stochastic transition.
+    Partially observable.
+
+    There are two modes.
+    If user does not set a reference path, the reward only encourages robot to reach goal as fast as possible. This
+    environment hence behaves like a path planning environment.
+    If user sets a reference path, the reward will encourage the robot to track the path to reach the goal. Hence, the
+    environment behaves like a path following (control) environment.
+    """
+
+    def __init__(
+        self,
+        size=10,
+        robot_radius=0.2,
+        action_dt=1.0,
+        ref_path=None,
+        discrete_action=False,
+        state_transition_noise_std=[0.1, 0.1, 0.1],
+        obs_noise_std=[0.1, 0.1, 0.1],
+    ):
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
+        StochasticEnv.__init__(self)
+        PartiallyObservableEnv.__init__(self)
+
+        self.state_transition_noise_type = NoiseType.GAUSSIAN.value
+        self.observation_noise_type = NoiseType.GAUSSIAN.value
+
+        self.state_transition_noise_std = state_transition_noise_std
+        self.obs_noise_std = obs_noise_std
+        self.state_transition_cov_matrix = np.diag(self.state_transition_noise_std**2)
+        self.obs_cov_matrix = np.diag(self.obs_noise_std**2)
+
+    @override
+    def sample_state_transition(self, state, action) -> tuple[list, float, bool, bool, dict]:
+        # compute next state
+        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
+        noise = np.random.multivariate_normal(
+            mean=np.zeros(self.state_space.state_size), cov=self.state_transition_cov_matrix
+        )
+        new_state = (np.array(new_state) + noise).tolist()
+
+        # Compute reward
+        reward = self.reward_func(state, new_state=new_state)
+
+        # Compute term and info
+        term, trunc, info = self._get_state_info(new_state)
+
+        return new_state, reward, term, trunc, info
+
+    @override
+    def sample_observation(self, state) -> list:
+        noise = np.random.multivariate_normal(mean=np.zeros(self.state_space.state_size), cov=self.obs_cov_matrix)
+        obs = (np.array(state) + noise).tolist()
+        return obs
+
+    def state_transition_jacobian(self, state, action, dt):
+        """
+        Return jocobian matrix of transition function wrt state at control
+        @state, state
+        @control, control
+        @return A, jacobian matrix
+        """
+
+        lin_vel = action[0]
+        theta = state[2]
+
+        # temp = vel / ang_vel
+        self.A = np.array(
+            [
+                [1, 0, -lin_vel * np.sin(theta) * dt],
+                [0, 1, lin_vel * np.cos(theta) * dt],
+                [0, 0, 1],
+            ]
+        )
+        return self.A
+
+    def observation_jacobian(self, state, obs):
+        """
+        Return observation_jacobian matrix.
+
+        @state, state
+        @obs, obs
+        """
+        self.H = np.eye(3, dtype=np.float32)
+
+        return self.H
+
+
+class OmniDriveTwoDEnv(DeterministicEnv, FullyObservableEnv):
     def __init__(self, size=10):
         super().__init__(size)
 
@@ -446,3 +577,5 @@ class TwoDWorldOmni(TwoDWorldDiffDrive):
         if self.state_samples is None:
             self.state_samples = []
         self.state_samples.append(state)
+
+
