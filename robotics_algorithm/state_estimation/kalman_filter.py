@@ -37,7 +37,7 @@ class KalmanFilter:
     def set_initial_state(self, state: list):
         """
         Set the initial state of filter.
-
+reward
         @param state, initial state
         """
         self.state = np.array(state)

@@ -24,7 +24,7 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class DiffDrive2DEnv:
+class DiffDrive2DEnv(object):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
@@ -217,7 +217,7 @@ class DiffDrive2DEnv:
 
     def _random_valid_state(self):
         while True:
-            robot_pos = np.random.uniform(self.state_space[0], self.state_space[1])
+            robot_pos = np.random.uniform(self.state_space.space[0], self.state_space.space[1])
             if self.is_state_valid(robot_pos):
                 break
 
@@ -311,7 +311,7 @@ class DiffDrive2DEnv:
                     marker="o",
                 )
 
-        if self.path:
+        if self.path is not None:
             for state in self.path:
                 plt.scatter(
                     state[0],
@@ -321,6 +321,7 @@ class DiffDrive2DEnv:
                     c="blue",
                     marker="o",
                 )
+
         if self.ref_path is not None:
             for state in self.ref_path:
                 plt.scatter(
@@ -390,9 +391,9 @@ class DiffDrive2DEnvSimple(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv)
     """
 
     def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
-        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
         DeterministicEnv.__init__(self)
         FullyObservableEnv.__init__(self)
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
 
 
 class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEnv):
@@ -423,17 +424,20 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         state_transition_noise_std=[0.1, 0.1, 0.1],
         obs_noise_std=[0.1, 0.1, 0.1],
     ):
-        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
         StochasticEnv.__init__(self)
         PartiallyObservableEnv.__init__(self)
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
 
         self.state_transition_noise_type = NoiseType.GAUSSIAN.value
         self.observation_noise_type = NoiseType.GAUSSIAN.value
 
         self.state_transition_noise_std = state_transition_noise_std
         self.obs_noise_std = obs_noise_std
-        self.state_transition_cov_matrix = np.diag(self.state_transition_noise_std**2)
-        self.obs_cov_matrix = np.diag(self.obs_noise_std**2)
+        self.state_transition_cov_matrix = np.eye(self.state_space.state_size)
+        np.fill_diagonal(self.state_transition_cov_matrix, np.array(self.state_transition_noise_std)**2)
+
+        self.obs_cov_matrix = np.eye(self.state_space.state_size)
+        np.fill_diagonal(self.obs_cov_matrix, np.array(self.obs_noise_std)**2)
 
     @override
     def sample_state_transition(self, state, action) -> tuple[list, float, bool, bool, dict]:
@@ -458,22 +462,21 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         obs = (np.array(state) + noise).tolist()
         return obs
 
-    def state_transition_jacobian(self, state, action, dt):
+    def state_transition_jacobian(self, state, action):
         """
         Return jocobian matrix of transition function wrt state at control
         @state, state
-        @control, control
+        @action, action
         @return A, jacobian matrix
         """
-
         lin_vel = action[0]
         theta = state[2]
 
         # temp = vel / ang_vel
         self.A = np.array(
             [
-                [1, 0, -lin_vel * np.sin(theta) * dt],
-                [0, 1, lin_vel * np.cos(theta) * dt],
+                [1, 0, -lin_vel * np.sin(theta) * self.action_dt],
+                [0, 1, lin_vel * np.cos(theta) * self.action_dt],
                 [0, 0, 1],
             ]
         )
@@ -577,5 +580,3 @@ class OmniDriveTwoDEnv(DeterministicEnv, FullyObservableEnv):
         if self.state_samples is None:
             self.state_samples = []
         self.state_samples.append(state)
-
-
