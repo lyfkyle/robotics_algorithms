@@ -74,13 +74,13 @@ class ValueIteration:
             max_change = -np.inf
             for state in states:
                 for action in actions:
-                    results, probs = self.env.state_transition_func(state, action)
+                    new_states, probs = self.env.state_transition_func(state, action)
 
                     # calculate Q values
                     q_sa = 0
-                    for i, result in enumerate(results):
-                        next_state, reward, term, trunc, info = result
-                        q_sa += probs[i] * (reward + discount_factor * v_state[next_state])
+                    for i, new_state in enumerate(new_states):
+                        reward = self.env.reward_func(state, action, new_state)
+                        q_sa += probs[i] * (reward + discount_factor * v_state[new_state])
 
                     # update Q(s,a)
                     Q[state][action] = q_sa

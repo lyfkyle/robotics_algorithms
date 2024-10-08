@@ -74,7 +74,7 @@ class AStar:
             if best_state_key not in unvisited_states:
                 continue
             else:
-                unvisited_states.remove(best_state)
+                unvisited_states.remove(best_state_key)
 
             # If goal state has been added.
             if best_state_key == goal_key:

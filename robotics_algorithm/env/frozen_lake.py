@@ -3,7 +3,7 @@ from typing_extensions import override
 import numpy as np
 import matplotlib.pyplot as plt
 
-from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace
+from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace, DistributionType
 
 
 class FrozenLake(MDPEnv):
@@ -39,6 +39,7 @@ class FrozenLake(MDPEnv):
         # Define spaces
         self.state_space = DiscreteSpace([tuple(s) for s in all_states])
         self.action_space = DiscreteSpace([0, 1, 2, 3])  #  0: up, 1: right, 2: down, 3: left
+        self.state_transition_dist_type = DistributionType.CATEGORICAL.value
 
     @override
     def reset(self, random_env=True) -> tuple:
@@ -56,68 +57,69 @@ class FrozenLake(MDPEnv):
         return self.cur_state, {}
 
     @override
-    def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:
+    def state_transition_func(self, state: tuple, action: float) -> tuple[tuple, float]:
         # sanity check
-        info = self._get_state_info(state)
-        assert not info["term"]
+        term, trunc, info = self.get_state_info(state)
+        assert not term
 
         i, j = state
 
-        next_states = []
+        new_states = []
         if action == 0:
-            next_states.append((i, min(j + 1, self.size - 1)))
-            next_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
-            next_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
+            new_states.append([i, min(j + 1, self.size - 1)])
+            new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
+            new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
         elif action == 1:
-            next_states.append((min(i + 1, self.size - 1), j))
-            next_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
-            next_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
+            new_states.append((min(i + 1, self.size - 1), j))
+            new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
+            new_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
         elif action == 2:
-            next_states.append((i, max(0, j - 1)))
-            next_states.append((max(0, i - 1), max(0, j - 1)))
-            next_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
+            new_states.append((i, max(0, j - 1)))
+            new_states.append((max(0, i - 1), max(0, j - 1)))
+            new_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
         elif action == 3:
-            next_states.append((max(0, i - 1), j))
-            next_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
-            next_states.append((max(0, i - 1), max(0, j - 1)))
+            new_states.append((max(0, i - 1), j))
+            new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
+            new_states.append((max(0, i - 1), max(0, j - 1)))
         probs = [0.8, 0.1, 0.1]
 
-        results = []
-        for next_state in next_states:
-            reward = self.reward_func(next_state)
-            info = self._get_state_info(next_state)
-            results.append([next_state, reward, info["term"], False, info])
+        # results = []
+        # for next_state in next_states:
+        #     reward = self.reward_func(next_state)
+        #     term, trunc, info = self.get_state_info(next_state)
+        #     results.append([next_state, reward, info["term"], False, info])
 
-        return results, probs
+        return new_states, probs
 
     @override
     def get_available_actions(self, state: tuple) -> list[tuple]:
         return self.action_space
 
     @override
-    def _get_state_info(self, state: tuple) -> dict:
+    def get_state_info(self, state: tuple) -> dict:
         info = {}
+        term = False
         if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
-            info["term"] = True
+            term = True
             info["success"] = True
         elif state in self.obstacles:
-            info["term"] = True
+            term = True
             info["success"] = False
         else:
-            info["term"] = False
+            term = False
             info["success"] = False
 
-        return info
+        return term, False, info
 
     @override
-    def reward_func(self, state: tuple, new_state: tuple | None = None) -> float:
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.
         # Transition to obstacle gives obstacle reward.
         # Transition to free gives step reward.
-        if state == self.goal_state:
+        if new_state == self.goal_state:
             reward = 100
-        elif state in self.obstacles:
+        elif new_state in self.obstacles:
             reward = -100
         else:
             if not self.dense_reward:
@@ -125,7 +127,7 @@ class FrozenLake(MDPEnv):
             else:
                 # Negative of dist as penalty.
                 # This encourages moving to goal.
-                reward = -(abs(state[0] - self.goal_state[0]) + abs(state[1] - self.goal_state[1]))
+                reward = -(abs(new_state[0] - self.goal_state[0]) + abs(new_state[1] - self.goal_state[1]))
 
         return reward
 

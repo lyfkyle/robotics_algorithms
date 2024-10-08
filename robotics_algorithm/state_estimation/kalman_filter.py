@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, NoiseType
+from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, DistributionType
 
 
 class KalmanFilter:
@@ -19,8 +19,8 @@ class KalmanFilter:
         assert env.observability == EnvType.PARTIALLY_OBSERVABLE.value
         assert env.state_transition_func_type == FunctionType.LINEAR.value
         assert env.observation_func_type == FunctionType.LINEAR.value
-        assert env.state_transition_noise_type == NoiseType.GAUSSIAN.value
-        assert env.observation_noise_type == NoiseType.GAUSSIAN.value
+        assert env.state_transition_dist_type == DistributionType.GAUSSIAN.value
+        assert env.observation_dist_type == DistributionType.GAUSSIAN.value
 
         # state_transition_func: x = Ax + Bu + sigma
         self.A = env.A

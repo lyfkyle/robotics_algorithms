@@ -51,9 +51,8 @@ class DiscreteBayesFilter:
 
         # In discrete case, just add them up.
         for state in self.env.state_space.get_all():
-            results, probs = self.env.state_transition_func(state, action)
-            for result, prob in zip(results, probs):
-                new_state = result[0]
+            new_states, probs = self.env.state_transition_func(state, action)
+            for new_state, prob in zip(new_states, probs):
                 new_state_belief[tuple(new_state)] += prob * self.state_belief[tuple(state)]
 
         self.state_belief = new_state_belief

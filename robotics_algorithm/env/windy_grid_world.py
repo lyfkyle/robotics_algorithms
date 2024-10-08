@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from typing_extensions import override
 
-from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace
+from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace, DistributionType
 
 GRID_HEIGHT = 7
 GRID_WIDTH = 10
@@ -39,6 +39,7 @@ class WindyGridWorld(MDPEnv):
         # Define spaces
         self.state_space = DiscreteSpace([(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)])
         self.action_space = DiscreteSpace([0, 1, 2, 3])  # action, 0: up, 1: right, 2: down, 3: left
+        self.state_transition_dist_type = DistributionType.CATEGORICAL.value
 
         self.start_state = start
         self.cur_state = start
@@ -53,7 +54,7 @@ class WindyGridWorld(MDPEnv):
         # NOTE: This environment has deterministic transition
         i, j = state
 
-        next_states = []
+        new_states = []
         if action == 0:
             next_state = (i, min(j + 1 + self.wind[i], GRID_HEIGHT - 1))
         elif action == 1:
@@ -65,35 +66,30 @@ class WindyGridWorld(MDPEnv):
             new_i = max(i - 1, 0)
             next_state = (new_i, min(j + self.wind[new_i], GRID_HEIGHT - 1))
 
-        next_states.append(next_state)
+        new_states.append(next_state)
         probs = [1.0]
 
-        results = []
-        for next_state in next_states:
-            reward = self.reward_func(next_state)
-            info = self._get_state_info(next_state)
-            results.append([next_state, reward, info["term"], False, info])
-
-        return results, probs
+        return new_states, probs
 
     @override
-    def _get_state_info(self, state: tuple) -> dict:
+    def get_state_info(self, state: tuple) -> dict:
         info = {}
+        term = False
         if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
-            info["term"] = True
+            term = True
             info["success"] = True
         else:
-            info["term"] = False
+            term = False
             info["success"] = False
 
-        return info
+        return term, False, info
 
     @override
-    def reward_func(self, state: tuple, new_state: tuple | None = None) -> float:
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.
         # Transition to free gives step reward.
-        if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
+        if new_state[0] == self.goal_state[0] and new_state[1] == self.goal_state[1]:
             reward = self.goal_reward
         else:
             reward = self.step_reward

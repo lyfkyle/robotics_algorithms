@@ -13,7 +13,7 @@ from robotics_algorithm.env.base_env import (
     DiscreteSpace,
     StochasticEnv,
     PartiallyObservableEnv,
-    NoiseType,
+    DistributionType,
 )
 from robotics_algorithm.robot.differential_drive import DiffDrive
 from robotics_algorithm.utils import math_utils
@@ -126,15 +126,10 @@ class DiffDrive2DEnv(object):
         # compute next state
         new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
 
-        # Compute reward
-        reward = self.reward_func(state, new_state=new_state)
+        return new_state
 
-        # Compute term and info
-        term, trunc, info = self._get_state_info(new_state)
-
-        return new_state, reward, term, trunc, info
-
-    def _get_state_info(self, state):
+    @override
+    def get_state_info(self, state):
         # Compute term and info
         term = False
         info = {}
@@ -428,33 +423,35 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         PartiallyObservableEnv.__init__(self)
         DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
 
-        self.state_transition_noise_type = NoiseType.GAUSSIAN.value
-        self.observation_noise_type = NoiseType.GAUSSIAN.value
-
+        self.state_transition_dist_type = DistributionType.GAUSSIAN.value
         self.state_transition_noise_std = state_transition_noise_std
         self.obs_noise_std = obs_noise_std
         self.state_transition_cov_matrix = np.eye(self.state_space.state_size)
-        np.fill_diagonal(self.state_transition_cov_matrix, np.array(self.state_transition_noise_std)**2)
+        np.fill_diagonal(self.state_transition_cov_matrix, np.array(self.state_transition_noise_std) ** 2)
 
+        self.observation_dist_type = DistributionType.GAUSSIAN.value
         self.obs_cov_matrix = np.eye(self.state_space.state_size)
-        np.fill_diagonal(self.obs_cov_matrix, np.array(self.obs_noise_std)**2)
+        np.fill_diagonal(self.obs_cov_matrix, np.array(self.obs_noise_std) ** 2)
 
     @override
     def sample_state_transition(self, state, action) -> tuple[list, float, bool, bool, dict]:
         # compute next state
-        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
+        # new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
+        # NOTE: as the noise is Gaussian, state_transition_func returns mean
+        mean_new_state = self.state_transition_func(state, action)[0]
+
         noise = np.random.multivariate_normal(
             mean=np.zeros(self.state_space.state_size), cov=self.state_transition_cov_matrix
         )
-        new_state = (np.array(new_state) + noise).tolist()
+        mean_new_state = (np.array(mean_new_state) + noise).tolist()
 
         # Compute reward
-        reward = self.reward_func(state, new_state=new_state)
+        reward = self.reward_func(state, new_state=mean_new_state)
 
         # Compute term and info
-        term, trunc, info = self._get_state_info(new_state)
+        term, trunc, info = self.get_state_info(mean_new_state)
 
-        return new_state, reward, term, trunc, info
+        return mean_new_state, reward, term, trunc, info
 
     @override
     def sample_observation(self, state) -> list:
@@ -482,19 +479,19 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         )
         return self.A
 
-    def observation_jacobian(self, state, obs):
+    def observation_jacobian(self, state, observation):
         """
         Return observation_jacobian matrix.
 
         @state, state
-        @obs, obs
+        @observation, observation
         """
         self.H = np.eye(3, dtype=np.float32)
 
         return self.H
 
 
-class OmniDriveTwoDEnv(DeterministicEnv, FullyObservableEnv):
+class OmniDriveTwoDEnv(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     def __init__(self, size=10):
         super().__init__(size)
 
@@ -517,21 +514,9 @@ class OmniDriveTwoDEnv(DeterministicEnv, FullyObservableEnv):
         return self.cur_state, {}
 
     @override
-    def sample_available_actions(self, state: Any, num_samples=1) -> list[Any]:
-        return np.random.sample(self.state_space[0], self.state_space[1], num_samples)
-
-    @override
     def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
-        # new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=1.0).tolist()
         new_state = action  # action is the new state
-
-        if new_state[0] <= 0 or new_state[1] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
-            return state, 0, True, False, {"success": False}
-
-        if not self.is_state_valid(new_state):
-            return state, 0, True, False, {"success": False}
-
-        return tuple(new_state), 1, False, False, {}
+        return new_state
 
     def extend(self, state1, state2, step_size=0.1):
         s1 = np.array(state1)

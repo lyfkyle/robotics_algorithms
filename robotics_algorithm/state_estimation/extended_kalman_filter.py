@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, NoiseType
+from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, DistributionType
 
 class ExtendedKalmanFilter:
     def __init__(self, env: BaseEnv):
@@ -16,8 +16,8 @@ class ExtendedKalmanFilter:
         assert env.observability == EnvType.PARTIALLY_OBSERVABLE.value
         assert env.state_transition_func_type == FunctionType.GENERAL.value
         assert env.observation_func_type == FunctionType.GENERAL.value
-        assert env.state_transition_noise_type == NoiseType.GAUSSIAN.value
-        assert env.observation_noise_type == NoiseType.GAUSSIAN.value
+        assert env.state_transition_dist_type == DistributionType.GAUSSIAN.value
+        assert env.observation_dist_type == DistributionType.GAUSSIAN.value
 
         # self.state = initial_state
         # self.covariance = initial_covariance

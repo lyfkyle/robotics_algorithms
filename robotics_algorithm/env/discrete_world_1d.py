@@ -3,7 +3,7 @@ from typing_extensions import override
 import numpy as np
 import matplotlib.pyplot as plt
 
-from robotics_algorithm.env.base_env import StochasticEnv, PartiallyObservableEnv, DiscreteSpace
+from robotics_algorithm.env.base_env import StochasticEnv, PartiallyObservableEnv, DiscreteSpace, DistributionType
 
 # center value being the probability of perfect control
 TRANSITION_PROB = [0.05, 0.1, 0.7, 0.1, 0.05]
@@ -33,6 +33,8 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
 
         self.state_transition_prob = state_transition_prob
         self.obs_prob = obs_prob
+        self.state_transition_dist_type = DistributionType.CATEGORICAL.value
+        self.observation_dist_type = DistributionType.CATEGORICAL.value
 
     @override
     def reset(self):
@@ -60,28 +62,22 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         new_states = [[x] for x in range(new_state - tmp, new_state + tmp + 1)]
         probs = self.state_transition_prob
 
-        results = []
-        for new_state in new_states:
-            reward = self.reward_func(new_state)
-            term, trunc, info = self._get_state_info(new_state)
-
+        for i in range(len(new_states)):
             # clamp state
-            if new_state[0] < 0:
-                new_state = [0]
-            if new_state[0] >= self.size:
-                new_state = [self.size - 1]
+            if new_states[i][0] < 0:
+                new_states[i] = [0]
+            if new_states[i][0] >= self.size:
+                new_states[i] = [self.size - 1]
 
-            results.append([new_state, reward, term, trunc, info])
-
-        return results, probs
+        return new_states, probs
 
     @override
-    def reward_func(self, state: list) -> float:
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
         # Check bounds
-        if state[0] < 0 or state[0] >= self.size:
+        if new_state[0] < 0 or new_state[0] >= self.size:
             return -100
 
-        return -abs(state[0])
+        return -abs(new_state[0])
 
     @override
     def observation_func(self, state: list) -> tuple[list[list], list[float]]:
@@ -92,7 +88,8 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
 
         return obss, probs
 
-    def _get_state_info(self, state: list) -> tuple[bool, bool, dict]:
+    @override
+    def get_state_info(self, state: list) -> tuple[bool, bool, dict]:
         term = False
         info = {}
         info["success"] = False

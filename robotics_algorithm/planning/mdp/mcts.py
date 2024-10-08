@@ -207,11 +207,16 @@ class MCTS:
             parent_node = parent_node.parent
 
     def _sample_step(self, state, action):
-        results, probs = self.env.state_transition_func(state, action)
-        idx = choice(np.arange(len(results)), 1, p=probs)[
+        new_states, probs = self.env.state_transition_func(state, action)
+        idx = choice(np.arange(len(new_states)), 1, p=probs)[
             0
         ]  # choose new state according to the transition probability.
-        return results[idx], probs[idx]
+
+        new_state = new_states[idx]
+        reward = self.env.reward_func(state, action, new_state)
+        term, trunc, info = self.env.get_state_info(new_state)
+
+        return (new_state, reward, term, trunc, info), probs[idx]
 
     def _get_q_value(self, state, action):
         return self.total_q_value[state][action] / self.state_action_visit_cnt[state][action]
