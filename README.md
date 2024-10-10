@@ -55,4 +55,21 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] LQR
   - [x] MPPI
   - [x] CEM-MPC
-- [ ] Learning
+- [ ] Imitation learning
+- [ ] Reinforcement learning
+  - [ ] Tabular
+  - [ ] Function approximation 
+- [ ] Other Environment
+  - [x] Frozen lake
+  - [x] Cliff walking
+  - [x] Windy gridworld 
+  - [x] 1D navigation
+    - [x] Deterministic and fully-observable
+    - [x] Stochastic and partially-observable
+  - [x] 2D navigation
+    - [x] Deterministic and fully-observable
+    - [ ] Stochastic and partially-observable
+  - [ ] 2D localization
+  - [ ] 2D SLAM  
+  - [ ] Multi-arm bandits
+  - [ ] Tiger 
