@@ -2,11 +2,11 @@
 
 ![logo](/doc/logo.jpg "logo")
 
-This repository contains pure-python implementation for essential robotics algorithms. 
+This repository contains pure-python implementation for essential robotics algorithms.
 
 The main benefits are:
 1. Have a single source of truth of various algorithms with clear explanation.
-2. Implemented with clear separation between dynamics, environment and algorithm, emphasizing that a lot of algorithms, e.g planing under uncertainties, optimal control, share the same underlying problem formulation，eg. MDP. 
+2. Implemented with clear separation between dynamics, environment and algorithm, emphasizing that a lot of algorithms, e.g planing under uncertainties, optimal control, share the same underlying problem formulation，eg. MDP.
 
 ## Scope
 
@@ -32,7 +32,7 @@ This repository is undergoing significant development. Here is the status checkl
 - [ ] State Estimation
   - [x] Discrete bayes filter
   - [x] Kalman filter
-  - [ ] Extended Kalman filter
+  - [x] Extended Kalman filter
   - [ ] Particle filter
 - [ ] Planing
   - [x] Discrete Planning
@@ -58,11 +58,11 @@ This repository is undergoing significant development. Here is the status checkl
 - [ ] Imitation learning
 - [ ] Reinforcement learning
   - [ ] Tabular
-  - [ ] Function approximation 
+  - [ ] Function approximation
 - [ ] Other Environment
   - [x] Frozen lake
   - [x] Cliff walking
-  - [x] Windy gridworld 
+  - [x] Windy gridworld
   - [x] 1D navigation
     - [x] Deterministic and fully-observable
     - [x] Stochastic and partially-observable
@@ -70,6 +70,6 @@ This repository is undergoing significant development. Here is the status checkl
     - [x] Deterministic and fully-observable
     - [ ] Stochastic and partially-observable
   - [ ] 2D localization
-  - [ ] 2D SLAM  
+  - [ ] 2D SLAM
   - [ ] Multi-arm bandits
-  - [ ] Tiger 
+  - [ ] Tiger
