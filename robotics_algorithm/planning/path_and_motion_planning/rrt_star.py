@@ -81,7 +81,7 @@ class RRTStar:
 
             self.extend(v_target)
 
-        if goal in self.tree:
+        if self.tree.has_node(goal):
             path = nx.shortest_path(self.tree, start, goal, weight="weight")
             path_len = nx.shortest_path_length(self.tree, start, goal, weight="weight")
             print(path, path_len)
@@ -181,8 +181,6 @@ class RRTStar:
 # TODO
 class RRTStarConnect:
     def __init__(self, num_of_samples):
-/*************  ✨ Codeium Command ⭐  *************/
-/******  e4fb788b-15b1-4f5e-89a4-a1df2b898be3  *******/
         self.num_of_samples = num_of_samples
         self.start_rrt = RRTStar()
         self.goal_rrt = RRTStar()

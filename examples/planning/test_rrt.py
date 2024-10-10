@@ -13,7 +13,7 @@ FIX_MAZE = True
 
 # -------- Helper Functions -------------
 def sample_func(env):
-    random_state = env.sample_state()
+    random_state = env.random_state()
     return tuple(random_state)
 
 

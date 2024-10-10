@@ -7,7 +7,7 @@ import networkx as nx
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
-class ProbabilisticRoadmap(object):
+class ProbabilisticRoadmap:
     def __init__(
         self,
         env: BaseEnv,

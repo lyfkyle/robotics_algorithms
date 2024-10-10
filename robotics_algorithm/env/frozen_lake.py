@@ -66,7 +66,7 @@ class FrozenLake(MDPEnv):
 
         new_states = []
         if action == 0:
-            new_states.append([i, min(j + 1, self.size - 1)])
+            new_states.append((i, min(j + 1, self.size - 1)))
             new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
             new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
         elif action == 1:

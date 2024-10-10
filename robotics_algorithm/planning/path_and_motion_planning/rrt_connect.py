@@ -9,7 +9,7 @@ import networkx as nx
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
-class RRT(object):
+class RRT:
     TRAPPED = 0
     REACHED = 1
 
@@ -136,7 +136,7 @@ class RRT(object):
         return self.tree
 
 
-class RRTConnect(object):
+class RRTConnect:
     def __init__(self, env: BaseEnv, sample_func: Callable, vertex_expand_func: Callable, num_of_samples: int):
         """Constructor.
 
