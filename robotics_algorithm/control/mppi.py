@@ -4,7 +4,7 @@ import numpy as np
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 
 
-class MPPI(object):
+class MPPI:
     """
     Model Predictive Path Integral controller.
 
@@ -52,7 +52,7 @@ class MPPI(object):
         self.param_lambda = param_lambda
         self.filter_window_size = filter_window_size
 
-        self.action_shape = np.array(env.sample_action()).shape
+        self.action_shape = np.array(env.random_action()).shape
         self.prev_actions = np.tile(self.action_mean, (self.sample_traj_len, 1))
         self.nominal_action = np.tile(self.action_mean, (self.sample_traj_len, 1))
 

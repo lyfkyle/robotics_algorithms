@@ -5,7 +5,7 @@ import scipy.linalg
 from robotics_algorithm.env.base_env import BaseEnv, FunctionType, SpaceType
 
 
-class LQR(object):
+class LQR:
     """Implements Linear-quadratic regulator.
 
     # Given a system with linear state transition function and quadratic cost function, the optimal control strategy

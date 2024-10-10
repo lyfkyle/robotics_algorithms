@@ -4,7 +4,7 @@ from scipy.stats import truncnorm
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 
 
-class CEMMPC(object):
+class CEMMPC:
     """Implements Cross-entropy method for model-predictive control.
 
     Assuming a Gaussion policy, the general idea is to sample a bunch of trajectories using env state transition model

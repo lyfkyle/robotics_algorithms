@@ -9,7 +9,7 @@ import networkx as nx
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
-class RRTStar(object):
+class RRTStar:
     TRAPPED = 0
     REACHED = 1
 
@@ -179,8 +179,10 @@ class RRTStar(object):
 
 
 # TODO
-class RRTStarConnect(object):
+class RRTStarConnect:
     def __init__(self, num_of_samples):
+/*************  ✨ Codeium Command ⭐  *************/
+/******  e4fb788b-15b1-4f5e-89a4-a1df2b898be3  *******/
         self.num_of_samples = num_of_samples
         self.start_rrt = RRTStar()
         self.goal_rrt = RRTStar()

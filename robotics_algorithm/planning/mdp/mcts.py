@@ -152,7 +152,7 @@ class MCTS:
 
         current_discount_factor = self.discount_factor
         for _ in range(self.max_simulation_eps_len):
-            random_action = self.env.sample_action()
+            random_action = self.env.random_action()
             result, _ = self._sample_step(state, random_action)
             new_state, reward, term, trunc, info = result
 

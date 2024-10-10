@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Cartpole(object):
+class Cartpole:
     def __init__(self):
         self.kinematics_integrator = "euler"
         self.gravity = 9.8
