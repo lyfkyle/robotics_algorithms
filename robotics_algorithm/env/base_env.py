@@ -30,7 +30,7 @@ class DistributionType(Enum):
     GAUSSIAN = 2
 
 
-class BaseEnv(object):
+class BaseEnv:
     """
     Base class for environment that is used for planning, control and learning.
 
@@ -93,16 +93,16 @@ class BaseEnv(object):
         # Conform to gymnasium env
         return new_obs, reward, term, trunc, info
 
-    def sample_state(self) -> list:
+    def random_state(self) -> list:
         """Sample a state"""
         return self.state_space.sample()
 
-    def sample_action(self) -> list:
+    def random_action(self) -> list:
         """Sample an action"""
         return self.action_space.sample()
 
-    def sample_observation(self, state: list) -> list:
-        """Sample an observation for the state."""
+    def random_observation(self) -> list:
+        """Sample an random observation"""
         return self.observation_space.sample()
 
     def sample_state_transition(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
@@ -119,6 +119,10 @@ class BaseEnv(object):
             trunc (bool): whether the episode is truncated
             info (dict): additional info
         """
+        raise NotImplementedError()
+
+    def sample_observation(self, state: list) -> list:
+        """Sample an observation for the state."""
         raise NotImplementedError()
 
     def state_transition_func(self, state: list, action: list) -> list:
@@ -194,7 +198,7 @@ class BaseEnv(object):
         raise NotImplementedError()
 
 
-class DiscreteSpace(object):
+class DiscreteSpace:
     def __init__(self, values):
         self.type = SpaceType.DISCRETE.value
         self.space = values
@@ -215,7 +219,7 @@ class DiscreteSpace(object):
         return self.space[idx]
 
 
-class ContinuousSpace(object):
+class ContinuousSpace:
     def __init__(self, low, high):
         self.type = SpaceType.CONTINUOUS.value
         self.space = [low, high]

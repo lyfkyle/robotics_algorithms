@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 from robotics_algorithm.env.base_env import (
+    BaseEnv,
     DeterministicEnv,
     FullyObservableEnv,
     ContinuousSpace,
@@ -24,7 +25,7 @@ DEFAULT_START = [0.5, 0.5, 0]
 DEFAULT_GOAL = [9.0, 9.0, math.radians(90)]
 
 
-class DiffDrive2DEnv(object):
+class DiffDrive2DEnv(BaseEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
@@ -83,6 +84,7 @@ class DiffDrive2DEnv(object):
         self.action_dt = action_dt
 
         self.path = None
+        self.path_dict = {}
         self.state_samples = None
 
         # Path following weights
@@ -96,7 +98,7 @@ class DiffDrive2DEnv(object):
         self._fig_created = False
 
     @override
-    def reset(self, random_env=True):
+    def reset(self, empty=False, random_env=True):
         if random_env:
             self._random_obstacles()
             self.start_state = self._random_valid_state()
@@ -105,11 +107,16 @@ class DiffDrive2DEnv(object):
             self.obstacles = DEFAULT_OBSTACLES
             self.start_state = DEFAULT_START
             self.goal_state = DEFAULT_GOAL
+
+        # no obstacles if empty
+        if empty:
+            self.obstacles = []
+
         self.ref_path = None
         self.cur_ref_path_idx = 0
         self.cur_state = self.start_state.copy()
 
-        return self.cur_state, {}
+        return self.sample_observation(self.cur_state), {}
 
     @override
     def step(self, action):
@@ -245,13 +252,16 @@ class DiffDrive2DEnv(object):
 
         self.path = interpolated_path
 
-    def add_state_path(self, path):
+    def add_state_path(self, path, id=None):
         """Add a path for visualization.
 
         Args:
             path (list(list)): the path.
         """
-        self.path = path
+        if id is None:
+            self.path = path
+        else:
+            self.path_dict[id] = path
 
     def render(self):
         if self.interactive_viz:
@@ -307,31 +317,40 @@ class DiffDrive2DEnv(object):
                 )
 
         if self.path is not None:
-            for state in self.path:
-                plt.scatter(
-                    state[0],
-                    state[1],
-                    # s=(s * self.robot_radius * 2) ** 2,
-                    s=(s * 0.01 * 2) ** 2,
-                    c="blue",
-                    marker="o",
-                )
+            plt.plot(
+                [s[0] for s in self.path],
+                [s[1] for s in self.path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                c="green",
+                marker="o",
+            )
 
         if self.ref_path is not None:
-            for state in self.ref_path:
-                plt.scatter(
-                    state[0],
-                    state[1],
-                    # s=(s * self.robot_radius * 2) ** 2,
-                    s=(s * 0.01 * 2) ** 2,
-                    c="green",
-                    marker="o",
-                )
+            plt.plot(
+                [s[0] for s in self.ref_path],
+                [s[1] for s in self.ref_path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                c="green",
+                marker="o",
+            )
+
+        for key, path in self.path_dict.items():
+            plt.plot(
+                [s[0] for s in path],
+                [s[1] for s in path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                marker="o",
+                label=key,
+            )
 
         plt.xlim(0, self.size)
         plt.xticks(np.arange(self.size))
         plt.ylim(0, self.size)
         plt.yticks(np.arange(self.size))
+        plt.legend()
 
         if self.interactive_viz:
             plt.pause(0.01)
@@ -386,6 +405,8 @@ class DiffDrive2DEnvSimple(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv)
     """
 
     def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
+        # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
+        #       DiffDrive2DEnv last.
         DeterministicEnv.__init__(self)
         FullyObservableEnv.__init__(self)
         DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
@@ -416,48 +437,33 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         action_dt=1.0,
         ref_path=None,
         discrete_action=False,
-        state_transition_noise_std=[0.1, 0.1, 0.1],
-        obs_noise_std=[0.1, 0.1, 0.1],
+        state_transition_noise_std=[0.01, 0.01, 0.01],
+        obs_noise_std=[0.05, 0.05, 0.05],
     ):
+        # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
+        #       DiffDrive2DEnv last.
         StochasticEnv.__init__(self)
         PartiallyObservableEnv.__init__(self)
         DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
 
         self.state_transition_dist_type = DistributionType.GAUSSIAN.value
-        self.state_transition_noise_std = state_transition_noise_std
-        self.obs_noise_std = obs_noise_std
+        self.state_transition_noise_var = np.array(state_transition_noise_std) ** 2
         self.state_transition_cov_matrix = np.eye(self.state_space.state_size)
-        np.fill_diagonal(self.state_transition_cov_matrix, np.array(self.state_transition_noise_std) ** 2)
+        np.fill_diagonal(self.state_transition_cov_matrix, self.state_transition_noise_var)
 
         self.observation_dist_type = DistributionType.GAUSSIAN.value
+        self.observation_var = np.array(obs_noise_std) ** 2
         self.obs_cov_matrix = np.eye(self.state_space.state_size)
-        np.fill_diagonal(self.obs_cov_matrix, np.array(self.obs_noise_std) ** 2)
+        np.fill_diagonal(self.obs_cov_matrix, self.observation_var)
 
     @override
-    def sample_state_transition(self, state, action) -> tuple[list, float, bool, bool, dict]:
-        # compute next state
-        # new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
-        # NOTE: as the noise is Gaussian, state_transition_func returns mean
-        mean_new_state = self.state_transition_func(state, action)[0]
-
-        noise = np.random.multivariate_normal(
-            mean=np.zeros(self.state_space.state_size), cov=self.state_transition_cov_matrix
-        )
-        mean_new_state = (np.array(mean_new_state) + noise).tolist()
-
-        # Compute reward
-        reward = self.reward_func(state, new_state=mean_new_state)
-
-        # Compute term and info
-        term, trunc, info = self.get_state_info(mean_new_state)
-
-        return mean_new_state, reward, term, trunc, info
+    def state_transition_func(self, state, action) -> tuple[list, list]:
+        mean_new_state = DiffDrive2DEnv.state_transition_func(self, state, action)
+        return mean_new_state, self.state_transition_noise_var.tolist()
 
     @override
-    def sample_observation(self, state) -> list:
-        noise = np.random.multivariate_normal(mean=np.zeros(self.state_space.state_size), cov=self.obs_cov_matrix)
-        obs = (np.array(state) + noise).tolist()
-        return obs
+    def observation_func(self, state) -> tuple[list, list]:
+        return state, self.observation_var.tolist()
 
     def state_transition_jacobian(self, state, action):
         """

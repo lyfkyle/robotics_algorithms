@@ -83,7 +83,7 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
 
     @override
     def reset(self):
-        self.start_state = self.sample_state()
+        self.start_state = self.random_state()
         self.start_state[1] = 0.0  # zero velocity
         self.goal_state = [0, 0]  # fixed
         self.cur_state = self.start_state.copy()
