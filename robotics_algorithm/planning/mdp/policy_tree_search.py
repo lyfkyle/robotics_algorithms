@@ -36,26 +36,28 @@ class PolicyTreeSearch:
         actions = self.env.action_space.get_all()
         return actions[q.argmax()]
 
-    def _compute_state_value(self, env, state, cur_depth):
+    def _compute_state_value(self, env: MDPEnv, state, cur_depth):
         q = np.zeros(env.action_space.size)
 
         # If maximum depth is not reached, recurse deeper
         if cur_depth <= self.max_depth:
             actions = env.action_space.get_all()
             for action_idx, action in enumerate(actions):
-                results, probs = env.state_transition_func(state, action)
+                new_states, probs = env.state_transition_func(state, action)
 
                 # calculate Q values
                 q_sa = 0
-                for i, result in enumerate(results):
-                    next_state, reward, term, trunc, info = result
+                for i, new_state in enumerate(new_states):
+                    # next_state, reward, term, trunc, info = result
+                    reward = self.env.reward_func(state, action, new_state)
+                    term, trunc, info = env.get_state_info(new_state)
 
                     if not term and not trunc:
-                        _, next_state_value = self._compute_state_value(env, next_state, cur_depth + 1)
+                        _, new_state_value = self._compute_state_value(env, new_state, cur_depth + 1)
                     else:
-                        next_state_value = 0
+                        new_state_value = 0
 
-                    q_sa += probs[i] * (reward + self.discount_factor * next_state_value)
+                    q_sa += probs[i] * (reward + self.discount_factor * new_state_value)
 
                 # update Q(s,a)
                 q[action_idx] = q_sa

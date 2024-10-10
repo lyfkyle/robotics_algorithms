@@ -115,6 +115,16 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         self.steps_beyond_terminated = None
 
     @override
+    def reset(self):
+        self.cur_state = (np.random.randn(4) * 0.05).tolist()  # near-upright position
+        self.goal_state = [0, 0, 0, 0]  # upright position
+
+        self.steps_beyond_terminated = None
+        self.step_cnt = 0
+
+        return self.cur_state, {}
+
+    @override
     def step(self, action: list) -> tuple[list, float, bool, bool, dict]:
         new_state, reward, term, trunc, info = super().step(action)
 
@@ -128,6 +138,10 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         assert self.cur_state is not None, "Call reset before using step method."
 
         new_state = self.robot_model.control(state, action)
+        return new_state
+
+    @override
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
         x = new_state[0]
         theta = new_state[2]
 
@@ -155,16 +169,21 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
 
             reward = -1.0 if self._sutton_barto_reward else 0.0
 
-        return new_state, reward, terminated, False, {}
+        return reward
 
-    def reset(self):
-        self.cur_state = (np.random.randn(4) * 0.05).tolist()  # near-upright position
-        self.goal_state = [0, 0, 0, 0]  # upright position
+    @override
+    def get_state_info(self, state):
+        x = state[0]
+        theta = state[2]
 
-        self.steps_beyond_terminated = None
-        self.step_cnt = 0
+        terminated = bool(
+            x < -self.x_threshold
+            or x > self.x_threshold
+            or theta < -self.theta_threshold_radians
+            or theta > self.theta_threshold_radians
+        )
 
-        return self.cur_state, {}
+        return terminated, False, {}
 
     def render(self):
         if self.screen is None:

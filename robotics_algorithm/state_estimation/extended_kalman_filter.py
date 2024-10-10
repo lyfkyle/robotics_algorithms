@@ -1,43 +1,32 @@
-import math
 import numpy as np
 
 from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, DistributionType
 
 
-class KalmanFilter:
+class ExtendedKalmanFilter:
     def __init__(self, env: BaseEnv):
         """
-        Kalman filter.
-
-        When environment has linear state transtion and linear observation function with Gaussian noise, bayesian
-        filter rule can be simplified.
-
-        State Transition: X = AX + BU + sigma
-        Measurement Z = HX + delta
+        State Transition: X = transition_func(x, u) + sigma
+        Measurement Z = measurement_func(x) + delta
+        R: Process covariance matrix from sigma
+        Q. Measurement covariance matrix from delta
         """
+
         assert env.state_transition_type == EnvType.STOCHASTIC.value
         assert env.observability == EnvType.PARTIALLY_OBSERVABLE.value
-        assert env.state_transition_func_type == FunctionType.LINEAR.value
-        assert env.observation_func_type == FunctionType.LINEAR.value
+        assert env.state_transition_func_type == FunctionType.GENERAL.value
+        assert env.observation_func_type == FunctionType.GENERAL.value
         assert env.state_transition_dist_type == DistributionType.GAUSSIAN.value
         assert env.observation_dist_type == DistributionType.GAUSSIAN.value
 
-        # state_transition_func: x = Ax + Bu + sigma
-        self.A = env.A
-        self.B = env.B
-        self.R = env.state_transition_covariance_matrix
-
-        # measurement function z = Hx + delta
-        self.H = env.H
-        self.Q = env.observation_covariance_matrix
-
+        self.env = env
         self.state = np.array(env.cur_state)
         self.covariance = np.eye(env.state_space.state_size)
 
     def set_initial_state(self, state: list):
         """
         Set the initial state of filter.
-reward
+
         @param state, initial state
         """
         self.state = np.array(state)
@@ -57,25 +46,32 @@ reward
 
     def predict(self, action: list):
         """
-        Predict the state of the Kalman filter.
-
-        @param action, applied action
+        @param control, control
         """
-        new_state = self.A @ self.state + self.B @ action
-        new_covariance = self.A @ self.covariance @ self.A.transpose() + self.R
+        A = self.env.state_transition_jacobian(self.state.tolist(), action)
+        new_state, _, _, _, _ = self.env.sample_state_transition(
+            self.state.tolist(), action
+        )  # non-linear transition_func
+        new_covariance = A @ self.covariance @ A.transpose() + self.env.state_transition_cov_matrix
 
-        self.state = new_state
+        self.state = np.array(new_state)
         self.covariance = new_covariance
 
     def update(self, obs: list):
         """
-        Update the state of the Kalman filter.
-
-        @param obs, obtained observation.
+        @param obs, observation
         """
-        K = self.covariance @ self.H.transpose() @ np.linalg.inv(self.H @ self.covariance @ self.H.transpose() + self.Q)
-        new_state = self.state + K @ (obs - self.H @ self.state)
-        tmp_matrix = K @ self.H
+        obs_np = np.array(obs)
+        sampled_obs_np = np.array(self.env.sample_observation(self.state.tolist()))
+
+        H = self.env.observation_jacobian(self.state.tolist(), obs)
+        K = (
+            self.covariance
+            @ H.transpose()
+            @ np.linalg.inv(H @ self.covariance @ H.transpose() + self.env.obs_cov_matrix)
+        )
+        new_state = self.state + K @ (obs_np - sampled_obs_np)
+        tmp_matrix = K @ H
         new_covariance = (np.eye(tmp_matrix.shape[0]) - tmp_matrix) @ self.covariance
 
         self.state = new_state

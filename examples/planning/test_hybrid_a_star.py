@@ -1,11 +1,11 @@
 import time
 import math
 
-from robotics_algorithm.env.continuous_world_2d import TwoDWorldDiffDrive
+from robotics_algorithm.env.continuous_world_2d import DiffDrive2DEnvSimple
 from robotics_algorithm.planning import HybridAStar
 
 # Initialize environment
-env = TwoDWorldDiffDrive(discrete_action=True)  # use discrete action for Hybrid A*
+env = DiffDrive2DEnvSimple(discrete_action=True)  # use discrete action for Hybrid A*
 
 # -------- Settings ------------
 FIX_MAZE = True

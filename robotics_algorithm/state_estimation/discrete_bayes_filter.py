@@ -29,11 +29,11 @@ class DiscreteBayesFilter:
         self.state_belief[tuple(state)] += 0.05  # slightly increase the initial state belief
         self._normalize()
 
-    def get_state(self):
+    def get_state(self) -> list:
         # return the state with highest probability
         return max(self.state_belief, key=self.state_belief.get)
 
-    def run(self, action, obs):
+    def run(self, action: list, obs: list):
         """
         Run one iteration of filter.
 
@@ -43,7 +43,7 @@ class DiscreteBayesFilter:
         self.predict(action)
         self.update(obs)
 
-    def predict(self, action):
+    def predict(self, action: list):
         """
         @param action, action
         """
@@ -51,16 +51,15 @@ class DiscreteBayesFilter:
 
         # In discrete case, just add them up.
         for state in self.env.state_space.get_all():
-            results, probs = self.env.state_transition_func(state, action)
-            for result, prob in zip(results, probs):
-                new_state = result[0]
+            new_states, probs = self.env.state_transition_func(state, action)
+            for new_state, prob in zip(new_states, probs):
                 new_state_belief[tuple(new_state)] += prob * self.state_belief[tuple(state)]
 
         self.state_belief = new_state_belief
 
         self._normalize()
 
-    def update(self, obs):
+    def update(self, obs: list):
         """
         @param obs, current observation.
         """

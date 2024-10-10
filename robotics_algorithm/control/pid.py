@@ -3,7 +3,7 @@ import numpy as np
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 
 
-class PID(object):
+class PID:
     """Implements Linear-quadratic regulator.
 
     # Given a system with linear state transition function and quadratic cost function, the optimal control strategy

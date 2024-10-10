@@ -577,15 +577,33 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         return self.cur_state, {}
 
     @override
-    def state_transition_func(self, state: tuple, action: tuple) -> tuple[tuple, float]:
+    def state_transition_func(self, state: list, action: list) -> tuple[list, float]:
         new_state = [state[0] + action[0], state[1] + action[1]]
         new_state[0] = max(min(new_state[0], self.size - 1), 0)
         new_state[1] = max(min(new_state[1], self.size - 1), 0)
 
-        if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
-            return state, 0, False, False, {}
+        return new_state
 
-        return tuple(new_state), -1, False, False, {}
+    @override
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+        if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
+            return -100
+
+        return -1
+
+    @override
+    def get_state_info(self, state: list) -> tuple[bool, bool, dict]:
+        term = False
+        info = {"success": False}
+
+        if self.maze[state[0], state[1]] == GridWorldMaze.OBSTACLE:
+            term = True
+
+        if self.maze[state[0], state[1]] == GridWorldMaze.GOAL:
+            term = True
+            info = {"success": True}
+
+        return term, False, info
 
     @override
     def get_available_actions(self, state: tuple) -> list[tuple]:

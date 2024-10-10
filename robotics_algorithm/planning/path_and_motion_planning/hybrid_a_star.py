@@ -4,7 +4,7 @@ import heapq
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
-class HybridAStar(object):
+class HybridAStar:
     def __init__(self, env: BaseEnv, heuristic_func: Callable, state_key_func: Callable):
         """Constructor.
 

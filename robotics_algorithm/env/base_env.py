@@ -1,4 +1,3 @@
-from typing import Any
 from typing_extensions import override
 from enum import Enum
 
@@ -24,12 +23,14 @@ class FunctionType(Enum):
     QUADRATIC = 2
 
 
-class NoiseType(Enum):
+class DistributionType(Enum):
+    NOT_APPLICABLE = -1
     GENERAL = 0
-    GAUSSIAN = 3
+    CATEGORICAL = 1
+    GAUSSIAN = 2
 
 
-class BaseEnv(object):
+class BaseEnv:
     """
     Base class for environment that is used for planning, control and learning.
 
@@ -55,10 +56,10 @@ class BaseEnv(object):
         self.observation_func_type = FunctionType.GENERAL.value
 
         # Noise type
-        self.state_transition_noise_type = NoiseType.GAUSSIAN.value
-        self.observation_noise_type = NoiseType.GAUSSIAN.value
+        self.state_transition_dist_type = DistributionType.NOT_APPLICABLE.value
+        self.observation_dist_type = DistributionType.NOT_APPLICABLE.value
 
-    def reset(self) -> tuple[Any, dict]:
+    def reset(self) -> tuple[list, dict]:
         """Reset env."""
         self.cur_state = None
 
@@ -68,14 +69,20 @@ class BaseEnv(object):
         """Visualize env."""
         pass
 
-    def step(self, action: Any) -> tuple[Any, float, bool, bool, dict]:
-        """Apply action to current environment. H
+    def step(self, action: list) -> tuple[list, float, bool, bool, dict]:
+        """Apply action to current environment.
+
+        This corresponds to gymnasium convention.
 
         Args:
-            action (Any): action to apply
+            action (list): action to apply
 
         Returns:
-            new_state (any): new state
+            new_state (list): the new state
+            reward (double): the reward obtained
+            term (bool): whether the state is terminal
+            trunc (bool): whether the episode is truncated
+            info (dict): additional info
         """
         new_state, reward, term, trunc, info = self.sample_state_transition(self.cur_state, action)
         self.cur_state = new_state
@@ -86,86 +93,112 @@ class BaseEnv(object):
         # Conform to gymnasium env
         return new_obs, reward, term, trunc, info
 
-    def sample_state(self) -> Any:
+    def random_state(self) -> list:
         """Sample a state"""
         return self.state_space.sample()
 
-    def sample_action(self) -> Any:
+    def random_action(self) -> list:
         """Sample an action"""
         return self.action_space.sample()
 
-    def sample_observation(self, state) -> Any:
-        """Sample an observation for the state."""
+    def random_observation(self) -> list:
+        """Sample an random observation"""
         return self.observation_space.sample()
 
-    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
-        """Sample a transition."""
+    def sample_state_transition(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
+        """Sample a state transition.
+
+        Args:
+            state (list): state
+            action (list): action
+
+        Returns:
+            new_state (list): the new state
+            reward (double): the reward obtained
+            term (bool): whether the state is terminal
+            trunc (bool): whether the episode is truncated
+            info (dict): additional info
+        """
         raise NotImplementedError()
 
-    def state_transition_func(self, state: Any, action: Any) -> Any:
-        """Calculate the next state given current state and action"""
+    def sample_observation(self, state: list) -> list:
+        """Sample an observation for the state."""
         raise NotImplementedError()
 
-    def observation_func(self, state: Any) -> Any:
-        """Calculate the possible observations for a given state."""
+    def state_transition_func(self, state: list, action: list) -> list:
+        """Calculate the next state given current state and action.
+
+        Args:
+            state (list): state
+            action (list): action
+
+        Returns:
+            new_state (list): the new state
+        """
         raise NotImplementedError()
 
-    def reward_func(self, state: Any, action: Any = None, new_state: Any = None) -> float:
+    def observation_func(self, state: list) -> list:
+        """Calculate the possible observations for a given state.
+
+        Args:
+            state (list): state
+
+        Returns:
+            obs (list): observation
+        """
+        raise NotImplementedError()
+
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
         """Calculate the reward of apply action at a state.
 
         Reward function is normally defined as R(s, a). However, in the gym convention, reward is defined as R(s, s').
         This base function supports both.
 
         Args:
-            state (Any): the state
-            action (Any, optional): the action to apply. Defaults to None.
-            new_state (Any, optional): the new_state after transition. Defaults to None.
+            state (list): the state
+            action (list, optional): the action to apply. Defaults to None.
+            new_state (list, optional): the new_state after transition. Defaults to None.
 
         Returns:
-            float: reward
+            reward (float)
         """
         raise NotImplementedError()
 
-    def is_state_valid(self, state: Any) -> bool:
+    def is_state_valid(self, state: list) -> bool:
         """Check whether a state is valid
 
         Args:
-            state (Any): state
+            state (list): state
 
         Returns:
             bool: return True if valid
         """
         raise NotImplementedError()
 
-    def _get_state_info(self, state: Any) -> dict:
-        """retrieve information about the state.
-
-        Args:
-            state (Any): state
-
-        Returns:
-            dict: a dictionary containing state information. Must contain term, trunc, reward to conform with
-                gymanasium.
-        """
-        return {
-            "term": False,
-            "trunc": False,
-        }
-
     def _is_action_valid(self, action) -> bool:
         res = False
         if self.action_space.type == SpaceType.DISCRETE.value:
             res = action in self.action_space.space
         elif self.action_space.type == SpaceType.CONTINUOUS.value:
-            res = (
-                (np.array(action) >= np.array(self.action_space.space[0])).all()
-                and (np.array(action) <= np.array(self.action_space.space[1])).all()
-            )
+            res = (np.array(action) >= np.array(self.action_space.space[0])).all() and (
+                np.array(action) <= np.array(self.action_space.space[1])
+            ).all()
 
         return res
 
+    def get_state_info(self, state: list) -> tuple[bool, bool, dict]:
+        """Returns additional flag and info associated with state
 
-class DiscreteSpace(object):
+        Args:
+            state (list): state
+
+        Returns:
+            tuple[bool, bool, dict]: term, trunc and info. In accordance to gymanasium convention.
+        """
+        raise NotImplementedError()
+
+
+class DiscreteSpace:
     def __init__(self, values):
         self.type = SpaceType.DISCRETE.value
         self.space = values
@@ -186,7 +219,7 @@ class DiscreteSpace(object):
         return self.space[idx]
 
 
-class ContinuousSpace(object):
+class ContinuousSpace:
     def __init__(self, low, high):
         self.type = SpaceType.CONTINUOUS.value
         self.space = [low, high]
@@ -212,29 +245,30 @@ class DeterministicEnv(BaseEnv):
         self.state_transition_type = EnvType.DETERMINISTIC.value
 
     @override
-    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+    def sample_state_transition(self, state, action) -> tuple[list, float, bool, bool, dict]:
         # Skip invalid action
         if not self._is_action_valid(action):
             raise Exception(f"action {action} is not within valid range!")
 
-        return self.state_transition_func(state, action)
+        new_state = self.state_transition_func(state, action)
+
+        reward = self.reward_func(state, action, new_state)
+        term, trunc, info = self.get_state_info(new_state)
+
+        return new_state, reward, term, trunc, info
 
     @override
-    def state_transition_func(self, state: Any, action: Any) -> tuple[Any, float, bool, bool, dict]:
+    def state_transition_func(self, state: list, action: list) -> list:
         """State transition function.
 
-        Models deterministic transition and therefore returns a single new_state along with its info
+        Models deterministic transition and therefore returns a single new_state.
 
         Args:
-            state (Any): state to transit from
-            action (Any): action to apply
+            state (list): state to transit from
+            action (list): action to apply
 
         Returns:
-            new_state (Any): the new state
-            reward (float): the reward(cost) for the transition.
-            term (bool): whether the transition terminates the episode
-            trunc (bool): whether the transition truncates the episode
-            info (dict): additional info
+            new_state (list): the new state
         """
         raise NotImplementedError()
 
@@ -245,36 +279,55 @@ class StochasticEnv(BaseEnv):
         self.state_transition_type = EnvType.STOCHASTIC.value
 
     @override
-    def sample_state_transition(self, state, action) -> tuple[Any, float, bool, bool, dict]:
+    def sample_state_transition(self, state, action) -> tuple[list, float, bool, bool, dict]:
         # Skip invalid action
         if not self._is_action_valid(action):
             raise Exception(f"action {action} is not within valid range!")
 
-        if self.state_space.type == SpaceType.DISCRETE.value:
+        if self.state_transition_dist_type == DistributionType.CATEGORICAL.value:
+            assert self.state_space.type == SpaceType.DISCRETE.value
+
             results, probs = self.state_transition_func(state, action)
             idx = choice(np.arange(len(results)), 1, p=probs)[
                 0
             ]  # choose new state according to the transition probability.
 
-            return results[idx]
+            new_state = results[idx]
+
+        elif self.state_transition_dist_type == DistributionType.GAUSSIAN.value:
+            assert self.state_space.type == SpaceType.CONTINUOUS.value
+
+            mean, var = self.state_transition_func(state, action)
+            new_state = np.random.multivariate_normal(mean=np.array(mean), cov=np.diag(var)).reshape(-1).tolist()
+
         else:
             raise NotImplementedError()
 
+        # compute reward
+        reward = self.reward_func(state, action, new_state)
+        term, trunc, info = self.get_state_info(new_state)
+
+        return new_state, reward, term, trunc, info
+
     @override
-    def state_transition_func(self, state: Any, action: Any) -> tuple[list[tuple], list[float]]:
+    def state_transition_func(self, state: list, action: list) -> tuple[list[list], list[float]] | tuple[list, list]:
         """State transition function.
 
         Models stochastic transition. Hence, we return each possible transition results with its corresponding
         probability.
 
         Args:
-            state (Any): state to transit from
-            action (Any): action to apply
+            state (list): state to transit from
+            action (list): action to apply
 
         Returns:
-            new_states (list[tuple]): a list of state transition result, consisting of new_state, reward, term,
-                trunc and info.
-            probs (list[float]): the probabilities of transitioning to new states.
+            if state transition distribution type is categorical, returns possible state transition results with its
+            associated probability.
+                new_states (list[list]): a list of new states
+                probs (list[float]): the probabilities of transitioning to new states.
+
+            else if state transition distribution type is gaussian, returns the mean and variance of new state
+            state transition result.
         """
         raise NotImplementedError()
 
@@ -289,21 +342,21 @@ class FullyObservableEnv(BaseEnv):
         return len(self.state_space)
 
     @override
-    def observation_func(self, state: Any) -> Any:
+    def observation_func(self, state: list) -> list:
         """Return the observation for a given state.
 
         Since the environment is fully-observable, observation equals to the state.
 
         Args:
-            state (Any): the state
+            state (list): the state
 
         Returns:
-            observations (Any):  observations.
+            observations (list):  observations.
         """
         return state
 
     @override
-    def sample_observation(self, state: Any) -> Any:
+    def sample_observation(self, state: list) -> list:
         return self.observation_func(self.cur_state)
 
 
@@ -315,18 +368,27 @@ class PartiallyObservableEnv(BaseEnv):
         # Define an additional observation space
         self.observation_space = None
 
-    def sample_observation(self, state) -> Any:
-        if self.observation_space.type == SpaceType.DISCRETE.value:
+    def sample_observation(self, state) -> list:
+        if self.observation_dist_type == DistributionType.CATEGORICAL.value:
             obss, obs_prob = self.observation_func(state)
             idx = choice(np.arange(len(obss)), 1, p=obs_prob)[
                 0
             ]  # choose observation according to the observation probability.
-            return obss[idx]
+            obs = obss[idx]
+
+        elif self.observation_dist_type == DistributionType.GAUSSIAN.value:
+            assert self.state_space.type == SpaceType.CONTINUOUS.value
+
+            mean, var = self.observation_func(state)
+            obs = np.random.multivariate_normal(mean=np.array(mean), cov=np.diag(var)).reshape(-1).tolist()
+
         else:
             raise NotImplementedError()
 
+        return obs
+
     @override
-    def observation_func(self, state: Any) -> tuple[list[Any], list[float]]:
+    def observation_func(self, state: list) -> tuple[list[list], list[float]]:
         """Return the observation for a given state.
 
         Note the environment is partially-observable.
@@ -334,10 +396,10 @@ class PartiallyObservableEnv(BaseEnv):
         For continuous env, we should return a parameterized distributions. (Unsupported for now).
 
         Args:
-            state (Any): the state
+            state (list): the state
 
         Returns:
-            observations ([list[Any]): a list of possible observations.
+            observations ([list[list]): a list of possible observations.
             obs_probs (list[float]]): probabilities of each observation.
         """
         raise NotImplementedError()

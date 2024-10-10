@@ -9,7 +9,7 @@ from robotics_algorithm.env.base_env import (
     StochasticEnv,
     PartiallyObservableEnv,
     FunctionType,
-    NoiseType,
+    DistributionType,
 )
 
 
@@ -56,19 +56,19 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         self.H = np.eye(2, dtype=np.float32)
 
         # state transition noise model
-        self.state_transition_noise_type = NoiseType.GAUSSIAN.value
+        self.state_transition_dist_type = DistributionType.GAUSSIAN.value
         self.state_transition_noise_std = state_transition_noise_std
-        var = state_transition_noise_std * state_transition_noise_std
+        self.state_transition_noise_var = state_transition_noise_std * state_transition_noise_std
         self.state_transition_covariance_matrix = np.array(
             [
-                [var, 0],  # only have noise on position
+                [self.state_transition_noise_var, 0],  # only have noise on position
                 [0, 1e-10],
             ],
             dtype=np.float32,
         )
 
         # observation noise model
-        self.observation_noise_type = NoiseType.GAUSSIAN.value
+        self.observation_dist_type = DistributionType.GAUSSIAN.value
         self.observation_noise_std = observation_noise_std
         var = observation_noise_std * observation_noise_std
         self.observation_covariance_matrix = np.array(
@@ -83,7 +83,7 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
 
     @override
     def reset(self):
-        self.start_state = self.sample_state()
+        self.start_state = self.random_state()
         self.start_state[1] = 0.0  # zero velocity
         self.goal_state = [0, 0]  # fixed
         self.cur_state = self.start_state.copy()
@@ -91,30 +91,10 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def sample_state_transition(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
-        new_state = np.array(self.robot_model.control(state, action, dt=0.01))
-        new_state = new_state + np.random.multivariate_normal(
-            mean=[0, 0], cov=self.state_transition_covariance_matrix
-        )  # add noise
-        new_state = new_state.reshape(-1).tolist()
-
-        # Check bounds
-        if (
-            new_state[0] <= self.state_space.space[0][0]
-            or new_state[0] >= self.state_space.space[1][0]
-            or new_state[1] <= self.state_space.space[0][1]
-            or new_state[1] >= self.state_space.space[1][1]
-        ):
-            return state, -100, True, False, {"success": False}
-
-        # Check goal state reached for termination
-        term = False
-        if np.allclose(np.array(new_state), np.array(self.goal_state), atol=1e-4):
-            term = True
-
-        self.cur_state = new_state
-
-        return new_state, self.reward_func(state, action), term, False, {}
+    def state_transition_func(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
+        new_state_mean = self.robot_model.control(state, action, dt=0.01)
+        new_state_var = [self.state_transition_noise_var, 1e-10]
+        return new_state_mean, new_state_var
 
     @override
     def sample_observation(self, state):
@@ -129,13 +109,44 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         return obs.reshape(-1).tolist()
 
     @override
-    def reward_func(self, state: list, action: list | None = None) -> float:
+    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+        # check bounds
+        if (
+            state[0] <= self.state_space.space[0][0]
+            or state[0] >= self.state_space.space[1][0]
+            or state[1] <= self.state_space.space[0][1]
+            or state[1] >= self.state_space.space[1][1]
+        ):
+            return -100
+
         # quadratic reward func
         state = np.array(state)
         action = np.array(action)
 
         cost = state.T @ self.Q @ state + action.T @ self.R @ action
         return -cost
+
+    @override
+    def get_state_info(self, state):
+        term = False
+        info = {"success": False}
+        # Check bounds
+        if (
+            state[0] <= self.state_space.space[0][0]
+            or state[0] >= self.state_space.space[1][0]
+            or state[1] <= self.state_space.space[0][1]
+            or state[1] >= self.state_space.space[1][1]
+        ):
+            term = True
+
+            return state, -100, True, False, {"success": False}
+
+        # Check goal state reached for termination
+        if np.allclose(np.array(state), np.array(self.goal_state), atol=1e-4):
+            term = True
+            info["success"] = True
+
+        return term, False, info
 
     @override
     def render(self):

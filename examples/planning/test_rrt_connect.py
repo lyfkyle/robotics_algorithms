@@ -1,11 +1,11 @@
 import time
 import numpy as np
 
-from robotics_algorithm.env.continuous_world_2d import TwoDWorldOmni
+from robotics_algorithm.env.continuous_world_2d import OmniDriveTwoDEnv
 from robotics_algorithm.planning import RRTConnect
 
 # Initialize environment
-env = TwoDWorldOmni()
+env = OmniDriveTwoDEnv()
 
 # -------- Settings ------------
 FIX_MAZE = True
@@ -13,7 +13,7 @@ FIX_MAZE = True
 
 # -------- Helper Functions -------------
 def sample_func(env):
-    random_state = env.sample_state()
+    random_state = env.random_state()
     return tuple(random_state)
 
 

@@ -9,7 +9,7 @@ import networkx as nx
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 
-class RRTStar(object):
+class RRTStar:
     TRAPPED = 0
     REACHED = 1
 
@@ -81,7 +81,7 @@ class RRTStar(object):
 
             self.extend(v_target)
 
-        if goal in self.tree:
+        if self.tree.has_node(goal):
             path = nx.shortest_path(self.tree, start, goal, weight="weight")
             path_len = nx.shortest_path_length(self.tree, start, goal, weight="weight")
             print(path, path_len)
@@ -179,7 +179,7 @@ class RRTStar(object):
 
 
 # TODO
-class RRTStarConnect(object):
+class RRTStarConnect:
     def __init__(self, num_of_samples):
         self.num_of_samples = num_of_samples
         self.start_rrt = RRTStar()
