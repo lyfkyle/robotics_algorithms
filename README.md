@@ -29,7 +29,7 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] Car
   - [ ] Quadrotor
   - [ ] Quadruped
-- [ ] State Estimation
+- [x] State Estimation
   - [x] Discrete bayes filter
   - [x] Kalman filter
   - [x] Extended Kalman filter
@@ -48,6 +48,7 @@ This repository is undergoing significant development. Here is the status checkl
     - [x] Policy tree search
     - [x] MCTS
   - [ ] POMDP
+    - [ ] Belief tree search
     - [ ] SARSOP
     - [ ] DESPOT
 - [ ] Control
@@ -59,17 +60,19 @@ This repository is undergoing significant development. Here is the status checkl
 - [ ] Reinforcement learning
   - [ ] Tabular
   - [ ] Function approximation
-- [ ] Other Environment
-  - [x] Frozen lake
-  - [x] Cliff walking
-  - [x] Windy gridworld
-  - [x] 1D navigation
+- [ ] Environments
+  - [x] Frozen lake (MDP)
+  - [x] Cliff walking (MDP)
+  - [x] Windy gridworld (MDP)
+  - [x] 1D navigation with double integrator
     - [x] Deterministic and fully-observable
     - [x] Stochastic and partially-observable
-  - [x] 2D navigation
+  - [x] 2D navigation with omni-directional robot
     - [x] Deterministic and fully-observable
-    - [ ] Stochastic and partially-observable
+  - [x] 2D navigation with differential drive
+    - [x] Deterministic and fully-observable
+    - [x] Stochastic and partially-observable
   - [ ] 2D localization
   - [ ] 2D SLAM
-  - [ ] Multi-arm bandits
-  - [ ] Tiger
+  - [ ] Multi-arm bandits (POMDP)
+  - [ ] Tiger (POMDP)
