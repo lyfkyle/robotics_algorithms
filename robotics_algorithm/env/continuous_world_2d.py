@@ -5,6 +5,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from scipy.stats import multivariate_normal
 
 from robotics_algorithm.env.base_env import (
     BaseEnv,
@@ -495,6 +496,20 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         self.H = np.eye(3, dtype=np.float32)
 
         return self.H
+
+    @override
+    def get_state_transition_prob(self, state: list, action : list, new_state: list) -> float:
+        # NOTE: since the state is continuous, we can only returns the pdf value. It is up to the consumer to
+        #       normalize to get a probability.
+        mean, var = self.state_transition_func(state, action)
+        return multivariate_normal.pdf(new_state, mean=mean, cov=np.diag(var))
+
+    @override
+    def get_observation_prob(self, state: list, observation: list) -> float:
+        # NOTE: since the state is continuous, we can only returns the pdf value. It is up to the consumer to
+        #       normalize to get a probability.
+        mean, var = self.observation_func(state)
+        return multivariate_normal.pdf(observation, mean=mean, cov=np.diag(var))
 
 
 class OmniDriveTwoDEnv(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):

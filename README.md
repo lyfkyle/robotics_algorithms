@@ -33,7 +33,7 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] Discrete bayes filter
   - [x] Kalman filter
   - [x] Extended Kalman filter
-  - [ ] Particle filter
+  - [x] Particle filter
 - [ ] Planing
   - [x] Discrete Planning
     - [x] Dijkstra
