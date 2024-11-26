@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 from robotics_algorithm.env.frozen_lake import FrozenLake
 from robotics_algorithm.learning.reinforcement_learning.sarsa import SARSA
+from robotics_algorithm.utils.math_utils import smooth
+from robotics_algorithm.utils.mdp_utils import make_greedy_policy
 
 env = FrozenLake(dense_reward=True)
 state, _ = env.reset()
@@ -10,9 +12,17 @@ env.render()
 
 # Plan
 learner = SARSA(env)
-Q, policy = learner.run(num_episodes=5000)
+Q, _ = learner.run(num_episodes=20000)
+# Plot cumulative rewards over episodes
+episodes, learning_curve = learner.get_learning_curve()
+plt.plot(episodes, smooth(learning_curve, weight=0.95), label="mc")
+plt.ylabel("episode_reward")
+plt.xlabel("episodes")
+plt.show()
+print(Q)
 
 # Execute
+policy = make_greedy_policy(Q, env.action_space.size)  # after learning, switch to use greedy policy
 state, _ = env.reset()
 path = []
 while True:
@@ -20,10 +30,9 @@ while True:
     action_probs = policy(state)
     action = np.random.choice(env.action_space.get_all(), p=action_probs)  # choose action
     next_state, reward, term, trunc, info = env.step(action)
-    env.render()
 
-    print(state)
-    print(action)
+    print(state, action, next_state, reward)
+    env.render()
 
     path.append(state)
     state = next_state
