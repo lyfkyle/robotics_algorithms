@@ -58,7 +58,11 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] CEM-MPC
 - [ ] Imitation learning
 - [ ] Reinforcement learning
-  - [ ] Tabular
+  - [] Tabular
+    - [x] On-policy MC
+    - [ ] Off-policy MC
+    - [x] On-policy TD (SARSA)
+    - [x] Off-policy TD (Q-learning)
   - [ ] Function approximation
 - [ ] Environments
   - [x] Frozen lake (MDP)
