@@ -12,7 +12,7 @@ env.render()
 
 # Plan
 learner = SARSA(env)
-Q, _ = learner.run(num_episodes=20000)
+Q, _ = learner.run(num_episodes=10000)
 # Plot cumulative rewards over episodes
 episodes, learning_curve = learner.get_learning_curve()
 plt.plot(episodes, smooth(learning_curve, weight=0.95), label="mc")
