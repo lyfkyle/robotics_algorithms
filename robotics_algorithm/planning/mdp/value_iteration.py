@@ -73,6 +73,10 @@ class ValueIteration:
             v_state_new = copy.deepcopy(v_state)
             max_change = -np.inf
             for state in states:
+                term, trunc, _ = self.env.get_state_info(state)
+                if term or trunc:
+                    continue
+
                 for action in actions:
                     new_states, probs = self.env.state_transition_func(state, action)
 

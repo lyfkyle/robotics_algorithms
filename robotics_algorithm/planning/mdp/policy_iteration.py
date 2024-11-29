@@ -88,6 +88,10 @@ class PolicyIteration:
             v_state_new = copy.deepcopy(v_state)
             max_change = 0
             for state in states:
+                term, trunc, _ = self.env.get_state_info(state)
+                if term or trunc:
+                    continue
+
                 for action in actions:
                     new_states, probs = env.state_transition_func(state, action)
 
@@ -99,7 +103,7 @@ class PolicyIteration:
                     # update Q(s,a)
                     Q[state][action] = q_sa
 
-                # Instad of using max, use action probability under the current policy
+                # Instead of using max, use action probability under the current policy
                 action_probs = policy(state)
                 value = np.dot(action_probs, Q[state])  # calculate v_pi
 

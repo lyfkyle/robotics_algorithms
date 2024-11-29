@@ -5,7 +5,7 @@ from robotics_algorithm.planning import PolicyTreeSearch
 
 
 env = FrozenLake(dense_reward=True)
-state, _ = env.reset(random_env=False)
+state, _ = env.reset()
 env.render()
 
 # Plan

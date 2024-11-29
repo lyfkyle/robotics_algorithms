@@ -2,61 +2,41 @@ import numpy as np
 
 from robotics_algorithm.env.windy_grid_world import WindyGridWorld
 from robotics_algorithm.env.cliff_walking import CliffWalking
+from robotics_algorithm.env.frozen_lake import FrozenLake
 from robotics_algorithm.planning import PolicyIteration
 
-env = CliffWalking()
-state, _ = env.reset()
-env.render()
+envs = [
+    FrozenLake(dense_reward=True),
+    CliffWalking(),
+    WindyGridWorld()
+]
 
-# Plan
-planner = PolicyIteration(env)
-Q, policy = planner.run()
+for env in envs:
+    state, _ = env.reset()
+    env.render()
 
-# Execute
-path = []
-while True:
-    # choose action according to epsilon-greedy policy
-    action_probs = policy(state)
-    action = np.random.choice(env.action_space.get_all(), p=action_probs)  # choose action
-    next_state, reward, term, trunc, info = env.step(action)
+    # Plan
+    planner = PolicyIteration(env)
+    Q, policy = planner.run()
 
-    print(state)
-    print(action)
+    print(Q)
 
-    path.append(state)
-    state = next_state
+    # Execute
+    path = []
+    while True:
+        # choose action according to epsilon-greedy policy
+        action_probs = policy(state)
+        action = np.random.choice(env.action_space.get_all(), p=action_probs)  # choose action
+        next_state, reward, term, trunc, info = env.step(action)
+        env.render()
 
-    if term or trunc:
-        break
+        print(state, action, reward)
 
-env.add_path(path)
-env.render()
+        path.append(state)
+        state = next_state
 
+        if term or trunc:
+            break
 
-env = WindyGridWorld()
-state, _ = env.reset()
-env.render()
-
-# Plan
-planner = PolicyIteration(env)
-Q, policy = planner.run()
-
-# Execute
-path = []
-while True:
-    # choose action according to epsilon-greedy policy
-    action_probs = policy(state)
-    action = np.random.choice(env.action_space.get_all(), p=action_probs)  # choose action
-    next_state, reward, term, trunc, info = env.step(action)
-
-    print(state)
-    print(action)
-
-    path.append(state)
-    state = next_state
-
-    if term or trunc:
-        break
-
-env.add_path(path)
-env.render()
+    # env.add_path(path)
+    env.render()
