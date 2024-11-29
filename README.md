@@ -13,10 +13,19 @@ The main benefits are:
 It should include popular and representative algorithms from robot dynamics, state estimation, planning, control and
 learning.
 
+## Requirement
+
+python 3.10
+
 ## How to use
 
 - Run `pip install -e .`
 - Run various scripts inside examples folder.
+
+For example, to run a* to find the shortest path between start and goal in a grid world
+```python
+python examples/planning/test_a_star.py
+```
 
 ## Status
 This repository is undergoing significant development. Here is the status checklist.
@@ -58,7 +67,7 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] CEM-MPC
 - [ ] Imitation learning
 - [ ] Reinforcement learning
-  - [] Tabular
+  - [ ] Tabular
     - [x] On-policy MC
     - [ ] Off-policy MC
     - [x] On-policy TD (SARSA)
