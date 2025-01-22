@@ -45,7 +45,10 @@ This repository is undergoing significant development. Here is the status checkl
     - [x] Extended Kalman filter
     - [x] Particle filter (MCL)
     - [ ] AMCL
-  - [ ] Mapping
+  - [ ] SLAM
+    - [ ] EKF SLAM
+    - [ ] Fast SLAM
+    - [ ] Graph SLAM  
 - [ ] Planing
   - [x] Discrete Planning
     - [x] Dijkstra
