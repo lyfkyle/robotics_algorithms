@@ -38,7 +38,7 @@ start_state[1] = min(max(env.size / 4.0, start_state[1]), env.size / 4.0 * 3.0)
 env.start_state = start_state
 env.cur_state = start_state
 obs = start_state
-env.render()
+env.render(draw_goal=False)
 
 # Initialize filter
 filter = ExtendedKalmanFilter(env)
@@ -55,7 +55,7 @@ obss.append(obs)
 
 max_steps = 500
 for i in range(max_steps):
-    print(f'step: {i}/500')
+    print(f'step: {i}/{max_steps}')
     # action = [random.uniform(0.0, 0.5), random.uniform(0, 0.5)]
     action = spiral_velocity(1.0, 0.01, i * env.action_dt, 0.2)
     new_obs, reward, term, trunc, info = env.step(action)
@@ -82,7 +82,7 @@ print('RMSE: {}'.format(rmse))
 env.add_state_path(true_states, id='groundtruth')
 env.add_state_path(obss, id='observed')
 env.add_state_path(filter_states, id='predicted')
-env.render()
+env.render(draw_goal=False)
 
 # Plot error over time.
 error = np.linalg.norm(true_states - filter_states, axis=-1)
