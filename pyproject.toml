@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "robotics_algorithm"
+version = "0.8.4"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "typing_extensions",
+    "networkx",
+    "pygame"
+]
+requires-python = ">=3.10"
+authors = [
+    { name = "Lu Yunfan", email = "luyunfan44@gmail.com" },
+]
+maintainers = [{ name = "Lu Yunfan", email = "luyunfan44@gmail.com" }]
+description = "A collection of robotics algorithms"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E.*"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
