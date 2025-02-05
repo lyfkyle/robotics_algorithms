@@ -331,6 +331,19 @@ class StochasticEnv(BaseEnv):
         """
         raise NotImplementedError()
 
+    def get_state_transition_prob(self, state: list, action: list, new_state: list) -> float:
+        """Get the probability of transitioning to new_state from state with action
+
+        Args:
+            state (list): state
+            action (list): action
+            new_state (list): new_state
+
+        Returns:
+            float: probability of the transition
+        """
+        raise NotImplementedError()
+
 
 class FullyObservableEnv(BaseEnv):
     def __init__(self):
@@ -401,6 +414,18 @@ class PartiallyObservableEnv(BaseEnv):
         Returns:
             observations ([list[list]): a list of possible observations.
             obs_probs (list[float]]): probabilities of each observation.
+        """
+        raise NotImplementedError()
+
+    def get_observation_prob(self, state: list, observation: list) -> float:
+        """Get the probability of getting the observation from state.
+
+        Args:
+            state (list): state
+            observation (list): observation
+
+        Returns:
+            float: probability of the observation given the state.
         """
         raise NotImplementedError()
 
