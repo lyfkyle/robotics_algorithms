@@ -37,6 +37,8 @@ Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html)
 
 This repository is undergoing significant development. Here is the status checklist.
 
+Algorithms
+
 - [ ] Robot Dynamics
   - [x] Differential drive
   - [x] Cartpole
@@ -56,7 +58,7 @@ This repository is undergoing significant development. Here is the status checkl
     - [ ] EKF SLAM
     - [ ] Fast SLAM
     - [ ] Graph SLAM
-- [ ] Planing
+- [ ] Planning
   - [x] Discrete Planning
     - [x] Dijkstra
     - [x] A-star
@@ -113,6 +115,11 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] 2D SLAM
   - [ ] Multi-arm bandits (POMDP)
   - [ ] Tiger (POMDP)
+
+Also aim to implement the following domain-specific examples
+
+- [ ] Path planning for differential drive robot using Hybrid A Star with original heuristics, analytic expansion and cost weighted distance measure.
+
 
 ## Known issues
 
