@@ -68,7 +68,7 @@ class DiffDrive2DEnv(BaseEnv):
                 ]
             )
 
-        self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
+        self.colour_map = colors.ListedColormap(['white', 'black', 'red', 'blue', 'green', 'yellow'])
         bounds = [
             DiffDrive2DEnvSimple.FREE_SPACE,
             DiffDrive2DEnvSimple.OBSTACLE,
@@ -143,16 +143,16 @@ class DiffDrive2DEnv(BaseEnv):
         info = {}
         if state[0] <= 0 or state[0] >= self.size or state[1] <= 0 or state[1] >= self.size:
             term = True
-            info = {"success": False}
+            info = {'success': False}
 
         if not self.is_state_valid(state):
             term = True
-            info = {"success": False}
+            info = {'success': False}
 
         # Check goal state reached for termination
         if self.is_state_similar(state, self.goal_state):
             term = True
-            info = {"success": True}
+            info = {'success': True}
 
         return term, False, info
 
@@ -264,7 +264,7 @@ class DiffDrive2DEnv(BaseEnv):
         else:
             self.path_dict[id] = path
 
-    def render(self):
+    def render(self, draw_start=True, draw_goal=True):
         if self.interactive_viz:
             if not self._fig_created:
                 plt.ion()
@@ -281,23 +281,25 @@ class DiffDrive2DEnv(BaseEnv):
                 x,
                 y,
                 s=(s * r * 2) ** 2,
-                c="black",
-                marker="o",
+                c='black',
+                marker='o',
             )
-        plt.scatter(
-            self.goal_state[0],
-            self.goal_state[1],
-            s=(s * self.robot_radius * 2) ** 2,
-            c="red",
-            marker="s",
-        )
-        plt.scatter(
-            self.start_state[0],
-            self.start_state[1],
-            s=(s * self.robot_radius * 2) ** 2,
-            c="yellow",
-            marker="s",
-        )
+        if draw_goal:
+            plt.scatter(
+                self.goal_state[0],
+                self.goal_state[1],
+                s=(s * self.robot_radius * 2) ** 2,
+                c='red',
+                marker='s',
+            )
+        if draw_start:
+            plt.scatter(
+                self.start_state[0],
+                self.start_state[1],
+                s=(s * self.robot_radius * 2) ** 2,
+                c='yellow',
+                marker='s',
+            )
         # plt.plot(
         #     self.cur_state[0],
         #     self.cur_state[1],
@@ -313,8 +315,8 @@ class DiffDrive2DEnv(BaseEnv):
                     state[1],
                     # s=(s * self.robot_radius * 2) ** 2,
                     s=(s * 0.01 * 2) ** 2,
-                    c="blue",
-                    marker="o",
+                    c='blue',
+                    marker='o',
                 )
 
         if self.path is not None:
@@ -323,8 +325,8 @@ class DiffDrive2DEnv(BaseEnv):
                 [s[1] for s in self.path],
                 # s=(s * self.robot_radius * 2) ** 2,
                 ms=(s * 0.01 * 2),
-                c="green",
-                marker="o",
+                c='green',
+                marker='o',
             )
 
         if self.ref_path is not None:
@@ -333,8 +335,8 @@ class DiffDrive2DEnv(BaseEnv):
                 [s[1] for s in self.ref_path],
                 # s=(s * self.robot_radius * 2) ** 2,
                 ms=(s * 0.01 * 2),
-                c="green",
-                marker="o",
+                c='green',
+                marker='o',
             )
 
         for key, path in self.path_dict.items():
@@ -343,7 +345,7 @@ class DiffDrive2DEnv(BaseEnv):
                 [s[1] for s in path],
                 # s=(s * self.robot_radius * 2) ** 2,
                 ms=(s * 0.01 * 2),
-                marker="o",
+                marker='o',
                 label=key,
             )
 
@@ -415,6 +417,7 @@ class DiffDrive2DEnvSimple(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv)
 
 class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
+       Adds transition stochasticity and partial observability to the original DiffDrive2DEnv.
 
     State: [x, y, theta]
     Action: [lin_vel, ang_vel]
@@ -498,7 +501,7 @@ class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEn
         return self.H
 
     @override
-    def get_state_transition_prob(self, state: list, action : list, new_state: list) -> float:
+    def get_state_transition_prob(self, state: list, action: list, new_state: list) -> float:
         # NOTE: since the state is continuous, we can only returns the pdf value. It is up to the consumer to
         #       normalize to get a probability.
         mean, var = self.state_transition_func(state, action)
