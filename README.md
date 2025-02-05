@@ -39,10 +39,13 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] Quadrotor
   - [ ] Quadruped
 - [x] State Estimation
-  - [x] Discrete bayes filter
-  - [x] Kalman filter
-  - [x] Extended Kalman filter
-  - [x] Particle filter
+  - [ ] Localizaion   
+    - [x] Discrete bayes filter
+    - [x] Kalman filter
+    - [x] Extended Kalman filter
+    - [x] Particle filter (MCL)
+    - [ ] AMCL
+  - [ ] Mapping
 - [ ] Planing
   - [x] Discrete Planning
     - [x] Dijkstra
