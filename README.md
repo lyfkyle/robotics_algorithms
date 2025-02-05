@@ -60,6 +60,8 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] Discrete Planning
     - [x] Dijkstra
     - [x] A-star
+    - [x] Hybrid A-star
+    - [ ] Cost-aware Hybrid A-star 
   - [ ] Motion Planning
     - [x] RRT / RRT-Connect
     - [x] RRT\*
@@ -82,6 +84,8 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] MPPI
   - [x] CEM-MPC
 - [ ] Imitation learning
+  - [ ] ACT
+  - [ ] Diffusion-policy
 - [ ] Reinforcement learning
   - [ ] Tabular
     - [x] On-policy MC
