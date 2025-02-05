@@ -1,7 +1,7 @@
 import time
 import math
 
-from robotics_algorithm.env.continuous_world_2d import DiffDrive2DEnvSimple
+from robotics_algorithm.env.continuous_world_2d import DiffDrive2DPlanning
 from robotics_algorithm.control.cem_mpc import CEMMPC
 
 # This path is computed using Hybrid A*
@@ -261,7 +261,7 @@ shortest_path = [
 ]
 
 # Initialize environment
-env = DiffDrive2DEnvSimple(action_dt=PATH_DT)
+env = DiffDrive2DPlanning(action_dt=PATH_DT)
 env.reset(random_env=False)
 env.add_ref_path(shortest_path)
 

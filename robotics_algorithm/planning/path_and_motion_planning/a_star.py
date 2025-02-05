@@ -44,7 +44,7 @@ class AStar:
         g = {}  # cost-to-come from start to a state
         f = {}  # cost-to-come + heuristic cost-to-go
         prev_state_dict = {}  # used to extract shortest path
-        state_dict = {}  # key is some  state key, value is the actual state.
+        state_dict = {}  # key is some state key, value is the actual state.
 
         start_key = self._state_key_func(start)
         goal_key = self._state_key_func(goal)
@@ -53,8 +53,8 @@ class AStar:
 
         for state in self.env.state_space.get_all():
             state_key = self._state_key_func(state)
-            g[state_key] = float("inf")
-            f[state_key] = float("inf")
+            g[state_key] = float('inf')
+            f[state_key] = float('inf')
             state_dict[state_key] = state
             unvisited_states.add(state_key)  # All states are unvisited
 
@@ -90,7 +90,7 @@ class AStar:
                 cost = -reward
 
                 # skip actions that result in failures
-                if term and not info["success"]:
+                if term and not info['success']:
                     continue
 
                 # if new_state has not been visited,

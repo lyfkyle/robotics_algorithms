@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from robotics_algorithm.env.continuous_world_2d import DiffDrive2DEnvComplex
+from robotics_algorithm.env.continuous_world_2d import DiffDrive2DLocalisation
 from robotics_algorithm.state_estimation.extended_kalman_filter import ExtendedKalmanFilter
 
 
@@ -28,7 +28,7 @@ def spiral_velocity(spiral_radius, spiral_growth_rate, time, linear_velocity):
 
 
 # Initialize environment
-env = DiffDrive2DEnvComplex(action_dt=0.1, obs_noise_std=[0.1, 0.1, 0.1])
+env = DiffDrive2DLocalisation(action_dt=0.1, obs_noise_std=[0.1, 0.1, 0.1])
 obs, _ = env.reset(empty=True)
 
 # Manually clamp env start state so that robot does not move outside of env when doing the spiral

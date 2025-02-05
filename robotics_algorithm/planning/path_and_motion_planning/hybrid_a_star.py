@@ -1,5 +1,6 @@
 from typing import Callable, Any
 import heapq
+import numpy as np
 
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
@@ -116,9 +117,17 @@ class HybridAStar:
             shortest_path = []
             state_key = goal_key
             while state_key in prev_state_dict:
+                # TODO Sanity check, to be removed
+                print(state_dict[state_key])
+                cur_state =state_dict[state_key]
                 prev_state_key, prev_action = prev_state_dict[state_key]
                 shortest_path.append(prev_action)
                 state_key = prev_state_key
+
+                # TODO sanity check, to be removed
+                prev_state = state_dict[prev_state_key]
+                cur_state_tmp = self.env.sample_state_transition(prev_state, prev_action)[0]
+                assert np.allclose(np.array(cur_state_tmp), np.array(cur_state))
 
             shortest_path = list(reversed(shortest_path))
             shortest_path_len = f[goal_key]

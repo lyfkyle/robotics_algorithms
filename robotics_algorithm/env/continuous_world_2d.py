@@ -33,9 +33,9 @@ class DiffDrive2DEnv(BaseEnv):
     Action: [lin_vel, ang_vel]
 
     There are two modes.
-    If user does not set a reference path, the reward only encourages robot to reach goal as fast as possible. This
+    - If user does not set a reference path, the reward only encourages robot to reach goal as fast as possible. This
     environment hence behaves like a path planning environment.
-    If user sets a reference path, the reward will encourage the robot to track the path to reach the goal. Hence, the
+    - If user sets a reference path, the reward will encourage the robot to track the path to reach the goal. Hence, the
     environment behaves like a path following (control) environment.
     """
 
@@ -48,10 +48,20 @@ class DiffDrive2DEnv(BaseEnv):
     MAX_POINT_TYPE = 6
 
     def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
+        """
+        Initialize a differential drive robot environment.
+
+        Args:
+            size (int): size of the maze
+            robot_radius (float): radius of the robot
+            action_dt (float): time step for the robot actions.
+            ref_path (list of points): reference path for path following
+            discrete_action (bool): whether the action space is discrete or continuous
+        """
         super().__init__()
 
         self.size = size
-        self.maze = np.full((size, size), DiffDrive2DEnvSimple.FREE_SPACE)
+        self.maze = np.full((size, size), DiffDrive2DPlanning.FREE_SPACE)
 
         self.state_space = ContinuousSpace(low=[0, 0, -math.pi], high=[self.size, self.size, math.pi])
         if not discrete_action:
@@ -70,13 +80,13 @@ class DiffDrive2DEnv(BaseEnv):
 
         self.colour_map = colors.ListedColormap(['white', 'black', 'red', 'blue', 'green', 'yellow'])
         bounds = [
-            DiffDrive2DEnvSimple.FREE_SPACE,
-            DiffDrive2DEnvSimple.OBSTACLE,
-            DiffDrive2DEnvSimple.START,
-            DiffDrive2DEnvSimple.GOAL,
-            DiffDrive2DEnvSimple.PATH,
-            DiffDrive2DEnvSimple.WAYPOINT,
-            DiffDrive2DEnvSimple.MAX_POINT_TYPE,
+            DiffDrive2DPlanning.FREE_SPACE,
+            DiffDrive2DPlanning.OBSTACLE,
+            DiffDrive2DPlanning.START,
+            DiffDrive2DPlanning.GOAL,
+            DiffDrive2DPlanning.PATH,
+            DiffDrive2DPlanning.WAYPOINT,
+            DiffDrive2DPlanning.MAX_POINT_TYPE,
         ]
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
@@ -158,7 +168,7 @@ class DiffDrive2DEnv(BaseEnv):
 
     @override
     def reward_func(self, state, action=None, new_state=None):
-        # If reference path does not exist, use manually distance traveled reward. Useful for computing shortest path.
+        # If reference path does not exist, use distance travelled reward. Useful for computing shortest path.
         if self.ref_path is None:
             if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
                 return -100
@@ -210,7 +220,7 @@ class DiffDrive2DEnv(BaseEnv):
         return self.calc_state_key(state1) == self.calc_state_key(state2)
 
     def calc_state_key(self, state):
-        return (round(state[0] / 0.25), round(state[1] / 0.25), round((state[2] + math.pi) / math.radians(30)))
+        return (round(state[0] / 0.1), round(state[1] / 0.1), round((state[2] + math.pi) / math.radians(30)))
 
     def _random_obstacles(self, num_of_obstacles=5):
         self.obstacles = []
@@ -244,7 +254,8 @@ class DiffDrive2DEnv(BaseEnv):
         interpolated_path = [self.start_state]
 
         state = self.start_state
-        num_sub_steps = int(self.action_dt / self.robot_model.time_res)
+        num_sub_steps = round(self.action_dt / self.robot_model.time_res)
+
         # Run simulation
         for action in action_path:
             for _ in range(num_sub_steps):
@@ -389,7 +400,7 @@ class DiffDrive2DEnv(BaseEnv):
         return nearest_idx
 
 
-class DiffDrive2DEnvSimple(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
+class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
@@ -415,7 +426,184 @@ class DiffDrive2DEnvSimple(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv)
         DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
 
 
-class DiffDrive2DEnvComplex(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEnv):
+class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
+        # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
+        #       DiffDrive2DEnv last.
+        super().__init__(size, robot_radius, action_dt, ref_path, discrete_action)
+
+        self._cost_map = {}
+        self._costmap_res = 0.1
+        self._exp_decay = 0.1
+        self.cost_penalty = 1.0
+        self.max_cost = 255
+
+    @override
+    def reset(self, empty=False, random_env=True):
+        super().reset(empty, random_env)
+
+        self._cost_map = {}
+        self.precompute_cost()
+
+    def precompute_cost(self):
+        costmap_size = int(self.size / self._costmap_res)
+        for i in range(costmap_size):
+            for j in range(costmap_size):
+                # key = (math.floor(x / self._costmap_res), math.floor(y / self._costmap_res))
+                self._cost_map[(i, j)] = self._calc_cost(
+                    (i * self._costmap_res + self._costmap_res / 2, j * self._costmap_res + self._costmap_res / 2)
+                )
+
+    def _calc_cost(self, state_xy):
+        """
+        Calculate the cost for a given state based on the distance to obstacles.
+
+        Args:
+            state_xy (tuple): The current xy state as a tuple (x, y).
+
+        Returns:
+            float: The computed cost based on the proximity to obstacles.
+        """
+        # Convert obstacles to numpy array for vectorized operations
+        obstacles_np = np.array(self.obstacles)
+
+        # Calculate Euclidean distance from the state to each obstacle
+        dist = np.linalg.norm(np.array(state_xy) - obstacles_np[:, :2], axis=-1)
+
+        # Adjust distances by subtracting the robot's and obstacles' radii
+        dist = dist - self.robot_radius - obstacles_np[:, 2]
+
+        # Find the minimum distance among all obstacles
+        dist = dist.min()
+
+        # Calculate cost using exponential decay based on distance
+        cost = self.max_cost * math.exp(-self._exp_decay * dist)
+
+        return cost
+
+    def get_cost(self, state):
+        # query the precomputed cost map
+        key = (math.floor(state[0] / self._costmap_res), math.floor(state[1] / self._costmap_res))
+        return self._cost_map[key]
+
+    @override
+    def reward_func(self, state, action=None, new_state=None):
+        # If reference path does not exist, use distance travelled reward. Useful for computing shortest path.
+        if self.ref_path is None:
+            if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
+                return -100
+
+            if not self.is_state_valid(new_state):
+                return -100
+
+            if self.is_state_similar(new_state, self.goal_state):
+                return 0
+
+            return -1 * (1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost)  # cost-weighted distance.
+
+    def render(self, draw_start=True, draw_goal=True):
+        if self.interactive_viz:
+            if not self._fig_created:
+                plt.ion()
+                plt.figure(figsize=(10, 10), dpi=100)
+                self._fig_created = True
+        else:
+            plt.figure(figsize=(10, 10), dpi=100)
+
+        plt.clf()
+        s = 1000 / self.size / 2
+        for obstacle in self.obstacles:
+            x, y, r = obstacle
+            plt.scatter(
+                x,
+                y,
+                s=(s * r * 2) ** 2,
+                c='black',
+                marker='o',
+            )
+        if draw_goal:
+            plt.scatter(
+                self.goal_state[0],
+                self.goal_state[1],
+                s=(s * self.robot_radius * 2) ** 2,
+                c='red',
+                marker='s',
+            )
+        if draw_start:
+            plt.scatter(
+                self.start_state[0],
+                self.start_state[1],
+                s=(s * self.robot_radius * 2) ** 2,
+                c='yellow',
+                marker='s',
+            )
+        # plt.plot(
+        #     self.cur_state[0],
+        #     self.cur_state[1],
+        #     marker=(3, 0, math.degrees(self.cur_state[2])+30),
+        #     markersize=(s * self.robot_radius * 2),
+        #     c="blue",
+        #     linestyle="None",
+        # )
+        if self.state_samples:
+            for state in self.state_samples:
+                plt.scatter(
+                    state[0],
+                    state[1],
+                    # s=(s * self.robot_radius * 2) ** 2,
+                    s=(s * 0.01 * 2) ** 2,
+                    c='blue',
+                    marker='o',
+                )
+
+        if self.path is not None:
+            plt.plot(
+                [s[0] for s in self.path],
+                [s[1] for s in self.path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                c='green',
+                marker='o',
+            )
+
+        if self.ref_path is not None:
+            plt.plot(
+                [s[0] for s in self.ref_path],
+                [s[1] for s in self.ref_path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                c='green',
+                marker='o',
+            )
+
+        for key, path in self.path_dict.items():
+            plt.plot(
+                [s[0] for s in path],
+                [s[1] for s in path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                marker='o',
+                label=key,
+            )
+
+        # Plot cost from cost map
+        if self._cost_map is not None:
+            costmap_img = np.array(list(self._cost_map.values())).reshape(100, 100)
+            plt.imshow(costmap_img, cmap='hot', alpha=0.5, origin="lower", extent=[0, 10, 0, 10])
+
+        plt.xlim(0, self.size)
+        plt.xticks(np.arange(self.size))
+        plt.ylim(0, self.size)
+        plt.yticks(np.arange(self.size))
+        plt.legend()
+
+        if self.interactive_viz:
+            plt.pause(0.01)
+        else:
+            plt.show()
+
+
+class DiffDrive2DLocalisation(DiffDrive2DEnv, StochasticEnv, PartiallyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
        Adds transition stochasticity and partial observability to the original DiffDrive2DEnv.
 
