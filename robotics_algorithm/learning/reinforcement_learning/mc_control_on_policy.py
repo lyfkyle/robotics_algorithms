@@ -1,8 +1,4 @@
-#!/usr/bin/evn python
 
-import os
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
 from typing import Callable
@@ -25,13 +21,11 @@ class MCControlOnPolicy:
         self.env = env
         self._max_episode_len = max_episode_len
 
-    def make_epsilon_greedy_policy(self, Q, epsilon, num_actions):
+    def make_epsilon_greedy_policy(self, epsilon, num_actions):
         """
         Creates an epsilon-greedy policy based on a given Q-function and epsilon.
 
         Args:
-            Q: A dictionary that maps from state -> action-values.
-                Each value is a numpy array of length nA (see below)
             epsilon: The probability to select a random action . float between 0 and 1.
             num_actions: Number of actions in the environment.
 
@@ -43,10 +37,11 @@ class MCControlOnPolicy:
 
         def policy_fn(state):
             # epsilon probability of picking a random action.
+
             action_prob = np.ones(num_actions, dtype=float) * epsilon / num_actions
 
             # (1 - epsilon) probability of picking the best action
-            best_action = np.random.choice(np.flatnonzero(np.isclose(Q[state], Q[state].max())))
+            best_action = np.argmax(self.Q[state])
             action_prob[best_action] += 1 - epsilon
             return action_prob
 
@@ -60,18 +55,17 @@ class MCControlOnPolicy:
         Args:
             num_episodes (int): Number of episodes to sample. Defaults to 500.
             discount_factor (float, optional): Gamma discount factor. Defaults to 0.95.
-            epsilon (float, optional): Chance the sample a random action. Float betwen 0 and 1. Defaults to 0.1.
+            epsilon (float, optional): Chance the sample a random action. Float between 0 and 1. Defaults to 0.1.
 
         Returns:
             tuple[dict, Callable]: A tuple (Q, policy).
             Q is a dictionary mapping state -> action values.
-            policy is a function that takes an observation as an argument and returns
-            action probabilities
+            policy is a function that takes an observation as an argument and returns action probabilities.
         """
         # Keeps track of sum and count of returns for each state
         # to calculate an average. We could use an array to save all
         # returns (like in the book) but that's memory inefficient.
-        returns_count = defaultdict(float)
+        returns_count = defaultdict(int)
 
         # for plotting
         self.episodes = []
@@ -79,10 +73,10 @@ class MCControlOnPolicy:
 
         # The final action-value function.
         # A nested dictionary that maps state -> (action -> action-value).
-        Q = defaultdict(lambda: np.zeros(self.env.action_space.size))
+        self.Q = defaultdict(lambda: np.zeros(self.env.action_space.size))
 
         # The policy we're following
-        policy = self.make_epsilon_greedy_policy(Q, epsilon, self.env.action_space.size)
+        policy = self.make_epsilon_greedy_policy(epsilon, self.env.action_space.size)
 
         # Learn
         for i_episode in range(1, num_episodes + 1):
@@ -108,8 +102,7 @@ class MCControlOnPolicy:
 
                 state = tuple(next_state)
 
-            ## first-visit MC Prediction
-
+            # first-visit MC Prediction
             # Find all states the we've visited in this episode
             # We convert each state to a tuple so that we can use it as a dict key
             state_action_in_episode = set(
@@ -123,13 +116,14 @@ class MCControlOnPolicy:
                 # calculate total return
                 total_return = sum([x[2] * (discount_factor**i) for i, x in enumerate(trajectory[first_idx:])])
                 # calculate average return in incremental fashion
-                returns_count[state_action] += 1.0
-                Q[state][action] = Q[state][action] + (1 / returns_count[state_action]) * (
-                    total_return - Q[state][action]
+                returns_count[state_action] += 1
+                self.Q[state][action] = self.Q[state][action] + (1.0 / returns_count[state_action]) * (
+                    total_return - self.Q[state][action]
                 )
 
             # improve policy based on updated Q function
-            policy = self.make_epsilon_greedy_policy(Q, epsilon, self.env.action_space.size)
+            # NOTE: we do not need to call this because Q function value is already updated
+            # policy = self.make_epsilon_greedy_policy(epsilon, self.env.action_space.size)
 
             # Print out which episode we're on, useful for debugging.
             if i_episode % 1 == 0:
@@ -137,7 +131,7 @@ class MCControlOnPolicy:
                 self.episodes.append(i_episode)
                 print("Episode {}/{}, reward : {}".format(i_episode, num_episodes, cumulative_reward))
 
-        return Q, policy
+        return self.Q, policy
 
     def get_learning_curve(self):
         return self.episodes, self.cumulative_rewards
