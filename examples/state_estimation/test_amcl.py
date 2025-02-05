@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from robotics_algorithm.env.continuous_world_2d import DiffDrive2DEnvComplex
-from robotics_algorithm.state_estimation.extended_kalman_filter import ExtendedKalmanFilter
+from robotics_algorithm.state_estimation.amcl import AMCL
 
 
 def spiral_velocity(spiral_radius, spiral_growth_rate, time, linear_velocity):
@@ -41,7 +41,8 @@ obs = start_state
 env.render()
 
 # Initialize filter
-filter = ExtendedKalmanFilter(env)
+filter = AMCL(env, min_particles=50, max_particles=500)
+print(filter.num_of_cur_particles)
 # filter.set_initial_state(env.cur_state)
 
 # Add initial state
@@ -54,6 +55,7 @@ filter_states.append(filter.get_state())
 obss.append(obs)
 
 max_steps = 500
+num_particles = [filter.num_of_cur_particles]
 for i in range(max_steps):
     print(f'step: {i}/500')
     # action = [random.uniform(0.0, 0.5), random.uniform(0, 0.5)]
@@ -65,6 +67,7 @@ for i in range(max_steps):
     true_states.append(env.cur_state)
     filter_states.append(filter.get_state())
     obss.append(new_obs)
+    num_particles.append(filter.num_of_cur_particles)
 
     if term or trunc:
         break
@@ -84,8 +87,11 @@ env.add_state_path(obss, id='observed')
 env.add_state_path(filter_states, id='predicted')
 env.render()
 
-# Plot error over time.
+# Plot error and num_particles over time.
 error = np.linalg.norm(true_states - filter_states, axis=-1)
-plt.plot(error)
-plt.title('Error over time')
+fig, ax = plt.subplots(2, 1)
+ax[0].plot(error)
+ax[0].set_title('Error over time')
+ax[1].plot(num_particles)
+ax[1].set_title('Number of particles over time')
 plt.show()

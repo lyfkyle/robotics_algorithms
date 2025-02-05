@@ -20,7 +20,7 @@ class ExtendedKalmanFilter:
         assert env.observation_dist_type == DistributionType.GAUSSIAN.value
 
         self.env = env
-        self.state = np.array(env.cur_state)
+        self.state = np.array(env.state_space.sample())
         self.covariance = np.eye(env.state_space.state_size)
 
     def set_initial_state(self, state: list):

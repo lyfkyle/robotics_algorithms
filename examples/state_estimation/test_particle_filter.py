@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 from robotics_algorithm.env.continuous_world_2d import DiffDrive2DEnvComplex
 from robotics_algorithm.state_estimation.particle_filter import ParticleFilter
@@ -12,7 +13,7 @@ def spiral_velocity(spiral_radius, spiral_growth_rate, time, linear_velocity):
         spiral_radius (float): The initial radius of the spiral.
         spiral_growth_rate (float): The rate at which the spiral's radius grows.
         time (float): The current time.
-        linear_velocity (float): The desiredlinear velocity of the robot.
+        linear_velocity (float): The desired linear velocity of the robot.
 
     Returns:
         tuple: The linear velocity and angular velocity of the robot.
@@ -29,15 +30,19 @@ def spiral_velocity(spiral_radius, spiral_growth_rate, time, linear_velocity):
 # Initialize environment
 env = DiffDrive2DEnvComplex(action_dt=0.1, obs_noise_std=[0.1, 0.1, 0.1])
 obs, _ = env.reset(empty=True)
-# Manually override start state and start observation
-env.start_state = [env.size / 2, env.size / 2, 0]
-env.cur_state = [env.size / 2, env.size / 2, 0]
-obs = [env.size / 2, env.size / 2, 0]
+
+# Manually clamp env start state so that robot does not move outside of env when doing the spiral
+start_state = env.cur_state.copy()
+start_state[0] = min(max(env.size / 4.0, start_state[0]), env.size / 4.0 * 3.0)
+start_state[1] = min(max(env.size / 4.0, start_state[1]), env.size / 4.0 * 3.0)
+env.start_state = start_state
+env.cur_state = start_state
+obs = start_state
 env.render()
 
 # Initialize filter
 filter = ParticleFilter(env, num_of_particles=250)
-filter.set_initial_state(env.cur_state)
+# filter.set_initial_state(env.cur_state)
 
 # Add initial state
 # Step env with random actions
@@ -50,7 +55,7 @@ obss.append(obs)
 
 max_steps = 500
 for i in range(max_steps):
-    print(i)
+    print(f'step: {i}/500')
     # action = [random.uniform(0.0, 0.5), random.uniform(0, 0.5)]
     action = spiral_velocity(1.0, 0.01, i * env.action_dt, 0.2)
     new_obs, reward, term, trunc, info = env.step(action)
@@ -77,3 +82,10 @@ env.add_state_path(true_states, id="groundtruth")
 env.add_state_path(obss, id="observed")
 env.add_state_path(filter_states, id="predicted")
 env.render()
+
+# Plot error over time.
+error = np.linalg.norm(true_states - filter_states, axis=-1)
+plt.plot(error)
+plt.title('Error over time')
+plt.show()
+
