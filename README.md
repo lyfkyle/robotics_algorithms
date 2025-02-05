@@ -5,6 +5,7 @@
 This repository contains pure-python implementation for essential robotics algorithms.
 
 The main benefits are:
+
 1. Have a single source of truth of various algorithms with clear explanation.
 2. Implemented with clear separation between dynamics, environment and algorithm, emphasizing that a lot of algorithms, e.g planing under uncertainties, optimal control, share the same underlying problem formulation，eg. MDP.
 
@@ -22,12 +23,14 @@ python 3.10
 - Run `pip install -e .`
 - Run various scripts inside examples folder.
 
-For example, to run a* to find the shortest path between start and goal in a grid world
+For example, to run a\* to find the shortest path between start and goal in a grid world
+
 ```python
 python examples/planning/test_a_star.py
 ```
 
 ## Status
+
 This repository is undergoing significant development. Here is the status checklist.
 
 - [ ] Robot Dynamics
@@ -39,24 +42,27 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] Quadrotor
   - [ ] Quadruped
 - [x] State Estimation
-  - [ ] Localizaion   
+  - [ ] Localizaion
     - [x] Discrete bayes filter
     - [x] Kalman filter
     - [x] Extended Kalman filter
     - [x] Particle filter (MCL)
-    - [ ] AMCL
+    - [x] AMCL
   - [ ] SLAM
     - [ ] EKF SLAM
     - [ ] Fast SLAM
-    - [ ] Graph SLAM  
+    - [ ] Graph SLAM
 - [ ] Planing
   - [x] Discrete Planning
     - [x] Dijkstra
     - [x] A-star
-  - [x] Motion Planning
-    - [x] RRT / RRT-Connect / RRT*
+  - [ ] Motion Planning
+    - [x] RRT / RRT-Connect
+    - [x] RRT\*
+    - [ ] RRT\*-Connect
     - [x] PRM
-    - [ ] BIT*
+    - [ ] Informed RRT\*
+    - [ ] BIT\*
   - [x] MDP
     - [x] Value iteration
     - [x] policy iteration
@@ -95,3 +101,7 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] 2D SLAM
   - [ ] Multi-arm bandits (POMDP)
   - [ ] Tiger (POMDP)
+
+## Known issues
+
+- [ ] EKF gives high localisation error at some instances.
