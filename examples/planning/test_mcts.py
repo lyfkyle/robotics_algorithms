@@ -6,7 +6,7 @@ from robotics_algorithm.planning import MCTS
 
 env = FrozenLake(dense_reward=True)  # For online tree search, dense reward needs to be enabled.
 # env = CliffWalking(dense_reward=True)  # For online tree search, dense reward needs to be enabled.
-state, _ = env.reset(random_env=False)
+state, _ = env.reset()
 env.render()
 
 planner = MCTS(env)

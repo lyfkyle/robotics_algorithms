@@ -43,7 +43,7 @@ class HybridAStar:
         g = {}  # cost-to-come from start to a state
         f = {}  # cost-to-come + heuristic cost-to-go
         prev_state_dict = {}  # used to extract shortest path
-        state_dict = {}  # key is some discrete state key, value is the actual continous state.
+        state_dict = {}  # key is some discrete state key, value is the actual continuous state.
 
         start_key = self._state_key_func(start)
         goal_key = self._state_key_func(goal)
