@@ -22,7 +22,16 @@ class FrozenLake(MDPEnv):
     FREE = 0
     OBSTACLE = 1
 
-    def __init__(self, size=5, num_of_obstacles=None, dense_reward: float = False):
+    def __init__(self, size=5, num_of_obstacles=None, dense_reward: float = False, random_env: bool = False):
+        """
+        Constructor.
+
+        Args:
+            size (int): the size of the environment, the environment is a square of size x size.
+            num_of_obstacles (int): the number of obstacles in the environment.
+            dense_reward (bool): whether the environment uses dense reward.
+            random_env (bool): whether to use a random environment.
+        """
         super().__init__()
 
         self.size = size
@@ -31,6 +40,7 @@ class FrozenLake(MDPEnv):
         self.obstacles = []
         self.cur_state = None
         self.dense_reward = dense_reward
+        self.random_env = random_env
 
         # Get all indices inside the 2D grid
         indices = np.indices((size, size))
@@ -42,8 +52,8 @@ class FrozenLake(MDPEnv):
         self.state_transition_dist_type = DistributionType.CATEGORICAL.value
 
     @override
-    def reset(self, random_env=True) -> tuple:
-        if not random_env:
+    def reset(self) -> tuple:
+        if not self.random_env:
             self.start_state = (0, 0)
             self.goal_state = (self.size - 1, self.size - 1)
             self.obstacles = [(1, 1), (3, 1), (1, 2), (4, 2), (4, 3), (2, 4)]
@@ -65,19 +75,19 @@ class FrozenLake(MDPEnv):
         i, j = state
 
         new_states = []
-        if action == 0:
+        if action == 0:  # up
             new_states.append((i, min(j + 1, self.size - 1)))
             new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
             new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
-        elif action == 1:
+        elif action == 1:  # right
             new_states.append((min(i + 1, self.size - 1), j))
             new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
             new_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
-        elif action == 2:
+        elif action == 2:  # btm
             new_states.append((i, max(0, j - 1)))
             new_states.append((max(0, i - 1), max(0, j - 1)))
             new_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
-        elif action == 3:
+        elif action == 3:  # left
             new_states.append((max(0, i - 1), j))
             new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
             new_states.append((max(0, i - 1), max(0, j - 1)))
@@ -136,7 +146,7 @@ class FrozenLake(MDPEnv):
         while not valid:
             state = np.random.randint(0, self.size, (2))
             if self.map[state[0], state[1]] == FrozenLake.FREE:
-                return (state[0], state[1])
+                return state.tolist()
 
     @override
     def render(self):
