@@ -29,6 +29,10 @@ For example, to run a\* to find the shortest path between start and goal in a gr
 python examples/planning/test_a_star.py
 ```
 
+## News
+
+Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
+
 ## Status
 
 This repository is undergoing significant development. Here is the status checklist.
