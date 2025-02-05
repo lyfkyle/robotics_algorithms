@@ -65,7 +65,7 @@ class MCControlOnPolicy:
         # Keeps track of sum and count of returns for each state
         # to calculate an average. We could use an array to save all
         # returns (like in the book) but that's memory inefficient.
-        returns_count = defaultdict(int)
+        state_action_visit_cnt = defaultdict(int)
 
         # for plotting
         self.episodes = []
@@ -102,7 +102,7 @@ class MCControlOnPolicy:
 
                 state = tuple(next_state)
 
-            # first-visit MC Prediction
+            # every-visit MC Prediction
             # Find all states the we've visited in this episode
             # We convert each state to a tuple so that we can use it as a dict key
             state_action_in_episode = set(
@@ -116,8 +116,8 @@ class MCControlOnPolicy:
                 # calculate total return
                 total_return = sum([x[2] * (discount_factor**i) for i, x in enumerate(trajectory[first_idx:])])
                 # calculate average return in incremental fashion
-                returns_count[state_action] += 1
-                self.Q[state][action] = self.Q[state][action] + (1.0 / returns_count[state_action]) * (
+                state_action_visit_cnt[state_action] += 1
+                self.Q[state][action] = self.Q[state][action] + (1.0 / state_action_visit_cnt[state_action]) * (
                     total_return - self.Q[state][action]
                 )
 
