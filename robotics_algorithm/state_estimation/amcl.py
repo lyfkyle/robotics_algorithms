@@ -28,12 +28,17 @@ class AMCL(ParticleFilter):
         self.min_samples = min_particles
         self.max_samples = max_particles
 
+        # For KLD sampling
+        # ! The statistical bound says: if we choose N number of samples, then we can guarantee that with probability quantile,
+        # ! the KL-divergence between the MLE and the true distribution is less than epsilon.
         self.quantile = 0.99
         self.epsilon = 0.05
-        self.w_short_term = 0
-        self.w_long_term = 0
+
+        # For Augmentation
         self.alpha_short_term = 0.1
         self.alpha_long_term = 0.001
+        self.w_short_term = 0
+        self.w_long_term = 0
 
     @override
     def update(self, observation):
@@ -87,8 +92,8 @@ class AMCL(ParticleFilter):
         if k <= 1:
             return self.max_samples
 
-        # The statistical bound says: if we choose n number of samples, then we can guarantee that with probability quantile,
-        # the KL-divergence between the MLE and the true distribution is less than epsilon.
+        # ! The statistical bound says: if we choose n number of samples, then we can guarantee that with probability quantile,
+        # ! the KL-divergence between the MLE and the true distribution is less than epsilon.
         a = 1
         b = 2 / (9 * (k - 1))
         c = math.sqrt(2 / (9 * (k - 1))) * self.quantile  # Upper X quantile of normal distribution
