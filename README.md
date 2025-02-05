@@ -61,7 +61,6 @@ This repository is undergoing significant development. Here is the status checkl
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
-    - [ ] Cost-aware Hybrid A-star 
   - [ ] Motion Planning
     - [x] RRT / RRT-Connect
     - [x] RRT\*
@@ -79,10 +78,14 @@ This repository is undergoing significant development. Here is the status checkl
     - [ ] SARSOP
     - [ ] DESPOT
 - [ ] Control
-  - [x] Classical control (PID)
-  - [x] LQR
-  - [x] MPPI
-  - [x] CEM-MPC
+  - [x] Classical control
+    - [x] PID
+  - [ ] Optimal Control
+    - [x] LQR
+    - [x] MPPI
+    - [x] CEM-MPC
+  - [ ] Other
+    - [ ] Regulated Pure Pursuit
 - [ ] Imitation learning
   - [ ] ACT
   - [ ] Diffusion-policy
@@ -105,6 +108,7 @@ This repository is undergoing significant development. Here is the status checkl
   - [x] 2D navigation with differential drive
     - [x] Deterministic and fully-observable
     - [x] Stochastic and partially-observable
+    - [ ] With obstacle-distance cost
   - [ ] 2D localization
   - [ ] 2D SLAM
   - [ ] Multi-arm bandits (POMDP)
