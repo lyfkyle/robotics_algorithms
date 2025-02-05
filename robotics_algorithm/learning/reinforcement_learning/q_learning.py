@@ -46,7 +46,7 @@ class QLearning:
         return policy_fn
 
     def run(
-        self, num_episodes: int = 500, discount_factor: float = 0.95, epsilon: float = 0.1, alpha=0.5
+        self, num_episodes: int = 500, discount_factor: float = 0.95, epsilon: float = 0.1, alpha=0.05
     ) -> tuple[dict, Callable]:
         """
         Run the SARSA algorithm to learn the optimal policy.
