@@ -1,5 +1,19 @@
 # Changelog
 
+## [v0.10.0]
+
+### Added
+
+- Added cost-aware differential drive path planning
+
+### Fixed
+
+- Fixed a bug in Hybrid A-star
+
+### Changed
+
+- Split continuous 2d env into separate classes for planning, control and localization, each with its own file.
+
 ## [v0.9.1]
 
 ### Added

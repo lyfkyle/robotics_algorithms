@@ -31,11 +31,14 @@ python examples/planning/test_a_star.py
 
 ## News
 
-Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
+- Added cost-aware differential drive path planning
+- Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
 
 ## Status
 
 This repository is undergoing significant development. Here is the status checklist.
+
+Algorithms
 
 - [ ] Robot Dynamics
   - [x] Differential drive
@@ -56,8 +59,8 @@ This repository is undergoing significant development. Here is the status checkl
     - [ ] EKF SLAM
     - [ ] Fast SLAM
     - [ ] Graph SLAM
-- [ ] Planing
-  - [x] Discrete Planning
+- [ ] Planning
+  - [x] Path Planning
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
@@ -113,6 +116,11 @@ This repository is undergoing significant development. Here is the status checkl
   - [ ] 2D SLAM
   - [ ] Multi-arm bandits (POMDP)
   - [ ] Tiger (POMDP)
+
+In addition to the algorithm itself, also implement several realistic robotics problems that often require additional
+domain-specific components and strategies.
+
+- [x] Path planning for differential drive robot using Hybrid A Star with original heuristics and cost weighted distance measure.
 
 ## Known issues
 

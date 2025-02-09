@@ -1,5 +1,6 @@
 from typing import Callable, Any
 import heapq
+import numpy as np
 
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
@@ -52,7 +53,7 @@ class HybridAStar:
 
         g[start_key] = 0
         f[start_key] = self._heuristic_func(start, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
-        heapq.heappush(priority_q, (f[start_key], start))
+        heapq.heappush(priority_q, (f[start_key], start_key))
         open_set = set()
         close_set = set()
         open_set.add(start_key)
@@ -65,11 +66,11 @@ class HybridAStar:
                 break
 
             # pop the best state found so far.
-            _, best_state = heapq.heappop(priority_q)
-            best_state_key = self._state_key_func(best_state)
+            _, best_state_key = heapq.heappop(priority_q)
             if best_state_key in open_set:
                 open_set.remove(best_state_key)
                 close_set.add(best_state_key)
+                best_state = state_dict[best_state_key]
             else:
                 continue  # If best_state in close_set, just continue
 
@@ -101,7 +102,7 @@ class HybridAStar:
                         # print(new_state_key, h_new_state)
                         f[new_state_key] = g_new_state + h_new_state
                         g[new_state_key] = g_new_state
-                        heapq.heappush(priority_q, (f[new_state_key], new_state))
+                        heapq.heappush(priority_q, (f[new_state_key], new_state_key))
                         state_dict[new_state_key] = new_state
                         prev_state_dict[new_state_key] = (best_state_key, action)
                         open_set.add(new_state_key)
