@@ -1,3 +1,15 @@
+"""Example to plan a path for differential drive robot with added cost to encourage path planner to stay away from
+obstacles.
+
+It is often desired to have larger clearance from environment obstacles, therefore, we can add a cost value to each
+map cell based on the distance to nearest obstacle. The distance is now weighted by this cost to encourage path planner
+to find a path that stays away from obstacles.
+
+In this example, we in addition use the original heuristics proposed by Hybrid A* to guide the path planner. The
+heuristic is calculated as the maximum of two sub heuristic function, one ignoring obstacles but considering kinematics, and
+another ignoring kinematics but considering obstacles.
+"""
+
 import time
 import math
 import numpy as np
@@ -59,7 +71,7 @@ def get_obstacle_cache_indices(x, y):
 
 def precompute_obstacle_heuristic(env: DiffDrive2DPlanningWithCost, goal):
     """
-    Precompute the obstacle heuristic. The heuristic is computed using Dijkstra's algorithm. The heuristic is the
+    Precompute the obstacle heuristic. The heuristic is computed using Breadth First Search. The heuristic is the
     minimum cost weighted distance to the goal state.
 
     Args:
@@ -70,7 +82,7 @@ def precompute_obstacle_heuristic(env: DiffDrive2DPlanningWithCost, goal):
         A dictionary where the key is the state key and the value is the obstacle heuristic.
     """
 
-    # The queue for Dijkstra's algorithm. The element is a tuple of (x, y, previous value)
+    # element is a tuple of (x, y, previous value)
     dq = deque()
 
     # The cache of the obstacle heuristic
@@ -158,4 +170,4 @@ else:
 
     env.add_action_path(path)
 
-env.render(title="path_with_cost_penalty")
+env.render(title='path_with_cost_penalty')

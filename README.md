@@ -119,7 +119,7 @@ Algorithms
 In addition to the algorithm itself, also implement several realistic robotics problems that often require additional
 domain-specific components and strategies.
 
-- [ ] Path planning for differential drive robot using Hybrid A Star with original heuristics and cost weighted distance measure.
+- [x] Path planning for differential drive robot using Hybrid A Star with original heuristics and cost weighted distance measure.
 
 ## Known issues
 
