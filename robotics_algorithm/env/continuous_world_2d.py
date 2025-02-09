@@ -434,16 +434,24 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
 
         self._cost_map = {}
         self._costmap_res = 0.1
-        self._exp_decay = 0.1
+        self._exp_decay = 0.5
         self.cost_penalty = 1.0
         self.max_cost = 255
 
     @override
-    def reset(self, empty=False, random_env=True):
-        super().reset(empty, random_env)
+    def reset(self):
+        self.obstacles = [[4, 6, 1], [6, 4, 1]]
+        self.start_state = DEFAULT_START
+        self.goal_state = DEFAULT_GOAL
+
+        self.ref_path = None
+        self.cur_ref_path_idx = 0
+        self.cur_state = self.start_state.copy()
 
         self._cost_map = {}
         self.precompute_cost()
+
+        return self.sample_observation(self.cur_state), {}
 
     def precompute_cost(self):
         costmap_size = int(self.size / self._costmap_res)
