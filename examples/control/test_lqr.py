@@ -8,7 +8,7 @@ from robotics_algorithm.control.lqr import LQR
 env = DoubleIntegratorEnv(use_discrete_time_model=False, observation_noise_std=1e-5, state_transition_noise_std=1e-5)
 
 env.reset()
-print("cur_state: ", env.start_state)
+print('cur_state: ', env.start_state)
 env.render()
 
 # initialize controller
@@ -37,7 +37,7 @@ env.render()
 env = DoubleIntegratorEnv(use_discrete_time_model=True, observation_noise_std=0, state_transition_noise_std=0)
 
 env.reset()
-print("cur_state: ", env.start_state)
+print('cur_state: ', env.start_state)
 env.render()
 
 # initialize controller
@@ -66,7 +66,7 @@ env.render()
 env = DoubleIntegratorEnv(use_discrete_time_model=True, observation_noise_std=0, state_transition_noise_std=0)
 
 env.reset()
-print("cur_state: ", env.start_state)
+print('cur_state: ', env.start_state)
 env.render()
 
 # initialize controller

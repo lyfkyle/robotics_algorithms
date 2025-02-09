@@ -1,7 +1,7 @@
 import time
 import math
 
-from robotics_algorithm.env.continuous_world_2d import DiffDrive2DPlanning
+from robotics_algorithm.env.continuous_2d.diff_drive_2d_planning import DiffDrive2DPlanning
 from robotics_algorithm.planning import HybridAStar
 
 # Initialize environment

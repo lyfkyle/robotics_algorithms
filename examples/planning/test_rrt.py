@@ -1,11 +1,11 @@
 import time
 import numpy as np
 
-from robotics_algorithm.env.continuous_world_2d import OmniDriveTwoDEnv
+from robotics_algorithm.env.continuous_2d.omni_2d_planning import OmniDrive2DPlanning
 from robotics_algorithm.planning import RRT
 
 # Initialize environment
-env = OmniDriveTwoDEnv()
+env = OmniDrive2DPlanning()
 
 # -------- Settings ------------
 FIX_MAZE = True

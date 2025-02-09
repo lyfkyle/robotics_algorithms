@@ -2,8 +2,9 @@ import time
 import math
 import numpy as np
 from collections import deque
+from matplotlib import pyplot as plt
 
-from robotics_algorithm.env.continuous_world_2d import DiffDrive2DPlanningWithCost
+from robotics_algorithm.env.continuous_2d.diff_drive_2d_planning import DiffDrive2DPlanningWithCost
 from robotics_algorithm.planning import HybridAStar
 from robotics_algorithm.utils import math_utils
 
@@ -49,11 +50,11 @@ def distance_heuristic(state, goal):
 
 
 def obstacle_heuristic(state, goal):
-    return obst_h_cache[get_obstacle_cache_key(state[0], state[1])]
+    return obst_h_cache[get_obstacle_cache_indices(state[0], state[1])]
 
 
-def get_obstacle_cache_key(x, y):
-    return (round(x / OBST_CACHE_RES), round(y / OBST_CACHE_RES))
+def get_obstacle_cache_indices(x, y):
+    return (math.floor(x / OBST_CACHE_RES), math.floor(y / OBST_CACHE_RES))
 
 
 def precompute_obstacle_heuristic(env: DiffDrive2DPlanningWithCost, goal):
@@ -73,47 +74,48 @@ def precompute_obstacle_heuristic(env: DiffDrive2DPlanningWithCost, goal):
     dq = deque()
 
     # The cache of the obstacle heuristic
-    obst_h_cache = {}
+    obst_h_size = round(env.size / OBST_CACHE_RES)
+    obst_h_cache = np.full((obst_h_size, obst_h_size), -1.0, dtype=np.float32)
+    gx, gy = get_obstacle_cache_indices(goal[0], goal[1])
     # The heuristic value of the goal state is 0
-    obst_h_cache[get_obstacle_cache_key(goal[0], goal[1])] = 0
+    obst_h_cache[gx, gy] = 0
 
     # Initialize the queue with the 4 neighbors of the goal state
-    gx, gy = goal[0], goal[1]
-    dq.append((gx + OBST_CACHE_RES, gy, 0))
-    dq.append((gx - OBST_CACHE_RES, gy, 0))
-    dq.append((gx, gy + OBST_CACHE_RES, 0))
-    dq.append((gx, gy - OBST_CACHE_RES, 0))
+    dq.append((gx + 1, gy, 0))
+    dq.append((gx - 1, gy, 0))
+    dq.append((gx, gy + 1, 0))
+    dq.append((gx, gy - 1, 0))
 
     while len(dq) > 0:
         # Get the next element from the queue
         x, y, prev_value = dq.popleft()
 
         # If the state is not within the environment, skip it
-        if x < 0 or x > env.size or y < 0 or y > env.size:
+        if x < 0 or x >= obst_h_size or y < 0 or y >= obst_h_size:
             continue
 
-        # Get the key of the state
-        xy_key = get_obstacle_cache_key(x, y)
-
-        # If the state is not valid, skip it
-        if not env.is_state_valid((x, y)):
-            obst_h_cache[xy_key] = float('inf')
+        # if computed, skip
+        if obst_h_cache[x, y] >= 0:
             continue
 
-        # If the state is not in the cache, add it
-        if xy_key not in obst_h_cache:
-            # Calculate the cost weighted distance to the state
-            cost_weighted_dist = OBST_CACHE_RES * (1.0 + COST_PENALTY * env.get_cost((x, y)) / env.max_cost)
+        state = (x * OBST_CACHE_RES, y * OBST_CACHE_RES, 0)
+        # If the state is not valid, distance is infinity
+        if not env.is_state_valid(state):
+            obst_h_cache[x, y] = np.inf
+
+        # else, calculate the cost weighted distance to the state
+        else:
+            cost_weighted_dist = OBST_CACHE_RES * (1.0 + COST_PENALTY * env.get_cost(state) / env.max_cost)
             cur_value = prev_value + cost_weighted_dist
 
             # Add the state to the cache
-            obst_h_cache[xy_key] = cur_value
+            obst_h_cache[x, y] = cur_value
 
-            # Add the 4 neighbors of the state to the queue
-            dq.append((x + OBST_CACHE_RES, y, cur_value))
-            dq.append((x - OBST_CACHE_RES, y, cur_value))
-            dq.append((x, y + OBST_CACHE_RES, cur_value))
-            dq.append((x, y - OBST_CACHE_RES, cur_value))
+        # Add the 4 neighbors of the state to the queue
+        dq.append((x + 1, y, cur_value))
+        dq.append((x - 1, y, cur_value))
+        dq.append((x, y + 1, cur_value))
+        dq.append((x, y - 1, cur_value))
 
     return obst_h_cache
 
@@ -133,20 +135,9 @@ env.render()
 planner = HybridAStar(env, heuristic_func, state_key_func)
 obst_h_cache = precompute_obstacle_heuristic(env, env.goal_state)
 
-import matplotlib.pyplot as plt
-
-obst_h_img = np.zeros((100, 100))
-for x in range(100):
-    for y in range(100):
-        if (x, y) not in obst_h_cache:
-            obst_h_img[x, y] = 100
-        elif obst_h_cache[(x, y)] == float('inf'):
-            obst_h_img[x, y] = 100
-        else:
-            obst_h_img[x, y] = obst_h_cache[(x, y)]
-        # print(obst_h_cache[(x, y)])
-
-plt.imshow(obst_h_img, cmap='hot', alpha=0.5, origin="lower", extent=[0, 10, 0, 10])
+# visualize obstacle heuristic
+plt.imshow(obst_h_cache, cmap='hot', alpha=0.5, origin='lower', extent=[0, 10, 0, 10])
+plt.title('Obstacle Heuristic')
 plt.show()
 
 

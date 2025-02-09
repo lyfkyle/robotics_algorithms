@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from robotics_algorithm.env.continuous_world_2d import DiffDrive2DLocalisation
+from robotics_algorithm.env.continuous_2d.diff_drive_2d_localization import DiffDrive2DLocalization
 from robotics_algorithm.state_estimation.extended_kalman_filter import ExtendedKalmanFilter
 
 
@@ -28,7 +28,7 @@ def spiral_velocity(spiral_radius, spiral_growth_rate, time, linear_velocity):
 
 
 # Initialize environment
-env = DiffDrive2DLocalisation(action_dt=0.1, obs_noise_std=[0.1, 0.1, 0.1])
+env = DiffDrive2DLocalization(action_dt=0.1, obs_noise_std=[0.1, 0.1, 0.1])
 obs, _ = env.reset(empty=True)
 
 # Manually clamp env start state so that robot does not move outside of env when doing the spiral
@@ -38,7 +38,7 @@ start_state[1] = min(max(env.size / 4.0, start_state[1]), env.size / 4.0 * 3.0)
 env.start_state = start_state
 env.cur_state = start_state
 obs = start_state
-env.render(draw_goal=False)
+env.render()
 
 # Initialize filter
 filter = ExtendedKalmanFilter(env)
@@ -82,7 +82,7 @@ print('RMSE: {}'.format(rmse))
 env.add_state_path(true_states, id='groundtruth')
 env.add_state_path(obss, id='observed')
 env.add_state_path(filter_states, id='predicted')
-env.render(draw_goal=False)
+env.render()
 
 # Plot error over time.
 error = np.linalg.norm(true_states - filter_states, axis=-1)
