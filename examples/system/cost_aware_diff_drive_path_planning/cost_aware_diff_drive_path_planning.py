@@ -13,7 +13,7 @@ env = DiffDrive2DPlanningWithCost(discrete_action=True)  # use discrete action f
 
 # -------- Settings ------------
 FIX_MAZE = True
-COST_PENALTY = 5.0
+COST_PENALTY = 3.0  # set this to 0 to disable cost penalty
 OBST_CACHE_RES = 0.1
 
 
@@ -136,10 +136,10 @@ planner = HybridAStar(env, heuristic_func, state_key_func)
 obst_h_cache = precompute_obstacle_heuristic(env, env.goal_state)
 
 # visualize obstacle heuristic
+plt.figure(figsize=(10, 10), dpi=100)
 plt.imshow(obst_h_cache, cmap='hot', alpha=0.5, origin='lower', extent=[0, 10, 0, 10])
 plt.title('Obstacle Heuristic')
 plt.show()
-
 
 # run path planner
 start_time = time.time()
@@ -158,4 +158,4 @@ else:
 
     env.add_action_path(path)
 
-env.render()
+env.render(title="path_with_cost_penalty")

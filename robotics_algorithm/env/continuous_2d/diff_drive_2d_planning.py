@@ -234,20 +234,19 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
 
     @override
     def reward_func(self, state, action=None, new_state=None):
-        # If reference path does not exist, use distance travelled reward. Useful for computing shortest path.
-        if self.ref_path is None:
-            if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
-                return -100
+        # cost-weighted distance travelled reward.
+        if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
+            return -100
 
-            if not self.is_state_valid(new_state):
-                return -100
+        if not self.is_state_valid(new_state):
+            return -100
 
-            if self.is_state_similar(new_state, self.goal_state):
-                return 0
+        if self.is_state_similar(new_state, self.goal_state):
+            return 0
 
-            return -1 * (1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost)  # cost-weighted distance.
+        return -1 * (1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost)  # cost-weighted distance.
 
-    def render(self, draw_start=True, draw_goal=True):
+    def render(self, draw_start=True, draw_goal=True, title="environment"):
         if self.interactive_viz:
             if not self._fig_created:
                 plt.ion()
@@ -291,31 +290,10 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
         #     c="blue",
         #     linestyle="None",
         # )
-        if self.local_plan:
-            for state in self.local_plan:
-                plt.scatter(
-                    state[0],
-                    state[1],
-                    # s=(s * self.robot_radius * 2) ** 2,
-                    s=(s * 0.01 * 2) ** 2,
-                    c='blue',
-                    marker='o',
-                )
-
         if self.path is not None:
             plt.plot(
                 [s[0] for s in self.path],
                 [s[1] for s in self.path],
-                # s=(s * self.robot_radius * 2) ** 2,
-                ms=(s * 0.01 * 2),
-                c='green',
-                marker='o',
-            )
-
-        if self.ref_path is not None:
-            plt.plot(
-                [s[0] for s in self.ref_path],
-                [s[1] for s in self.ref_path],
                 # s=(s * self.robot_radius * 2) ** 2,
                 ms=(s * 0.01 * 2),
                 c='green',
@@ -341,6 +319,7 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
         plt.xticks(np.arange(self.size))
         plt.ylim(0, self.size)
         plt.yticks(np.arange(self.size))
+        plt.title(title)
         plt.legend()
 
         if self.interactive_viz:

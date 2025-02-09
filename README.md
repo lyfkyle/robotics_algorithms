@@ -116,10 +116,10 @@ Algorithms
   - [ ] Multi-arm bandits (POMDP)
   - [ ] Tiger (POMDP)
 
-In addition to the algorithm itself, also implement several realistic examples that
-often require additional domain-specific components and strategies.
+In addition to the algorithm itself, also implement several realistic robotics problems that often require additional
+domain-specific components and strategies.
 
-- [ ] Path planning for differential drive robot using Hybrid A Star with original heuristics, analytic expansion and cost weighted distance measure.
+- [ ] Path planning for differential drive robot using Hybrid A Star with original heuristics and cost weighted distance measure.
 
 ## Known issues
 
