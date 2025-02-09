@@ -31,7 +31,7 @@ python examples/planning/test_a_star.py
 
 ## News
 
-- Added cost-aware differential drive path planning
+- 09/02/2025: Added cost-aware differential drive path planning
 - Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
 
 ## Status
