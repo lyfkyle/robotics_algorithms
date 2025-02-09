@@ -31,7 +31,8 @@ python examples/planning/test_a_star.py
 
 ## News
 
-Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
+- Added cost-aware differential drive path planning
+- Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
 
 ## Status
 
@@ -59,7 +60,7 @@ Algorithms
     - [ ] Fast SLAM
     - [ ] Graph SLAM
 - [ ] Planning
-  - [x] Discrete Planning
+  - [x] Path Planning
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
