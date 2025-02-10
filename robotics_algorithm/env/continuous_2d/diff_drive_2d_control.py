@@ -5,6 +5,7 @@ from typing_extensions import override
 from robotics_algorithm.env.base_env import (
     DeterministicEnv,
     FullyObservableEnv,
+    FunctionType,
 )
 from robotics_algorithm.env.continuous_2d.diff_drive_2d_env_base import DiffDrive2DEnv
 from robotics_algorithm.utils import math_utils
@@ -25,7 +26,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     goal.
     """
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, discrete_action=False):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, discrete_action=False):
         # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
         #       DiffDrive2DEnv last.
         DeterministicEnv.__init__(self)
@@ -74,7 +75,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         if self.is_state_similar(new_state, self.goal_state):
             return 0
 
-        # calculate stage cost
+        # calculate state cost
         nearest_idx = self._get_nearest_waypoint_to_state(new_state)
         ref_x = self.ref_path[nearest_idx, 0]
         ref_y = self.ref_path[nearest_idx, 1]
@@ -91,6 +92,9 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         progress_cost = 0.1 / (nearest_idx - prev_idx + 1)
 
         return -(path_cost + progress_cost)
+
+    def linearize_state_transition(self, state):
+        return self.robot_model.linearize_dynamics(state)
 
     def _get_nearest_waypoint_to_state(self, state: list):
         """search the closest waypoint to the vehicle on the reference path"""
@@ -203,3 +207,54 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
             plt.pause(0.01)
         else:
             plt.show()
+
+class DiffDrive2DControlRelative(DiffDrive2DControl):
+    """A differential drive robot must reach goal state in a 2d maze with obstacles.
+
+    State: [x, y, theta]
+    Action: [lin_vel, ang_vel]
+
+    Continuous state space.
+    Continuous action space.
+    Deterministic transition.
+    Fully observable.
+
+    In this mode, user must set a reference path, the reward will encourage the robot to track the path to reach the
+    goal. The difference between this class and DiffDrive2DControl is that state is defined with relative to the
+    reference state. This way allows us to liearize the state transition
+    """
+
+    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, discrete_action=False):
+        # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
+        #       DiffDrive2DEnv last.
+        DeterministicEnv.__init__(self)
+        FullyObservableEnv.__init__(self)
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, discrete_action)
+
+        self.ref_path = None
+        self.cur_ref_path_idx = 0
+
+        # declare linear state transition
+        # ! The dynamics is not linear strictly but at each step can be approximated by
+        # ! linearization.
+        # x_new = Ax + Bu (discrete time model)
+        self.state_transition_func_type = FunctionType.LINEAR.value
+
+        # declare quadratic cost
+        # L = x.T @ Q @ x + u.T @ R @ u
+        self.x_cost_weight = 50
+        self.y_cost_weight = 50
+        self.yaw_cost_weight = 1.0
+        self.reward_func_type = FunctionType.QUADRATIC.value
+        self.Q = np.diag([self.x_cost_weight, self.y_cost_weight, self.yaw_cost_weight])
+        self.R = np.diag([1, 1])  # control cost matrix
+
+    @override
+    def reset(self, ref_path):
+        self.ref_path = ref_path
+        state, info = super().reset()
+
+        ref_state = self.ref_path[0]
+        state_relative = np.array(state) - np.array(ref_state)
+        return state_relative.tolist()
+

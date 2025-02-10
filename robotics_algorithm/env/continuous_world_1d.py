@@ -96,6 +96,9 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         new_state_var = [self.state_transition_noise_var, 1e-10]
         return new_state_mean, new_state_var
 
+    def linearize_state_transition(self, state):
+        return self.A, self.B
+
     @override
     def sample_observation(self, state):
         # simulate measuring the position with noise

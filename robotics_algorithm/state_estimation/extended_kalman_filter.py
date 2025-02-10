@@ -48,11 +48,11 @@ class ExtendedKalmanFilter:
         """
         @param control, control
         """
-        A = self.env.state_transition_jacobian(self.state.tolist(), action)
+        F = self.env.state_transition_jacobian(self.state.tolist(), action)
         mean_new_state, _ = self.env.state_transition_func(
             self.state.tolist(), action
         )  # non-linear transition_func
-        new_covariance = A @ self.covariance @ A.transpose() + self.env.state_transition_cov_matrix
+        new_covariance = F @ self.covariance @ F.transpose() + self.env.state_transition_cov_matrix
 
         self.state = np.array(mean_new_state)
         self.covariance = new_covariance

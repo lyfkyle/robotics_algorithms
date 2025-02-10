@@ -137,6 +137,17 @@ class BaseEnv:
         """
         raise NotImplementedError()
 
+    def linearize_state_transition(self, state):
+        """Linearize the state transition function around current state
+
+        Args:
+            state (list): state
+
+        Returns:
+            A, B such that new_state = A @ state + B @ action
+        """
+        raise NotImplementedError()
+
     def observation_func(self, state: list) -> list:
         """Calculate the possible observations for a given state.
 

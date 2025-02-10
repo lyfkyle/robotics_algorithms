@@ -56,6 +56,13 @@ class DiffDrive:
 
         return [x_new.item(), y_new.item(), theta_new]
 
+    def linearize_dynamics(self, state):
+        # linearize dynamics around state -> x_new = Ax + Bu
+        x, y ,theta = state
+        A = np.eye(3)
+        B = np.array([[np.cos(theta) * self.time_res, 0], [np.sin(theta) * self.time_res, 0, 0], [0, self.time_res]]).T
+
+        return A, B
 
 if __name__ == "__main__":
     # Simulation parameters

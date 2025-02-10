@@ -39,8 +39,7 @@ class LQR:
             list: current action
         """
         state = np.array(state).reshape(-1, 1)
-        A, B = self.env.linearize_state_transition(state)
-        Q, R = self.env.Q, self.env.R
+        Q, R, A, B = self.env.Q, self.env.R, self.env.A, self.env.B
 
         if self.discrete_time:
             P = self._solve_dare(A, B, Q, R)
