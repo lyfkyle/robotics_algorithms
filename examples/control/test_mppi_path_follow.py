@@ -10,7 +10,7 @@ CUR_DIR = osp.join(osp.dirname(osp.abspath(__file__)))
 
 # This path is computed using Hybrid A*
 PATH_DT = 0.1
-with open(osp.join(CUR_DIR, 'exmaple_path.json'), 'r') as f:
+with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 
 # Initialize environment

@@ -77,15 +77,14 @@ class DiffDrive2DLocalization(DiffDrive2DEnv, StochasticEnv, PartiallyObservable
         lin_vel = action[0]
         theta = state[2]
 
-        # temp = vel / ang_vel
-        self.A = np.array(
+        self.F = np.array(
             [
                 [1, 0, -lin_vel * np.sin(theta) * self.action_dt],
                 [0, 1, lin_vel * np.cos(theta) * self.action_dt],
                 [0, 0, 1],
             ]
         )
-        return self.A
+        return self.F
 
     def observation_jacobian(self, state, observation):
         """

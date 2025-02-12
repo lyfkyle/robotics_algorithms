@@ -49,7 +49,7 @@ Algorithms
   - [ ] Quadrotor
   - [ ] Quadruped
 - [x] State Estimation
-  - [ ] Localizaion
+  - [x] Localizaion
     - [x] Discrete bayes filter
     - [x] Kalman filter
     - [x] Extended Kalman filter
@@ -87,7 +87,9 @@ Algorithms
     - [x] LQR
     - [x] MPPI
     - [x] CEM-MPC
+    - [ ] Convex-MPC
   - [ ] Other
+    - [ ] Time-elastic Band
     - [ ] Regulated Pure Pursuit
 - [ ] Imitation learning
   - [ ] ACT

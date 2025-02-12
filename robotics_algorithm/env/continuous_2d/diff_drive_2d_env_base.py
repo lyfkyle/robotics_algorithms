@@ -56,7 +56,8 @@ class DiffDrive2DEnv(BaseEnv):
 
         self.state_space = ContinuousSpace(low=[0, 0, -math.pi], high=[self.size, self.size, math.pi])
         if not discrete_action:
-            self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
+            # self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
+            self.action_space = ContinuousSpace(low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')])
         else:
             self.action_space = DiscreteSpace(
                 [
@@ -148,7 +149,8 @@ class DiffDrive2DEnv(BaseEnv):
         return True
 
     def is_state_similar(self, state1, state2):
-        return self.calc_state_key(state1) == self.calc_state_key(state2)
+        # return self.calc_state_key(state1) == self.calc_state_key(state2)
+        return np.linalg.norm(np.array(state1) - np.array(state2)) < 0.2
 
     def calc_state_key(self, state):
         return (round(state[0] / 0.1), round(state[1] / 0.1), round((state[2] + math.pi) / math.radians(30)))

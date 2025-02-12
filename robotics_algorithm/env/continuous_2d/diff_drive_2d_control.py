@@ -50,10 +50,13 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         self.ref_path = np.array(ref_path)
         self.cur_ref_path_idx = 0
 
+        self.start_state = ref_path[0]
+        self.cur_state = ref_path[0]
+        self.goal_state = ref_path[-1]
+
     @override
-    def reset(self, empty=False, random_env=True):
-        self.ref_path = None
-        self.cur_ref_path_idx = 0
+    def reset(self, ref_path, empty=False, random_env=False):
+        self.set_ref_path(ref_path)
 
         return super().reset(empty, random_env)
 
@@ -63,7 +66,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
         # update current reference path index if reference path is present
         if self.ref_path is not None:
-            self.cur_ref_path_idx = self._get_nearest_waypoint_to_state(res[0])
+            self.cur_ref_path_idx = self.get_nearest_waypoint_to_state(res[0])
 
         return res
 
@@ -76,7 +79,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
             return 0
 
         # calculate state cost
-        nearest_idx = self._get_nearest_waypoint_to_state(new_state)
+        nearest_idx = self.get_nearest_waypoint_to_state(new_state)
         ref_x = self.ref_path[nearest_idx, 0]
         ref_y = self.ref_path[nearest_idx, 1]
         ref_yaw = self.ref_path[nearest_idx, 2]
@@ -88,15 +91,12 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
             + self.yaw_cost_weight * yaw_diff**2
         ).item()
 
-        prev_idx = self._get_nearest_waypoint_to_state(state)
+        prev_idx = self.get_nearest_waypoint_to_state(state)
         progress_cost = 0.1 / (nearest_idx - prev_idx + 1)
 
         return -(path_cost + progress_cost)
 
-    def linearize_state_transition(self, state):
-        return self.robot_model.linearize_dynamics(state)
-
-    def _get_nearest_waypoint_to_state(self, state: list):
+    def get_nearest_waypoint_to_state(self, state: list):
         """search the closest waypoint to the vehicle on the reference path"""
         # x, y, _ = state
         # xy_state = np.array([x, y])
@@ -208,7 +208,8 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         else:
             plt.show()
 
-class DiffDrive2DControlRelative(DiffDrive2DControl):
+
+class DiffDrive2DControlRelative(DeterministicEnv, FullyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
     State: [x, y, theta]
@@ -229,9 +230,16 @@ class DiffDrive2DControlRelative(DiffDrive2DControl):
         #       DiffDrive2DEnv last.
         DeterministicEnv.__init__(self)
         FullyObservableEnv.__init__(self)
-        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, discrete_action)
+
+        # TODO refactor this...
+        self._env_impl = DiffDrive2DControl(size, robot_radius, action_dt, discrete_action)
+        self._env_impl.interactive_viz = True
+
+        self.state_space = self._env_impl.state_space
+        self.action_space = self._env_impl.action_space
 
         self.ref_path = None
+        self.lookahead_index = 5
         self.cur_ref_path_idx = 0
 
         # declare linear state transition
@@ -242,19 +250,147 @@ class DiffDrive2DControlRelative(DiffDrive2DControl):
 
         # declare quadratic cost
         # L = x.T @ Q @ x + u.T @ R @ u
-        self.x_cost_weight = 50
-        self.y_cost_weight = 50
+        self.x_cost_weight = 1
+        self.y_cost_weight = 1
         self.yaw_cost_weight = 1.0
         self.reward_func_type = FunctionType.QUADRATIC.value
         self.Q = np.diag([self.x_cost_weight, self.y_cost_weight, self.yaw_cost_weight])
         self.R = np.diag([1, 1])  # control cost matrix
 
     @override
-    def reset(self, ref_path):
+    def reset(self, ref_path, empty=False, random_env=False):
         self.ref_path = ref_path
-        state, info = super().reset()
+        self.cur_ref_path_idx = min(self.lookahead_index, len(self.ref_path) - 1)
 
-        ref_state = self.ref_path[0]
-        state_relative = np.array(state) - np.array(ref_state)
-        return state_relative.tolist()
+        self._state_impl, info = self._env_impl.reset(ref_path, empty, random_env)
 
+        self._cur_ref_state = np.array(ref_path[self.cur_ref_path_idx])
+        # self._cur_ref_state = [3.0, 3.0, 0.0]
+        state_relative = (np.array(self._state_impl) - self._cur_ref_state).tolist()
+
+        self.start_state = state_relative
+        self.goal_state = self.ref_path[-1]
+        self.cur_state = state_relative
+        return state_relative, info
+
+    @override
+    def state_transition_func(self, state: list, action: list) -> list:
+        # compute next state
+        state_impl = self._cur_ref_state + np.array(state)
+        new_state_impl = self._env_impl.state_transition_func(state_impl, action)
+        new_state = np.array(new_state_impl) - self._cur_ref_state
+
+        return new_state.tolist()
+
+    @override
+    def get_state_info(self, state):
+        return self._env_impl.get_state_info(state)
+
+    @override
+    def step(self, action):
+        new_state, reward, term, trunc, info = self._env_impl.step(action)
+
+        # self._state_impl = np.array(new_state) + self._cur_ref_state
+        self._state_impl = new_state
+
+        # update current reference path index if reference path is present
+        nearest_wp_index = self._env_impl.get_nearest_waypoint_to_state(self._state_impl)
+        if np.linalg.norm(np.array(self._state_impl) - np.array(self._cur_ref_state)) < 0.2:
+            # if nearest_wp_index > self.cur_ref_path_idx - 2:
+            self.cur_ref_path_idx = min(nearest_wp_index + self.lookahead_index, len(self.ref_path) - 1)
+            self._cur_ref_state = self.ref_path[self.cur_ref_path_idx]
+
+        self.cur_state = (np.array(self._state_impl) - self._cur_ref_state).tolist()
+
+        return self.cur_state, reward, term, trunc, info
+
+    @override
+    def linearize_state_transition(self, state):
+        state_impl = np.array(state) + self._cur_ref_state
+        return self._env_impl.robot_model.linearize_dynamics(state_impl)
+
+    @override
+    def render(self, draw_start=True, draw_goal=True, draw_current=True):
+        if self._env_impl.interactive_viz:
+            if not self._env_impl._fig_created:
+                plt.ion()
+                plt.figure(figsize=(10, 10), dpi=100)
+                self._env_impl._fig_created = True
+        else:
+            plt.figure(figsize=(10, 10), dpi=100)
+
+        plt.clf()
+        s = 1000 / self._env_impl.size / 2
+        for obstacle in self._env_impl.obstacles:
+            x, y, r = obstacle
+            plt.scatter(
+                x,
+                y,
+                s=(s * r * 2) ** 2,
+                c='black',
+                marker='o',
+            )
+        if draw_goal:
+            plt.scatter(
+                self._env_impl.goal_state[0],
+                self._env_impl.goal_state[1],
+                s=(s * self._env_impl.robot_radius * 2) ** 2,
+                c='red',
+                marker='o',
+            )
+        if draw_start:
+            plt.scatter(
+                self._env_impl.start_state[0],
+                self._env_impl.start_state[1],
+                s=(s * self._env_impl.robot_radius * 2) ** 2,
+                c='yellow',
+                marker='o',
+            )
+        if self.ref_path is not None:
+            plt.plot(
+                [s[0] for s in self._env_impl.ref_path],
+                [s[1] for s in self._env_impl.ref_path],
+                # s=(s * self.robot_radius * 2) ** 2,
+                ms=(s * 0.01 * 2),
+                c='green',
+                marker='o',
+            )
+        plt.scatter(
+            self._cur_ref_state[0],
+            self._cur_ref_state[1],
+            # s=(s * self.robot_radius * 2) ** 2,
+            s=(s * 0.1 * 2) ** 2,
+            c='orange',
+            marker='o',
+            zorder=2.5
+        )
+        if draw_current:
+            plt.scatter(
+                self._env_impl.cur_state[0],
+                self._env_impl.cur_state[1],
+                s=(s * self._env_impl.robot_radius * 2) ** 2,
+                c='blue',
+                marker='o',
+                zorder=2.5
+            )
+            plt.arrow(
+                self._env_impl.cur_state[0],
+                self._env_impl.cur_state[1],
+                np.cos(self._env_impl.cur_state[2]) * self._env_impl.robot_radius * 1.5,
+                np.sin(self._env_impl.cur_state[2]) * self._env_impl.robot_radius * 1.5,
+                head_width=0.1,
+                head_length=0.2,
+                fc='r',
+                ec='r',
+                zorder=2.5
+            )
+        plt.xlim(0, self._env_impl.size)
+        plt.xticks(np.arange(self._env_impl.size))
+        plt.ylim(0, self._env_impl.size)
+        plt.yticks(np.arange(self._env_impl.size))
+        plt.legend()
+
+        if self._env_impl.interactive_viz:
+            plt.pause(0.01)
+        else:
+            plt.show()

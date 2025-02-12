@@ -21,7 +21,7 @@ class LQR:
         """
         assert env.state_space.type == SpaceType.CONTINUOUS.value
         assert env.action_space.type == SpaceType.CONTINUOUS.value
-        assert env.state_transition_type == FunctionType.LINEAR.value
+        assert env.state_transition_func_type == FunctionType.LINEAR.value
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 
         self.env = env

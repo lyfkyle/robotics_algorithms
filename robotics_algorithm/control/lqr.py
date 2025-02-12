@@ -21,7 +21,7 @@ class LQR:
         """
         assert env.state_space.type == SpaceType.CONTINUOUS.value
         assert env.action_space.type == SpaceType.CONTINUOUS.value
-        assert env.state_transition_type == FunctionType.LINEAR.value
+        assert env.state_transition_func_type == FunctionType.LINEAR.value
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 
         self.env = env
@@ -38,9 +38,9 @@ class LQR:
         Returns:
             list: current action
         """
-        state = np.array(state).reshape(-1, 1)
         A, B = self.env.linearize_state_transition(state)
         Q, R = self.env.Q, self.env.R
+        state = np.array(state).reshape(-1, 1)
 
         if self.discrete_time:
             P = self._solve_dare(A, B, Q, R)
@@ -50,7 +50,7 @@ class LQR:
         K = np.linalg.inv(R) @ B.T @ P
 
         u = -K @ state
-        return u.tolist()
+        return u.reshape(-1).tolist()
 
     def _solve_care(self, A, B, Q, R):
         return scipy.linalg.solve_continuous_are(A, B, Q, R)
