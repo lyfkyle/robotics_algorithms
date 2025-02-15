@@ -29,7 +29,7 @@ class LQR:
         self.horizon = horizon
         self.solve_by_iteration = solve_by_iteration
 
-    def run(self, state: list, action) -> list:
+    def run(self, state: list, action:list) -> list:
         """Compute the current action based on the current state.
 
         Args:
@@ -50,7 +50,7 @@ class LQR:
             K = np.linalg.inv(R) @ B.T @ P
 
         u = -K @ state
-        return u.reshape(-1).tolist()
+        return u.reshape(-1)
 
     def _solve_care(self, A, B, Q, R):
         return scipy.linalg.solve_continuous_are(A, B, Q, R)

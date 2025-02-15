@@ -114,7 +114,7 @@ class DiffDrive2DEnv(BaseEnv):
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def state_transition_func(self, state: list, action: list) -> tuple[Any, float, bool, bool, dict]:
+    def state_transition_func(self, state: list, action: list) -> list:
         # compute next state
         new_state = self.robot_model.control(state, action[0], action[1], dt=self.action_dt)
 
