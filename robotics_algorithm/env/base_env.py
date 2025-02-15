@@ -137,7 +137,7 @@ class BaseEnv:
         """
         raise NotImplementedError()
 
-    def linearize_state_transition(self, state):
+    def linearize_state_transition(self, state, action):
         """Linearize the state transition function around current state
 
         Args:

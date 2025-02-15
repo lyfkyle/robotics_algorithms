@@ -29,7 +29,7 @@ class LQR:
         self.horizon = horizon
         self.solve_by_iteration = solve_by_iteration
 
-    def run(self, state: list) -> list:
+    def run(self, state: list, action) -> list:
         """Compute the current action based on the current state.
 
         Args:
@@ -38,16 +38,16 @@ class LQR:
         Returns:
             list: current action
         """
-        A, B = self.env.linearize_state_transition(state)
+        A, B = self.env.linearize_state_transition(self.env.goal_state, action)
         Q, R = self.env.Q, self.env.R
         state = np.array(state).reshape(-1, 1)
 
         if self.discrete_time:
             P = self._solve_dare(A, B, Q, R)
+            K = np.linalg.inv(R + B.T @ P @ B) @ B.T @ P
         else:
             P = self._solve_care(A, B, Q, R)
-
-        K = np.linalg.inv(R) @ B.T @ P
+            K = np.linalg.inv(R) @ B.T @ P
 
         u = -K @ state
         return u.reshape(-1).tolist()

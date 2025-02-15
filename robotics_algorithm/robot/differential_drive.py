@@ -26,9 +26,9 @@ class DiffDrive:
         lin_vel = self.wheel_radius * (v_r + v_l) / 2.0
         ang_vel = self.wheel_radius * (v_r - v_l) / self.wheel_dist
 
-        return self.control_velocity(state, lin_vel, ang_vel, dt)
+        return self.control(state, lin_vel, ang_vel, dt)
 
-    def control_velocity(self, state: list, lin_vel: float, ang_vel: float, dt: float) -> list:
+    def control(self, state: list, lin_vel: float, ang_vel: float, dt: float) -> list:
         """
         Update the robot state based on the differential drive kinematics.
 
@@ -56,10 +56,11 @@ class DiffDrive:
 
         return [x_new.item(), y_new.item(), theta_new]
 
-    def linearize_dynamics(self, state):
+    def linearize_dynamics(self, state, action):
         # linearize dynamics around state -> x_new = Ax + Bu
         x, y, theta = state
-        A = np.eye(3)
+        lin_vel, ang_vel = action
+        A = np.array([[1, 0, -lin_vel * np.sin(theta) * self.time_res], [0, 1, lin_vel * np.cos(theta) * self.time_res], [0, 0, 1]])
         B = np.array([[np.cos(theta) * self.time_res, 0], [np.sin(theta) * self.time_res, 0], [0, self.time_res]])
 
         return A, B

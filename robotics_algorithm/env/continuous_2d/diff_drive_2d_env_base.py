@@ -116,7 +116,7 @@ class DiffDrive2DEnv(BaseEnv):
     @override
     def state_transition_func(self, state: list, action: list) -> tuple[Any, float, bool, bool, dict]:
         # compute next state
-        new_state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.action_dt)
+        new_state = self.robot_model.control(state, action[0], action[1], dt=self.action_dt)
 
         return new_state
 

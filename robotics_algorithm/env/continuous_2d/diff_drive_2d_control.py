@@ -35,11 +35,27 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
         self.ref_path = None
         self.cur_ref_path_idx = 0
+        self.lookahead_index = 5
 
         # Path following weights
         self.x_cost_weight = 50
         self.y_cost_weight = 50
         self.yaw_cost_weight = 1.0
+
+        # declare linear state transition
+        # ! The dynamics is not linear strictly but at each step can be approximated by
+        # ! linearization.
+        # x_new = Ax + Bu (discrete time model)
+        self.state_transition_func_type = FunctionType.LINEAR.value
+
+        # declare quadratic cost
+        # L = x.T @ Q @ x + u.T @ R @ u
+        self.x_cost_weight = 10
+        self.y_cost_weight = 10
+        self.yaw_cost_weight = 1.0
+        self.reward_func_type = FunctionType.QUADRATIC.value
+        self.Q = np.diag([self.x_cost_weight, self.y_cost_weight, self.yaw_cost_weight])
+        self.R = np.diag([1, 1])  # control cost matrix
 
     def set_ref_path(self, ref_path: list[list]):
         """Add a reference path for robot to follow.
@@ -49,6 +65,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         """
         self.ref_path = np.array(ref_path)
         self.cur_ref_path_idx = 0
+        self.cur_lookahead_idx = self.lookahead_index
 
         self.start_state = ref_path[0]
         self.cur_state = ref_path[0]
@@ -67,8 +84,12 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         # update current reference path index if reference path is present
         if self.ref_path is not None:
             self.cur_ref_path_idx = self.get_nearest_waypoint_to_state(res[0])
+            self.cur_lookahead_idx = min(self.cur_ref_path_idx + self.lookahead_index, len(self.ref_path) - 1)
 
         return res
+
+    def get_cur_ref_state(self):
+        return self.ref_path[self.cur_lookahead_idx]
 
     @override
     def reward_func(self, state, action=None, new_state=None):
@@ -124,6 +145,10 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
         return nearest_idx
 
+    @override
+    def linearize_state_transition(self, state, action):
+        return self.robot_model.linearize_dynamics(state, action)
+
     def set_local_plan(self, local_plan: list[list]):
         """Set current local plan of controller
 
@@ -176,6 +201,18 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 s=(s * self.robot_radius * 2) ** 2,
                 c='blue',
                 marker='o',
+                zorder=2.5
+            )
+            plt.arrow(
+                self.cur_state[0],
+                self.cur_state[1],
+                np.cos(self.cur_state[2]) * self.robot_radius * 1.5,
+                np.sin(self.cur_state[2]) * self.robot_radius * 1.5,
+                head_width=0.1,
+                head_length=0.2,
+                fc='r',
+                ec='r',
+                zorder=2.5
             )
         if self.ref_path is not None:
             plt.plot(
@@ -185,6 +222,16 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 ms=(s * 0.01 * 2),
                 c='green',
                 marker='o',
+            )
+            cur_ref_state = self.get_cur_ref_state()
+            plt.scatter(
+                cur_ref_state[0],
+                cur_ref_state[1],
+                # s=(s * self.robot_radius * 2) ** 2,
+                s=(s * 0.1 * 2) ** 2,
+                c='orange',
+                marker='o',
+                zorder=2.5
             )
         if self.local_plan:
             for state in self.local_plan:
@@ -250,8 +297,8 @@ class DiffDrive2DControlRelative(DeterministicEnv, FullyObservableEnv):
 
         # declare quadratic cost
         # L = x.T @ Q @ x + u.T @ R @ u
-        self.x_cost_weight = 1
-        self.y_cost_weight = 1
+        self.x_cost_weight = 10
+        self.y_cost_weight = 10
         self.yaw_cost_weight = 1.0
         self.reward_func_type = FunctionType.QUADRATIC.value
         self.Q = np.diag([self.x_cost_weight, self.y_cost_weight, self.yaw_cost_weight])
@@ -265,7 +312,7 @@ class DiffDrive2DControlRelative(DeterministicEnv, FullyObservableEnv):
         self._state_impl, info = self._env_impl.reset(ref_path, empty, random_env)
 
         self._cur_ref_state = np.array(ref_path[self.cur_ref_path_idx])
-        # self._cur_ref_state = [3.0, 3.0, 0.0]
+        self._cur_ref_state = [3.0, 3.0, 0.0]
         state_relative = (np.array(self._state_impl) - self._cur_ref_state).tolist()
 
         self.start_state = state_relative
@@ -294,20 +341,20 @@ class DiffDrive2DControlRelative(DeterministicEnv, FullyObservableEnv):
         self._state_impl = new_state
 
         # update current reference path index if reference path is present
-        nearest_wp_index = self._env_impl.get_nearest_waypoint_to_state(self._state_impl)
-        if np.linalg.norm(np.array(self._state_impl) - np.array(self._cur_ref_state)) < 0.2:
-            # if nearest_wp_index > self.cur_ref_path_idx - 2:
-            self.cur_ref_path_idx = min(nearest_wp_index + self.lookahead_index, len(self.ref_path) - 1)
-            self._cur_ref_state = self.ref_path[self.cur_ref_path_idx]
+        # nearest_wp_index = self._env_impl.get_nearest_waypoint_to_state(self._state_impl)
+        # if np.linalg.norm(np.array(self._state_impl) - np.array(self._cur_ref_state)) < 0.2:
+        #     # if nearest_wp_index > self.cur_ref_path_idx - 2:
+        #     self.cur_ref_path_idx = min(nearest_wp_index + self.lookahead_index, len(self.ref_path) - 1)
+        #     self._cur_ref_state = self.ref_path[self.cur_ref_path_idx]
 
         self.cur_state = (np.array(self._state_impl) - self._cur_ref_state).tolist()
 
         return self.cur_state, reward, term, trunc, info
 
     @override
-    def linearize_state_transition(self, state):
+    def linearize_state_transition(self, state, action):
         state_impl = np.array(state) + self._cur_ref_state
-        return self._env_impl.robot_model.linearize_dynamics(state_impl)
+        return self._env_impl.robot_model.linearize_dynamics(state_impl, action)
 
     @override
     def render(self, draw_start=True, draw_goal=True, draw_current=True):
