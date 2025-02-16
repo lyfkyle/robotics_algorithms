@@ -4,7 +4,7 @@ import json
 import os.path as osp
 import numpy as np
 
-from robotics_algorithm.env.continuous_2d.diff_drive_2d_control import DiffDrive2DControlRelative, DiffDrive2DControl
+from robotics_algorithm.env.continuous_2d.diff_drive_2d_control import DiffDrive2DControl
 from robotics_algorithm.control.lqr import LQR
 
 CUR_DIR = osp.join(osp.dirname(osp.abspath(__file__)))
@@ -64,14 +64,12 @@ controller = LQR(env, horizon=100, discrete_time=True, solve_by_iteration=True)
 # Time-varying local trajectory stabilization (tracking)
 state = env.cur_state
 ref_action = [0.0, 0.0]
-path = [state]
 env.render()
 
 while True:
     # print(state, env._cur_ref_state, env._env_impl.cur_state)
 
-    # lookahead = 5
-    cur_ref_pose = env.get_cur_ref_state()
+    cur_ref_pose = env.get_cur_lookahead_state()
     state_error = (np.array(env.cur_state) - np.array(cur_ref_pose)).tolist()
     action_error = controller.run(state_error, ref_action)
     action = (np.array(ref_action) + np.array(action_error)).tolist()
@@ -91,37 +89,7 @@ while True:
     print(state, action, next_state)
     env.render()
 
-    path.append(next_state)
     state = next_state
 
     if term or trunc:
         break
-
-
-
-# Entire path tracking
-# while True:
-#     # print(state, env._cur_ref_state, env._env_impl.cur_state)
-
-#     action = controller.run(state, action)
-
-#     # print(action)
-#     # visualize local plan
-#     # local_plan = [state]
-#     # best_actions = controller.prev_actions.tolist()  # debug
-#     # new_state = env.sample_state_transition(state, action)[0]
-#     # for future_action in best_actions:
-#     #     new_state = env.sample_state_transition(new_state, future_action)[0]
-#     #     local_plan.append(new_state)
-#     # env.set_local_plan(local_plan)
-
-#     next_state, reward, term, trunc, info = env.step(action)
-
-#     print(state, action, next_state)
-#     env.render()
-
-#     path.append(next_state)
-#     state = next_state
-
-#     if term or trunc:
-#         break

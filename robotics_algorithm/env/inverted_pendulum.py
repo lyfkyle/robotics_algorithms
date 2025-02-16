@@ -34,8 +34,8 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         self.quadratic_reward = quadratic_reward
         if quadratic_reward:
             self.reward_func_type = FunctionType.QUADRATIC.value
-            self.Q = np.array([[1, 0], [0, 1]])
-            self.R = np.array([[1]])
+            self.Q = np.array([[10, 0], [0, 10]])
+            self.R = np.array([[0.01]])
 
         # robot model
         self.robot_model = Pendulum()
