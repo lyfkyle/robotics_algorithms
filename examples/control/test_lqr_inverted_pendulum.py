@@ -1,7 +1,7 @@
 import numpy as np
 
 from robotics_algorithm.env.inverted_pendulum import InvertedPendulumEnv
-from robotics_algorithm.control.lqr import LQR
+from robotics_algorithm.control.optimal_control.lqr import LQR
 
 # discrete time model
 env = InvertedPendulumEnv()
@@ -15,9 +15,8 @@ controller = LQR(env, discrete_time=True)
 # run controller
 state = env.cur_state
 path = [state]
-action = np.array([0.0])
 while True:
-    action = controller.run(state, action)
+    action = controller.run(state)
     next_state, reward, term, trunc, info = env.step(action)
 
     print(state, action, next_state, reward, term, trunc)

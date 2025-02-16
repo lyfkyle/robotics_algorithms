@@ -31,7 +31,7 @@ class ParticleFilter:
             particle = self.env.random_state()
             self.particles.append(particle)
 
-    def set_initial_state(self, state: list):
+    def set_initial_state(self, state: np.ndarray):
         """
         Set the initial state of filter.
 
@@ -41,12 +41,12 @@ class ParticleFilter:
         for i in range(self.num_of_uniform_particles, self.num_of_particles):
             self.particles[i] = state
 
-    def get_state(self) -> list:
+    def get_state(self) -> np.ndarray:
         # simply average
-        mean_state = np.mean(np.array(self.particles), axis=0).tolist()
+        mean_state = np.mean(np.array(self.particles), axis=0).
         return mean_state
 
-    def run(self, action: list, observation: list):
+    def run(self, action: np.ndarray, observation: np.ndarray):
         """
         Run one iteration of the filter.
 
@@ -86,7 +86,7 @@ class ParticleFilter:
         # importance sampling, sample with replacement according to weights
         particle_indices = np.arange(self.num_of_particles)
         new_particle_indices = np.random.choice(particle_indices, size=self.num_of_particles, replace=True, p=weights)
-        new_particles = np.array(self.particles)[new_particle_indices].tolist()
+        new_particles = np.array(self.particles)[new_particle_indices].
 
         # Add random particles if required
         for i in range(self.num_of_uniform_particles):

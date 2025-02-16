@@ -20,7 +20,7 @@ class DiscreteBayesFilter:
         for state in self.env.state_space.get_all():
             self.state_belief[tuple(state)] = 1 / self._state_space_size
 
-    def set_initial_state(self, state: list):
+    def set_initial_state(self, state: np.ndarray):
         """
         Set the initial state of filter.
 
@@ -29,11 +29,11 @@ class DiscreteBayesFilter:
         self.state_belief[tuple(state)] += 0.05  # slightly increase the initial state belief
         self._normalize()
 
-    def get_state(self) -> list:
+    def get_state(self) -> np.ndarray:
         # return the state with highest probability
         return max(self.state_belief, key=self.state_belief.get)
 
-    def run(self, action: list, obs: list):
+    def run(self, action: np.ndarray, obs: np.ndarray):
         """
         Run one iteration of filter.
 
@@ -43,7 +43,7 @@ class DiscreteBayesFilter:
         self.predict(action)
         self.update(obs)
 
-    def predict(self, action: list):
+    def predict(self, action: np.ndarray):
         """
         @param action, action
         """
@@ -59,7 +59,7 @@ class DiscreteBayesFilter:
 
         self._normalize()
 
-    def update(self, obs: list):
+    def update(self, obs: np.ndarray):
         """
         @param obs, current observation.
         """

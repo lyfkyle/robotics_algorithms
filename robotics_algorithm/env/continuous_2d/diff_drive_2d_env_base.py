@@ -38,7 +38,7 @@ class DiffDrive2DEnv(BaseEnv):
     WAYPOINT = 5
     MAX_POINT_TYPE = 6
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, discrete_action=False, has_kinematics_constraint=True):
         """
         Initialize a differential drive robot environment.
 
@@ -46,7 +46,6 @@ class DiffDrive2DEnv(BaseEnv):
             size (int): size of the maze
             robot_radius (float): radius of the robot
             action_dt (float): time step for the robot actions.
-            ref_path (list of points): reference path for path following
             discrete_action (bool): whether the action space is discrete or continuous
         """
         super().__init__()
@@ -56,8 +55,10 @@ class DiffDrive2DEnv(BaseEnv):
 
         self.state_space = ContinuousSpace(low=[0, 0, -math.pi], high=[self.size, self.size, math.pi])
         if not discrete_action:
-            # self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
-            self.action_space = ContinuousSpace(low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')])
+            if has_kinematics_constraint:
+                self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
+            else:
+                self.action_space = ContinuousSpace(low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')])
         else:
             self.action_space = DiscreteSpace(
                 [
@@ -70,17 +71,17 @@ class DiffDrive2DEnv(BaseEnv):
                 ]
             )
 
-        self.colour_map = colors.ListedColormap(['white', 'black', 'red', 'blue', 'green', 'yellow'])
-        bounds = [
-            DiffDrive2DEnv.FREE_SPACE,
-            DiffDrive2DEnv.OBSTACLE,
-            DiffDrive2DEnv.START,
-            DiffDrive2DEnv.GOAL,
-            DiffDrive2DEnv.PATH,
-            DiffDrive2DEnv.WAYPOINT,
-            DiffDrive2DEnv.MAX_POINT_TYPE,
-        ]
-        self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
+        # self.colour_map = colors.ListedColormap(['white', 'black', 'red', 'blue', 'green', 'yellow'])
+        # bounds = [
+        #     DiffDrive2DEnv.FREE_SPACE,
+        #     DiffDrive2DEnv.OBSTACLE,
+        #     DiffDrive2DEnv.START,
+        #     DiffDrive2DEnv.GOAL,
+        #     DiffDrive2DEnv.PATH,
+        #     DiffDrive2DEnv.WAYPOINT,
+        #     DiffDrive2DEnv.MAX_POINT_TYPE,
+        # ]
+        # self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
         self.robot_model = DiffDrive(wheel_dist=0.2, wheel_radius=0.05)
         self.robot_radius = robot_radius
@@ -114,14 +115,14 @@ class DiffDrive2DEnv(BaseEnv):
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def state_transition_func(self, state: list, action: list) -> list:
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
         # compute next state
-        new_state = self.robot_model.control(state, action[0], action[1], dt=self.action_dt)
+        new_state = self.robot_model.control(state, action, dt=self.action_dt)
 
         return new_state
 
     @override
-    def get_state_info(self, state):
+    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
         # Compute term and info
         term = False
         info = {}
@@ -141,21 +142,21 @@ class DiffDrive2DEnv(BaseEnv):
         return term, False, info
 
     @override
-    def is_state_valid(self, state: list):
+    def is_state_valid(self, state: np.ndarray) -> bool:
         for obstacle in self.obstacles:
             if np.linalg.norm(np.array(state[:2]) - np.array(obstacle[:2])) <= obstacle[2] + self.robot_radius:
                 return False
 
         return True
 
-    def is_state_similar(self, state1, state2):
+    def is_state_similar(self, state1: np.ndarray, state2: np.ndarray) -> bool:
         # return self.calc_state_key(state1) == self.calc_state_key(state2)
-        return np.linalg.norm(np.array(state1) - np.array(state2)) < 0.2
+        return np.linalg.norm(state1 - state2) < 0.2
 
-    def calc_state_key(self, state):
+    def calc_state_key(self, state: np.ndarray) -> tuple[int, int, int]:
         return (round(state[0] / 0.1), round(state[1] / 0.1), round((state[2] + math.pi) / math.radians(30)))
 
-    def _random_obstacles(self, num_of_obstacles=5):
+    def _random_obstacles(self, num_of_obstacles: int = 5):
         self.obstacles = []
         for _ in range(num_of_obstacles):
             obstacle = np.random.uniform([0, 0, 0.1], [self.size, self.size, 1])
@@ -167,4 +168,4 @@ class DiffDrive2DEnv(BaseEnv):
             if self.is_state_valid(robot_pos):
                 break
 
-        return robot_pos.tolist()
+        return robot_pos

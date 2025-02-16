@@ -25,13 +25,13 @@ class WindyGridWorld(MDPEnv):
     Fully observable.
     """
 
-    def __init__(self, start: tuple = (0, 3), goal: tuple = (7, 3), wind: list = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]):
+    def __init__(self, start: tuple = (0, 3), goal: tuple = (7, 3), wind: np.ndarray = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]):
         """Constructor.
 
         Args:
             start (tuple): the start position of agent.
             goal (tuple): the goal position.
-            wind (list): the strength of upward wind in each horizontal position.
+            wind (np.ndarray): the strength of upward wind in each horizontal position.
                       The number decides how many grid cell the agent will be pushed upward.
         """
         super().__init__()
@@ -50,7 +50,7 @@ class WindyGridWorld(MDPEnv):
         self.path = []
 
     @override
-    def state_transition_func(self, state: tuple, action: int) -> tuple[list[tuple], list[float]]:
+    def state_transition_func(self, state: tuple, action: int) -> tuple[np.ndarray[tuple], np.ndarray[float]]:
         # NOTE: This environment has deterministic transition
         i, j = state
 
@@ -85,7 +85,7 @@ class WindyGridWorld(MDPEnv):
         return term, False, info
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.
         # Transition to free gives step reward.

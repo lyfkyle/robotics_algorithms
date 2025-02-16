@@ -1,5 +1,7 @@
-from robotics_algorithm.env.continuous_world_1d import DoubleIntegratorEnv
-from robotics_algorithm.control.lqr import LQR
+import numpy as np
+
+from robotics_algorithm.env.continuous_1d.double_integrator_env import DoubleIntegratorEnv
+from robotics_algorithm.control.optimal_control.lqr import LQR
 
 # Test 1
 # Continuous time model

@@ -28,14 +28,14 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
 
         # state and action space
         self.state_space = ContinuousSpace(low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')])
-        self.action_space = ContinuousSpace(low=-float('inf'), high=float('inf'))
+        self.action_space = ContinuousSpace(low=[-1e10], high=[1e10])  # torque
 
         # reward
         self.quadratic_reward = quadratic_reward
         if quadratic_reward:
             self.reward_func_type = FunctionType.QUADRATIC.value
             self.Q = np.array([[10, 0], [0, 10]])
-            self.R = np.array([[0.01]])
+            self.R = np.array([[1]])
 
         # robot model
         self.robot_model = Pendulum()
@@ -58,7 +58,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def step(self, action: list) -> tuple[list, float, bool, bool, dict]:
+    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         new_state, reward, term, trunc, info = super().step(action)
 
         self.step_cnt += 1
@@ -67,7 +67,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return new_state, reward, term, trunc, info
 
     @override
-    def state_transition_func(self, state: list, action: list) -> list:
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
         # compute next state
         new_state = self.robot_model.control(state, action)
         return new_state
@@ -98,7 +98,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def linearize_state_transition(self, state, action):
-        return self.robot_model.linearized_dynamics(state, action)
+        return self.robot_model.linearize_state_transition(state, action)
 
     @override
     def render(self):

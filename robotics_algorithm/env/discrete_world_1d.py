@@ -52,7 +52,7 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         plt.show()
 
     @override
-    def state_transition_func(self, state: list, action: list) -> tuple[list[tuple], list[float]]:
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray[tuple], np.ndarray[float]]:
         state = state[0]
         action = action[0]
 
@@ -72,7 +72,7 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         return new_states, probs
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         # Check bounds
         if new_state[0] < 0 or new_state[0] >= self.size:
             return -100
@@ -80,7 +80,7 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         return -abs(new_state[0])
 
     @override
-    def observation_func(self, state: list) -> tuple[list[list], list[float]]:
+    def observation_func(self, state: np.ndarray) -> tuple[np.ndarray[np.ndarray], np.ndarray[float]]:
         state = state[0]
         tmp = int(len(self.obs_prob) // 2)
         obss = [[x] for x in range(state - tmp, state + tmp + 1)]
@@ -89,7 +89,7 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         return obss, probs
 
     @override
-    def get_state_info(self, state: list) -> tuple[bool, bool, dict]:
+    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
         term = False
         info = {}
         info["success"] = False

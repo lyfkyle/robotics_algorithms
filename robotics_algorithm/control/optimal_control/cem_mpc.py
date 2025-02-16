@@ -7,7 +7,7 @@ from robotics_algorithm.env.base_env import BaseEnv, SpaceType
 class CEMMPC:
     """Implements Cross-entropy method for model-predictive control.
 
-    Assuming a Gaussion policy, the general idea is to sample a bunch of trajectories using env state transition model
+    Assuming a Gaussian policy, the general idea is to sample a bunch of trajectories using env state transition model
     and get their respective cost. Then take the top-K best trajectories and update the policy's mean and std based
     on these trajectories. We then sample another set of trajectories based on the updated Gaussian policy. We iterate
     this process for certain number of times and return the best action in the current best trajectory.
@@ -19,8 +19,8 @@ class CEMMPC:
         num_traj_samples: int = 40,
         num_elites: int = 10,
         sample_traj_len: int = 20,
-        action_mean: float | list = 0.0,
-        action_std: float | list = 1.0,
+        action_mean: float | np.ndarray = 0.0,
+        action_std: float | np.ndarray = 1.0,
         opt_iter: int = 5,
         alpha: float = 0.1,
     ):
@@ -32,8 +32,8 @@ class CEMMPC:
             num_elites (int, optional): number of best trajectories to use for estimating the next mean and std.
                 Defaults to 10.
             sample_traj_len (int, optional): the length of each rollout trajectory. Defaults to 20.
-            action_mean (float | list, optional): the nominal mean of sampled action. Defaults to 0.0.
-            action_std (float | list, optional): the nominal std of sampled action. Defaults to 1.0.
+            action_mean (float | np.ndarray, optional): the nominal mean of sampled action. Defaults to 0.0.
+            action_std (float | np.ndarray, optional): the nominal std of sampled action. Defaults to 1.0.
             opt_iter (int, optional): number of optimization iteration. Defaults to 5.
             alpha (float, optional): the low pass filter gain for updating mean and std in each optimization iteration.
                 Defaults to 0.1.
@@ -53,14 +53,14 @@ class CEMMPC:
         self.action_seq_mean = np.tile(self.nominal_action_mean, (self.sample_traj_len, 1))
         self.action_seq_std = np.tile(self.nominal_action_std, (self.sample_traj_len, 1))
 
-    def run(self, state: list) -> list:
+    def run(self, state: np.ndarray) -> np.ndarray:
         """Compute the current action given current state
 
         Args:
-            state (list): current state
+            state (np.ndarray): current state
 
         Returns:
-            list: current action
+            np.ndarray: current action
         """
         for _ in range(self.opt_iter):
             # Sample trajectories
@@ -75,7 +75,7 @@ class CEMMPC:
                 cur_state = state
                 total_cost = 0
                 for t in range(self.sample_traj_len):
-                    action = sampled_action_seq[k, t].tolist()
+                    action = sampled_action_seq[k, t]
                     new_state, reward, term, trunc, _ = self.env.sample_state_transition(cur_state, action)
                     cost = -reward
 
@@ -105,7 +105,7 @@ class CEMMPC:
         self.action_seq_std = np.copy(self.nominal_action_std)
 
         # Return the best traj's first action
-        return self.best_traj[0].tolist()
+        return self.best_traj[0]
 
     def _sample_action_seq(self):
         m = self.action_seq_mean[None, :]

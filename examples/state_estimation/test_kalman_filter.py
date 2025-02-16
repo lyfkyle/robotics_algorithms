@@ -2,7 +2,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-from robotics_algorithm.env.continuous_world_1d import DoubleIntegratorEnv
+from robotics_algorithm.env.continuous_1d.double_integrator_env import DoubleIntegratorEnv
 from robotics_algorithm.state_estimation.kalman_filter import KalmanFilter
 
 # Env

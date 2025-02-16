@@ -26,21 +26,25 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     goal.
     """
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, discrete_action=False):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, use_lookahead=True, lookahead_dist=5, has_kinematics_constraint=True):
+        """Constructor
+
+        Args:
+            size (int, optional): size of the environment. Defaults to 10.
+            robot_radius (float, optional): robot radius. Defaults to 0.2.
+            action_dt (float, optional): action dt. Defaults to 0.05.
+            lookahead_dist (int, optional): lookahead distance. Defaults to -1.
+        """
         # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
         #       DiffDrive2DEnv last.
         DeterministicEnv.__init__(self)
         FullyObservableEnv.__init__(self)
-        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, discrete_action)
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, discrete_action=False, has_kinematics_constraint=has_kinematics_constraint)
 
         self.ref_path = None
         self.cur_ref_path_idx = 0
-        self.lookahead_index = 5
-
-        # Path following weights
-        self.x_cost_weight = 50
-        self.y_cost_weight = 50
-        self.yaw_cost_weight = 1.0
+        self.use_lookahead = use_lookahead
+        self.lookahead_index = lookahead_dist
 
         # declare linear state transition
         # ! The dynamics is not linear strictly but at each step can be approximated by
@@ -50,20 +54,20 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
         # declare quadratic cost
         # L = x.T @ Q @ x + u.T @ R @ u
-        self.x_cost_weight = 10
-        self.y_cost_weight = 10
+        self.x_cost_weight = 1
+        self.y_cost_weight = 1
         self.yaw_cost_weight = 1.0
         self.reward_func_type = FunctionType.QUADRATIC.value
         self.Q = np.diag([self.x_cost_weight, self.y_cost_weight, self.yaw_cost_weight])
         self.R = np.diag([1, 1])  # control cost matrix
 
-    def set_ref_path(self, ref_path: list[list]):
+    def set_ref_path(self, ref_path: np.ndarray):
         """Add a reference path for robot to follow.
 
         Args:
-            ref_path (list(list)): the reference path.
+            ref_path (np.ndarray): the reference path.
         """
-        self.ref_path = np.array(ref_path)
+        self.ref_path = ref_path
         self.cur_ref_path_idx = 0
         self.cur_lookahead_idx = self.lookahead_index
 
@@ -72,10 +76,14 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         self.goal_state = ref_path[-1]
 
     @override
-    def reset(self, ref_path, empty=False, random_env=False):
-        self.set_ref_path(ref_path)
+    def reset(self, ref_path, empty=True, random_env=False):
+        self.set_ref_path(np.array(ref_path))
 
-        return super().reset(empty, random_env)
+        # no obstacles if empty
+        if empty:
+            self.obstacles = []
+
+        return self.sample_observation(self.cur_state), {}
 
     @override
     def step(self, action):
@@ -89,7 +97,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         return res
 
     def get_cur_lookahead_state(self):
-        return np.array(self.ref_path[self.cur_lookahead_idx])
+        return self.ref_path[self.cur_lookahead_idx]
 
     @override
     def reward_func(self, state, action=None, new_state=None):
@@ -112,12 +120,17 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
             + self.yaw_cost_weight * yaw_diff**2
         ).item()
 
+        # Encourage the robot to progress along the reference path
         prev_idx = self.get_nearest_waypoint_to_state(state)
-        progress_cost = 0.1 / (nearest_idx - prev_idx + 1)
+        if nearest_idx <= prev_idx:
+            progress_cost = 10
+        else:
+            progress_cost = 0
+        #     progress_cost = 0.1 / min((nearest_idx - prev_idx))
 
         return -(path_cost + progress_cost)
 
-    def get_nearest_waypoint_to_state(self, state: list):
+    def get_nearest_waypoint_to_state(self, state: np.ndarray):
         """search the closest waypoint to the vehicle on the reference path"""
         # x, y, _ = state
         # xy_state = np.array([x, y])
@@ -147,13 +160,13 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
     @override
     def linearize_state_transition(self, state, action):
-        return self.robot_model.linearize_dynamics(state, action)
+        return self.robot_model.linearize_state_transition(state, action)
 
-    def set_local_plan(self, local_plan: list[list]):
+    def set_local_plan(self, local_plan: np.ndarray[np.ndarray]):
         """Set current local plan of controller
 
         Args:
-            local_plan (list[list]): list of predicted future states
+            local_plan (np.ndarray[np.ndarray]): np.ndarray of predicted future states
         """
         self.local_plan = local_plan
 
@@ -223,6 +236,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 c='green',
                 marker='o',
             )
+        if self.use_lookahead:
             cur_ref_state = self.get_cur_lookahead_state()
             plt.scatter(
                 cur_ref_state[0],

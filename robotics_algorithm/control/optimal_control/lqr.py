@@ -8,10 +8,9 @@ from robotics_algorithm.env.base_env import BaseEnv, FunctionType, SpaceType
 class LQR:
     """Implements Linear-quadratic regulator.
 
-    # Given a system with linear state transition function and quadratic cost function, the optimal control strategy
-    # can be computed analytically and has the form: u = -Kx
+    Given a system with linear state transition function and quadratic cost function, the optimal control strategy
+    can be computed analytically and has the form: u = -Kx
     """
-
     def __init__(self, env: BaseEnv, discrete_time=True, horizon=float("inf"), solve_by_iteration=False):
         """
         State transition:
@@ -29,16 +28,22 @@ class LQR:
         self.horizon = horizon
         self.solve_by_iteration = solve_by_iteration
 
-    def run(self, state: list, action:list) -> list:
+        # By default, default reference state and action is env.goal and zero action
+        self.A, self.B = self.env.linearize_state_transition(env.goal_state, np.zeros(env.action_space.state_size))
+
+    def set_ref_state_action(self, ref_state, ref_action):
+        self.A, self.B = self.env.linearize_state_transition(ref_state, ref_action)
+
+    def run(self, state: np.ndarray) -> np.ndarray:
         """Compute the current action based on the current state.
 
         Args:
-            state (list): current state.
+            state (np.ndarray): current state.
 
         Returns:
-            list: current action
+            np.ndarray: current action
         """
-        A, B = self.env.linearize_state_transition(self.env.goal_state, action)
+        A, B = self.A, self.B
         Q, R = self.env.Q, self.env.R
         state = np.array(state).reshape(-1, 1)
 

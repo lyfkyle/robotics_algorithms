@@ -38,7 +38,7 @@ class RRT:
     def initialize_tree(self, start_state: tuple):
         self.tree.add_node(start_state)
 
-    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, np.ndarray[tuple], float]:
         """
         Run planner.
 
@@ -48,7 +48,7 @@ class RRT:
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise.
-            shortest_path (list[tuple]): a list of vertices if shortest path is found.
+            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
         start = tuple(start)
@@ -91,7 +91,7 @@ class RRT:
         """
 
         # RRT finds the nearest node in tree to v_target
-        all_nodes = list(self.tree.nodes)
+        all_nodes = np.ndarray(self.tree.nodes)
         nearest_neighbors = self.get_nearest_neighbors(all_nodes, v_target)
         v_cur = tuple(nearest_neighbors[0])
 
@@ -108,17 +108,17 @@ class RRT:
         else:
             return RRT.TRAPPED, v_new
 
-    def get_nearest_neighbors(self, all_vertices: list[tuple], v: tuple, n_neighbors: int = 1) -> list[tuple]:
+    def get_nearest_neighbors(self, all_vertices: np.ndarray[tuple], v: tuple, n_neighbors: int = 1) -> np.ndarray[tuple]:
         """
         return the closest neighbors of v in all_vertices.
 
         Args:
-            all_vertices (list[tuple]): a list of vertices
+            all_vertices (np.ndarray[tuple]): a np.ndarray of vertices
             v (tuple): the target vertex.
             n_neighbors (int): number of nearby neighbors.
 
         Returns:
-            (list[tuple]): a list of nearby vertices
+            (np.ndarray[tuple]): a np.ndarray of nearby vertices
         """
         n_neighbors = min(n_neighbors, len(all_vertices))
 
@@ -128,7 +128,7 @@ class RRT:
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).tolist()
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).
         nbr_vertices = [tuple(v) for v in nbr_vertices]
         return nbr_vertices
 
@@ -158,7 +158,7 @@ class RRTConnect:
         self.tree = nx.Graph()
         self._sample_func = sample_func
 
-    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, np.ndarray[tuple], float]:
         """
         Run planner.
 
@@ -168,7 +168,7 @@ class RRTConnect:
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise.
-            shortest_path (list[tuple]): a list of vertices if shortest path is found.
+            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
         start = tuple(start)
@@ -212,7 +212,7 @@ class RRTConnect:
             (nx.Graph): the current planning tree.
         """
         combined = nx.Graph()
-        combined.add_edges_from(list(self.start_rrt.tree.edges(data=True)) + list(self.goal_rrt.tree.edges(data=True)))
+        combined.add_edges_from(np.ndarray(self.start_rrt.tree.edges(data=True)) + np.ndarray(self.goal_rrt.tree.edges(data=True)))
         nodes = set(self.start_rrt.tree.nodes())
         nodes.update(set(self.goal_rrt.tree.nodes()))
         combined.add_nodes_from(nodes)

@@ -66,17 +66,17 @@ class ProbabilisticRoadmap:
                 if can_link:
                     self.roadmap.add_edge(tuple(v), tuple(neighbor), weight=length)
 
-    def get_nearest_neighbors(self, all_vertices: list[tuple], v: tuple, n_neighbors: int = 1) -> list[tuple]:
+    def get_nearest_neighbors(self, all_vertices: np.ndarray[tuple], v: tuple, n_neighbors: int = 1) -> np.ndarray[tuple]:
         """
         return the closest neighbors of v in all_vertices.
 
         Args:
-            all_vertices (list[tuple]): a list of vertices
+            all_vertices (np.ndarray[tuple]): a np.ndarray of vertices
             v (tuple): the target vertex.
             n_neighbors (int): number of nearby neighbors.
 
         Returns:
-            (list[tuple]): a list of nearby vertices
+            (np.ndarray[tuple]): a np.ndarray of nearby vertices
         """
         n_neighbors = min(n_neighbors, len(all_vertices))
 
@@ -86,11 +86,11 @@ class ProbabilisticRoadmap:
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).tolist()
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).
         nbr_vertices = [tuple(v) for v in nbr_vertices]
         return nbr_vertices
 
-    def get_path(self, start: list, goal: list) -> tuple[bool, list[tuple], float]:
+    def get_path(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, np.ndarray[tuple], float]:
         """
         Online computation of path.
 
@@ -100,7 +100,7 @@ class ProbabilisticRoadmap:
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise
-            shortest_path (list[tuple]): a list of vertices if shortest path is found
+            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found
             shortest_path_len (float): the length of shortest path if found.
         """
         start = tuple(start)
@@ -132,7 +132,7 @@ class ProbabilisticRoadmap:
         print(path, path_len)
         return True, path, path_len
 
-    def run(self, start: tuple, goal: tuple) -> tuple[bool, list[tuple], float]:
+    def run(self, start: tuple, goal: tuple) -> tuple[bool, np.ndarray[tuple], float]:
         """
         Run algorithm.
 
@@ -142,7 +142,7 @@ class ProbabilisticRoadmap:
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise.
-            shortest_path (list[tuple]): a list of vertices if shortest path is found.
+            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
         self.compute_roadmap()

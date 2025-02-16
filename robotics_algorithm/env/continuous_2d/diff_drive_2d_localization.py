@@ -54,13 +54,13 @@ class DiffDrive2DLocalization(DiffDrive2DEnv, StochasticEnv, PartiallyObservable
         np.fill_diagonal(self.obs_cov_matrix, self.observation_var)
 
     @override
-    def state_transition_func(self, state, action) -> tuple[list, list]:
+    def state_transition_func(self, state, action) -> tuple[np.ndarray, np.ndarray]:
         mean_new_state = DiffDrive2DEnv.state_transition_func(self, state, action)
-        return mean_new_state, self.state_transition_noise_var.tolist()
+        return mean_new_state, self.state_transition_noise_var.
 
     @override
-    def observation_func(self, state) -> tuple[list, list]:
-        return state, self.observation_var.tolist()
+    def observation_func(self, state) -> tuple[np.ndarray, np.ndarray]:
+        return state, self.observation_var.
 
     @override
     def reward_func(self, state, action = None, new_state = None):
@@ -98,14 +98,14 @@ class DiffDrive2DLocalization(DiffDrive2DEnv, StochasticEnv, PartiallyObservable
         return self.H
 
     @override
-    def get_state_transition_prob(self, state: list, action: list, new_state: list) -> float:
+    def get_state_transition_prob(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray) -> float:
         # NOTE: since the state is continuous, we can only returns the pdf value. It is up to the consumer to
         #       normalize to get a probability.
         mean, var = self.state_transition_func(state, action)
         return multivariate_normal.pdf(new_state, mean=mean, cov=np.diag(var))
 
     @override
-    def get_observation_prob(self, state: list, observation: list) -> float:
+    def get_observation_prob(self, state: np.ndarray, observation: np.ndarray) -> float:
         # NOTE: since the state is continuous, we can only returns the pdf value. It is up to the consumer to
         #       normalize to get a probability.
         mean, var = self.observation_func(state)
@@ -115,7 +115,7 @@ class DiffDrive2DLocalization(DiffDrive2DEnv, StochasticEnv, PartiallyObservable
         """Add a path for visualization.
 
         Args:
-            path (list(list)): the path.
+            path (np.ndarray(np.ndarray)): the path.
         """
         if id is None:
             self.path = path

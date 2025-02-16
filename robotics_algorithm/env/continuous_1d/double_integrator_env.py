@@ -86,18 +86,19 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         self.start_state = self.random_state()
         self.start_state[1] = 0.0  # zero velocity
         self.goal_state = [0, 0]  # fixed
-        self.cur_state = self.start_state.copy()
+        self.cur_state = np.copy(self.start_state)
 
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def state_transition_func(self, state: list, action: list) -> tuple[list, float, bool, bool, dict]:
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         new_state_mean = self.robot_model.control(state, action, dt=0.01)
         new_state_var = [self.state_transition_noise_var, 1e-10]
         return new_state_mean, new_state_var
 
-    def linearize_state_transition(self, state):
-        return self.A, self.B
+    @override
+    def linearize_state_transition(self, state: np.ndarray, action: np.ndarray):
+        return self.robot_model.linearize_state_transition(state, action)
 
     @override
     def sample_observation(self, state):
@@ -109,10 +110,10 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
             mean=[0, 0], cov=self.observation_covariance_matrix
         ).reshape(2, 1)
 
-        return obs.reshape(-1).tolist()
+        return obs.reshape(-1)
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         # check bounds
         if (
             state[0] <= self.state_space.space[0][0]

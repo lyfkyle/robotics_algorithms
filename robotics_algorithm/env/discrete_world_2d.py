@@ -554,7 +554,7 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
 
         # Get all indices inside the 2D grid
         indices = np.indices((size, size))
-        all_states = np.stack(indices, axis=-1).reshape(-1, 2).tolist()
+        all_states = np.stack(indices, axis=-1).reshape(-1, 2)
 
         self.state_space = DiscreteSpace(values=[tuple(s) for s in all_states])
         self.action_space = DiscreteSpace(values=[(0, 1), (0, -1), (1, 0), (-1, 0)])  # left, right, top and bottom
@@ -577,7 +577,7 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         return self.cur_state, {}
 
     @override
-    def state_transition_func(self, state: list, action: list) -> tuple[list, float]:
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray, float]:
         new_state = [state[0] + action[0], state[1] + action[1]]
         new_state[0] = max(min(new_state[0], self.size - 1), 0)
         new_state[1] = max(min(new_state[1], self.size - 1), 0)
@@ -585,14 +585,14 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         return new_state
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
             return -100
 
         return -1
 
     @override
-    def get_state_info(self, state: list) -> tuple[bool, bool, dict]:
+    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
         term = False
         info = {"success": False}
 
@@ -606,7 +606,7 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         return term, False, info
 
     @override
-    def get_available_actions(self, state: tuple) -> list[tuple]:
+    def get_available_actions(self, state: tuple) -> np.ndarray[tuple]:
         return self.action_space
 
     def random_valid_state(self) -> tuple:

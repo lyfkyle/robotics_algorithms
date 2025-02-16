@@ -51,7 +51,7 @@ class OmniDrive2DPlanning(DiffDrive2DPlanning, DeterministicEnv, FullyObservable
         s2 = np.array(state2)
 
         if np.allclose(s1, s2):
-            return [s1.tolist()]
+            return [s1.]
 
         num_of_steps = max(int(np.abs(s2 - s1).max() / step_size) + 1, 2)
         step_size = (s2 - s1) / (num_of_steps - 1)
@@ -62,7 +62,7 @@ class OmniDrive2DPlanning(DiffDrive2DPlanning, DeterministicEnv, FullyObservable
             if not self.is_state_valid(s):
                 break
             else:
-                path.append(s.tolist())
+                path.append(s.)
 
         return path
 

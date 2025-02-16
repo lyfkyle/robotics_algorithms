@@ -1,5 +1,5 @@
 from robotics_algorithm.env.cartpole_balance import CartPoleEnv
-from robotics_algorithm.control.mppi import MPPI
+from robotics_algorithm.control.optimal_control.mppi import MPPI
 
 # Initialize environment
 env = CartPoleEnv()

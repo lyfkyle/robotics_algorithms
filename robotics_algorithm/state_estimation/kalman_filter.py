@@ -34,17 +34,17 @@ class KalmanFilter:
         self.state = np.array(env.cur_state)
         self.covariance = np.eye(env.state_space.state_size)
 
-    def set_initial_state(self, state: list):
+    def set_initial_state(self, state: np.ndarray):
         """
         Set the initial state of filter.
         @param state, initial state
         """
         self.state = np.array(state)
 
-    def get_state(self) -> list:
-        return self.state.tolist()
+    def get_state(self) -> np.ndarray:
+        return self.state.
 
-    def run(self, action: list, obs: list):
+    def run(self, action: np.ndarray, obs: np.ndarray):
         """
         Run one iteration of the Kalman filter.
 
@@ -54,7 +54,7 @@ class KalmanFilter:
         self.predict(action)
         self.update(obs)
 
-    def predict(self, action: list):
+    def predict(self, action: np.ndarray):
         """
         Predict the state of the Kalman filter.
 
@@ -66,7 +66,7 @@ class KalmanFilter:
         self.state = new_state
         self.covariance = new_covariance
 
-    def update(self, obs: list):
+    def update(self, obs: np.ndarray):
         """
         Update the state of the Kalman filter.
 

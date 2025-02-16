@@ -17,12 +17,12 @@ class DoubleIntegrator:
 
         self.use_discrete_time_model = use_discrete_time_model
 
-    def control(self, state: list, control: list, dt: float) -> list:
+    def control(self, state: np.ndarray, control: np.ndarray, dt: float) -> np.ndarray:
         """Compute the end state given then current state and control.
 
         Args:
-            state (list): [q, q_dot] robot's current state
-            control (list): left and right wheel velocities in radians
+            state (np.ndarray): [q, q_dot] robot's current state
+            control (np.ndarray): left and right wheel velocities in radians
             dt (float): time step
 
         Returns:
@@ -39,8 +39,10 @@ class DoubleIntegrator:
             # if discrete_time model is used, transition func directly gives new state
             new_state = self.A @ state + self.B @ control
 
-        return new_state.reshape(-1).tolist()
+        return new_state.reshape(-1)
 
+    def linearize_state_transition(self, state, action):
+        return self.A, self.B
 
 if __name__ == "__main__":
     # Simulation parameters

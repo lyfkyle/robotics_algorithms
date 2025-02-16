@@ -21,8 +21,8 @@ class MPPI:
         env: BaseEnv,
         num_traj_samples: int = 250,
         sample_traj_len: int = 20,
-        action_mean: float | list = 0.0,
-        action_std: float | list = 1.0,
+        action_mean: float | np.ndarray = 0.0,
+        action_std: float | np.ndarray = 1.0,
         param_lambda: float = 0.8,
         filter_window_size: int = 5,
     ):
@@ -32,8 +32,8 @@ class MPPI:
             env (BaseEnv): The env
             num_traj_samples (int, optional): num of trajectories to sample. Defaults to 250.
             sample_traj_len (int, optional): the lookahead distance. Defaults to 20.
-            action_mean (float | list, optional): the mean of sampled action. Also form the nominal action. Defaults to 0.0.
-            action_std (float| list, optional): the std of sampled action. Defaults to 1.0.
+            action_mean (float | np.ndarray, optional): the mean of sampled action. Also form the nominal action. Defaults to 0.0.
+            action_std (float| np.ndarray, optional): the std of sampled action. Defaults to 1.0.
             param_lambda (float, optional): controls how much we weigh trajectory cost. Smaller value means we favour
                 low cost trajectories more. Defaults to 0.8.
             filter_window_size (int, optional): window size of moving average filter to smooth final computed control
@@ -56,14 +56,14 @@ class MPPI:
         self.prev_actions = np.tile(self.action_mean, (self.sample_traj_len, 1))
         self.nominal_action = np.tile(self.action_mean, (self.sample_traj_len, 1))
 
-    def run(self, state: list) -> list:
+    def run(self, state: np.ndarray) -> np.ndarray:
         """Compute the current action given current state
 
         Args:
-            state (list): current state
+            state (np.ndarray): current state
 
         Returns:
-            list: current action
+            np.ndarray: current action
         """
         # Sample trajectories
         all_costs = []
@@ -84,7 +84,7 @@ class MPPI:
                 sampled_action = np.clip(sampled_action, self.env.action_space.space[0], self.env.action_space.space[1])
 
                 # Simulate state transitions forward (the model predictive part)
-                new_state, reward, term, trunc, _ = self.env.sample_state_transition(cur_state, sampled_action.tolist())
+                new_state, reward, term, trunc, _ = self.env.sample_state_transition(cur_state, sampled_action)
                 cost = -reward
 
                 total_cost += cost
@@ -119,7 +119,7 @@ class MPPI:
         self.prev_actions[-1] = actions[-1]
 
         # Execute the first one
-        return actions[0].tolist()
+        return actions[0]
 
     def _compute_weights(self, traj_costs: np.ndarray) -> np.ndarray:
         """compute weights for each sample"""

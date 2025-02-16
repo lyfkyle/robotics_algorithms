@@ -24,7 +24,7 @@ class Pendulum():
 
         return np.array([new_theta, new_theta_dot])
 
-    def linearized_dynamics(self, state, action):
+    def linearize_state_transition(self, state, action):
         # discrete-time case: x_t+1 = Ax + Bu
         theta = state[0]
         theta += np.pi

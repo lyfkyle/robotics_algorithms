@@ -29,14 +29,14 @@ class PID:
         self._prev_error = np.zeros_like(self.goal_state, dtype=np.float32)
         self._accum_error = np.zeros_like(self.goal_state, dtype=np.float32)
 
-    def run(self, state: list) -> list:
+    def run(self, state: np.ndarray) -> np.ndarray:
         """Compute the current action based on the current state.
 
         Args:
-            state (list): current state.
+            state (np.ndarray): current state.
 
         Returns:
-            list: current action
+            np.ndarray: current action
         """
         state = np.array(state)
 
@@ -48,4 +48,4 @@ class PID:
 
         self._prev_error = error
 
-        return control.tolist()
+        return control

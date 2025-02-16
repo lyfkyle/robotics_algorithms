@@ -1,7 +1,7 @@
 import numpy as np
 
 from robotics_algorithm.env.cartpole_balance import CartPoleEnv
-from robotics_algorithm.control.pid import PID
+from robotics_algorithm.control.classical_control.pid import PID
 
 # Initialize environment
 # NOTE: we can use PID for cartpole because when it is near the upright position, the system behaves like LTI system.

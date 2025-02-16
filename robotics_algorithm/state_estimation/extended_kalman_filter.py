@@ -23,7 +23,7 @@ class ExtendedKalmanFilter:
         self.state = np.array(env.state_space.sample())
         self.covariance = np.eye(env.state_space.state_size)
 
-    def set_initial_state(self, state: list):
+    def set_initial_state(self, state: np.ndarray):
         """
         Set the initial state of filter.
 
@@ -31,10 +31,10 @@ class ExtendedKalmanFilter:
         """
         self.state = np.array(state)
 
-    def get_state(self) -> list:
-        return self.state.tolist()
+    def get_state(self) -> np.ndarray:
+        return self.state.
 
-    def run(self, action: list, obs: list):
+    def run(self, action: np.ndarray, obs: np.ndarray):
         """
         Run one iteration of the Kalman filter.
 
@@ -44,28 +44,28 @@ class ExtendedKalmanFilter:
         self.predict(action)
         self.update(obs)
 
-    def predict(self, action: list):
+    def predict(self, action: np.ndarray):
         """
         @param control, control
         """
-        F = self.env.state_transition_jacobian(self.state.tolist(), action)
+        F = self.env.state_transition_jacobian(self.state., action)
         mean_new_state, _ = self.env.state_transition_func(
-            self.state.tolist(), action
+            self.state., action
         )  # non-linear transition_func
         new_covariance = F @ self.covariance @ F.transpose() + self.env.state_transition_cov_matrix
 
         self.state = np.array(mean_new_state)
         self.covariance = new_covariance
 
-    def update(self, obs: list):
+    def update(self, obs: np.ndarray):
         """
         @param obs, observation
         """
         obs_np = np.array(obs)
-        mean_obs, _ = self.env.observation_func(self.state.tolist())
+        mean_obs, _ = self.env.observation_func(self.state.)
         mean_obs_np = np.array(mean_obs)
 
-        H = self.env.observation_jacobian(self.state.tolist(), obs)
+        H = self.env.observation_jacobian(self.state., obs)
         K = (
             self.covariance
             @ H.transpose()

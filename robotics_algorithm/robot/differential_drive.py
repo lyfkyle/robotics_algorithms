@@ -11,12 +11,12 @@ class DiffDrive:
         self.wheel_dist = 0.2  # meters
         self.time_res = 0.05
 
-    def control_wheel_speed(self, state: list, control: list, dt: float) -> list:
+    def control_wheel_speed(self, state: np.ndarray, control: np.ndarray, dt: float) -> np.ndarray:
         """_summary_
 
         Args:
-            state (list): [x, y, theta] robot's current state
-            control (list): [v_l, v_r] left and right wheel velocities in radians
+            state (np.ndarray): [x, y, theta] robot's current state
+            control (np.ndarray): [v_l, v_r] left and right wheel velocities in radians
             dt (float): time step
 
         Returns:
@@ -28,20 +28,20 @@ class DiffDrive:
 
         return self.control(state, lin_vel, ang_vel, dt)
 
-    def control(self, state: list, lin_vel: float, ang_vel: float, dt: float) -> list:
+    def control(self, state: np.ndarray, action: np.ndarray, dt: float) -> np.ndarray:
         """
         Update the robot state based on the differential drive kinematics.
 
         Args:
-            state (list): [x, y, theta] robot's current state.
-            lin_vel (float): linear velocity
-            ang_vel (float): angular velocity
+            state (np.ndarray): [x, y, theta] robot's current state.
+            action (np.ndarray): [lin_vel, ang_vel]
             dt (float): time step
 
         Returns:
             new state [x, y, theta]
         """
         x, y, theta = state
+        lin_vel, ang_vel = action
 
         t = 0
         while t < dt:
@@ -54,10 +54,11 @@ class DiffDrive:
             t += self.time_res
             x, y, theta = x_new, y_new, theta_new
 
-        return [x_new.item(), y_new.item(), theta_new]
+        return np.array([x_new, y_new, theta_new])
 
-    def linearize_dynamics(self, state, action):
+    def linearize_state_transition(self, state, action):
         # linearize dynamics around state -> x_new = Ax + Bu
+
         x, y, theta = state
         lin_vel, ang_vel = action
         A = np.array([[1, 0, -lin_vel * np.sin(theta) * self.time_res], [0, 1, lin_vel * np.cos(theta) * self.time_res], [0, 0, 1]])

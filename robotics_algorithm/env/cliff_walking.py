@@ -29,7 +29,7 @@ class CliffWalking(MDPEnv):
         self,
         start: tuple = (0, 0),
         goal: tuple = (8, 0),
-        obstacles: list[tuple] = OBSTACLES,
+        obstacles: np.ndarray[tuple] = OBSTACLES,
         dense_reward: bool = False,
     ):
         """Constructor.
@@ -37,7 +37,7 @@ class CliffWalking(MDPEnv):
         Args:
             start (tuple): the start position of agent.
             goal (tuple): the goal position.
-            obstacles (list[tuple]): a list of obstacle positions.
+            obstacles (np.ndarray[tuple]): a np.ndarray of obstacle positions.
             dense_reward (bool): whether to use dense reward for this env.
         """
         super().__init__()
@@ -58,7 +58,7 @@ class CliffWalking(MDPEnv):
         self.dense_reward = dense_reward
 
     @override
-    def state_transition_func(self, state: tuple, action: int) -> tuple[list[tuple], list[float]]:
+    def state_transition_func(self, state: tuple, action: int) -> tuple[np.ndarray[tuple], np.ndarray[float]]:
         i, j = state
 
         new_states = []
@@ -105,7 +105,7 @@ class CliffWalking(MDPEnv):
         return term, False,info
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.
         # Transition to obstacle gives obstacle reward.

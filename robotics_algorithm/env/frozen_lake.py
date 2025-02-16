@@ -44,7 +44,7 @@ class FrozenLake(MDPEnv):
 
         # Get all indices inside the 2D grid
         indices = np.indices((size, size))
-        all_states = np.stack(indices, axis=-1).reshape(-1, 2).tolist()
+        all_states = np.stack(indices, axis=-1).reshape(-1, 2)
 
         # Define spaces
         self.state_space = DiscreteSpace([tuple(s) for s in all_states])
@@ -102,7 +102,7 @@ class FrozenLake(MDPEnv):
         return new_states, probs
 
     @override
-    def get_available_actions(self, state: tuple) -> list[tuple]:
+    def get_available_actions(self, state: tuple) -> np.ndarray[tuple]:
         return self.action_space
 
     @override
@@ -122,7 +122,7 @@ class FrozenLake(MDPEnv):
         return term, False, info
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.
         # Transition to obstacle gives obstacle reward.
@@ -146,7 +146,7 @@ class FrozenLake(MDPEnv):
         while not valid:
             state = np.random.randint(0, self.size, (2))
             if self.map[state[0], state[1]] == FrozenLake.FREE:
-                return state.tolist()
+                return state
 
     @override
     def render(self):

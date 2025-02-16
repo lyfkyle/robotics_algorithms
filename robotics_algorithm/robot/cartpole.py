@@ -13,7 +13,7 @@ class Cartpole:
         self.force_mag = 10.0
         self.dt = 0.02  # seconds between state updates
 
-    def control(self, state: list, force: float) -> list:
+    def control(self, state: np.ndarray, force: float) -> np.ndarray:
         state = np.array(state)
 
         x, x_dot, theta, theta_dot = state

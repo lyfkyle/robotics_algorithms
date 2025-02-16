@@ -1,10 +1,9 @@
-import time
 import math
 import json
 import os.path as osp
 
 from robotics_algorithm.env.continuous_2d.diff_drive_2d_control import DiffDrive2DControl
-from robotics_algorithm.control.mppi import MPPI
+from robotics_algorithm.control.optimal_control.mppi import MPPI
 
 CUR_DIR = osp.join(osp.dirname(osp.abspath(__file__)))
 
@@ -14,14 +13,12 @@ with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 
 # Initialize environment
-env = DiffDrive2DControl(action_dt=PATH_DT)
-env.reset(random_env=False)
-env.set_ref_path(shortest_path)
-
-controller = MPPI(env, action_mean=[0.25, 0], action_std=[0.25, math.radians(30)])
-
-# debug
+env = DiffDrive2DControl(use_lookahead=False)
+env.reset(shortest_path)
 env.interactive_viz = True
+
+# Init controller
+controller = MPPI(env, action_mean=[0.25, 0], action_std=[0.25, math.radians(30)])
 
 # run controller
 state = env.start_state
@@ -31,7 +28,7 @@ while True:
 
     # visualize local plan
     local_plan = [state]
-    best_actions = controller.prev_actions.tolist()  # debug
+    best_actions = controller.prev_actions  # debug
     new_state = env.sample_state_transition(state, action)[0]
     for future_action in best_actions:
         new_state = env.sample_state_transition(new_state, future_action)[0]

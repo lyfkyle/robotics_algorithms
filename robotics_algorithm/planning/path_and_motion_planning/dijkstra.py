@@ -21,7 +21,7 @@ class Dijkstra:
         self._state_key_func = state_key_func
 
 
-    def run(self, start: Any, goal: Any) -> tuple[bool, list[Any], float]:
+    def run(self, start: Any, goal: Any) -> tuple[bool, np.ndarray[Any], float]:
         """Run algorithm.
 
         Args:
@@ -30,7 +30,7 @@ class Dijkstra:
 
         Returns:
             res (bool): return true if a path is found, return false otherwise.
-            shortest_path (list[Any]): a list of state if shortest path is found.
+            shortest_path (np.ndarray[Any]): a np.ndarray of state if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
         # for every state, f[v] = g(s, v)
@@ -109,7 +109,7 @@ class Dijkstra:
                 shortest_path.append(state_dict[prev_state_key])
                 state_key = prev_state_key
 
-            shortest_path = list(reversed(shortest_path))
+            shortest_path = np.ndarray(reversed(shortest_path))
             shortest_path_len = g[goal_key]
             return (True, shortest_path, shortest_path_len)
         else:

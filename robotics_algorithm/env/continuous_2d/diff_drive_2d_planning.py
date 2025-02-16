@@ -61,7 +61,7 @@ class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         """Add an action path for visualization.
 
         Args:
-            action_path (list(list)): the path consisting a list of consecutive action.
+            action_path (np.ndarray(np.ndarray)): the path consisting a np.ndarray of consecutive action.
         """
         interpolated_path = [self.start_state]
 
@@ -80,7 +80,7 @@ class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         """Add a path for visualization.
 
         Args:
-            path (list(list)): the path.
+            path (np.ndarray(np.ndarray)): the path.
         """
         if id is None:
             self.path = path
@@ -312,7 +312,7 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
 
         # Plot cost from cost map
         if self._cost_map is not None:
-            costmap_img = np.array(list(self._cost_map.values())).reshape(100, 100)
+            costmap_img = np.array(np.ndarray(self._cost_map.values())).reshape(100, 100)
             plt.imshow(costmap_img, cmap='hot', alpha=0.5, origin='lower', extent=[0, 10, 0, 10])
 
         plt.xlim(0, self.size)
