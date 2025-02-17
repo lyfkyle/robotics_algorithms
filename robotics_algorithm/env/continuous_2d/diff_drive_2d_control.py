@@ -10,6 +10,7 @@ from robotics_algorithm.env.base_env import (
 from robotics_algorithm.env.continuous_2d.diff_drive_2d_env_base import DiffDrive2DEnv
 from robotics_algorithm.utils import math_utils
 
+DEFAULT_OBSTACLES = [[2, 2, 0.5], [5, 5, 1], [3, 8, 0.5], [8, 3, 1]]
 
 class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
@@ -78,6 +79,11 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     @override
     def reset(self, ref_path, empty=True, random_env=False):
         self.set_ref_path(np.array(ref_path))
+
+        if random_env:
+            self._random_obstacles()
+        else:
+            self.obstacles = DEFAULT_OBSTACLES
 
         # no obstacles if empty
         if empty:

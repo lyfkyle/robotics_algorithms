@@ -11,7 +11,7 @@ PATH_DT = 0.1
 with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 env = DiffDrive2DControl()
-env.reset(shortest_path)
+env.reset(shortest_path, empty=False)
 env.interactive_viz = True
 env.render()
 
