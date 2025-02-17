@@ -13,12 +13,17 @@ with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
 env = DiffDrive2DControl()
 env.reset(shortest_path)
 env.interactive_viz = True
+env.render()
 
 # initialize controller
 controller = ConvexMPC(env, horizon=20)
+# TODO scipy.solve_dare fails in path follow case. We solve via DP with finite horizon
+controller._lqr.horizon=500
+controller._lqr.solve_by_iteration=True
+
 state = env.cur_state
 ref_action = np.zeros(env.action_space.state_size)
-env.render()
+
 
 # run controller
 while True:

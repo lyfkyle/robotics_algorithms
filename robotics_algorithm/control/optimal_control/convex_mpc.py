@@ -25,11 +25,15 @@ class ConvexMPC:
         """
         assert env.state_space.type == SpaceType.CONTINUOUS.value
         assert env.action_space.type == SpaceType.CONTINUOUS.value
-        assert env.state_transition_func_type == FunctionType.LINEAR.value
+        assert env.state_transition_func_type == FunctionType.LINEAR.value or env.state_transition_func_type == FunctionType.GENERAL.value
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 
         self.env = env
         self.T = horizon
+
+        # ! Use LQR to calculate terminal cost. This makes sense as we assume after horizon, the system is brought
+        # ! to good state where all constraints should be satisfied.
+        self._lqr = LQR(env)
 
         # By default, default reference state and action is env.goal and zero action
         self.A, self.B = self.env.linearize_state_transition(env.goal_state, np.zeros(env.action_space.state_size))
@@ -56,6 +60,9 @@ class ConvexMPC:
         A, B = self.A, self.B
         Q, R = self.env.Q, self.env.R
 
+        # use lqr to get terminal cost
+        P = self._lqr._solve_dare(A, B, Q, R)
+
         x = cvxpy.Variable((self.T + 1, self.env.state_space.state_size))
         u = cvxpy.Variable((self.T + 1, self.env.action_space.state_size))
 
@@ -66,6 +73,7 @@ class ConvexMPC:
             cost += cvxpy.quad_form(u[t], R)
             constr += [x[t + 1].T == A @ x[t] + B @ u[t]]
 
+        cost += cvxpy.quad_form(x[self.T], P)  # LQR terminal cost
         constr += [x[0] == state]
         prob = cvxpy.Problem(cvxpy.Minimize(cost), constr)
 

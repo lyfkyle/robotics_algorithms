@@ -44,4 +44,4 @@ class Cartpole(Robot):
             theta_dot = theta_dot + self.dt * thetaacc
             theta = theta + self.dt * theta_dot
 
-        return [x.item(), x_dot.item(), theta.item(), theta_dot.item()]
+        return np.array([x, x_dot, theta, theta_dot])

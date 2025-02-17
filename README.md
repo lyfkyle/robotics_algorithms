@@ -26,12 +26,13 @@ python 3.10
 For example, to run a\* to find the shortest path between start and goal in a grid world
 
 ```python
-python examples/planning/test_a_star.py
+python examples/planning/path_planning/test_a_star.py
 ```
 
 ## News
 
-- 09/02/2025: Added cost-aware differential drive path planning
+- 17/02/2025: Added convex MPC, inverted pendulum and more path following examples.
+- 09/02/2025: Added cost-aware differential drive path planning.
 - Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
 
 ## Status
@@ -44,8 +45,10 @@ Algorithms
   - [x] Differential drive
   - [x] Cartpole
   - [x] Double Integrator
+  - [x] Inverted Pendulum
   - [ ] Arm
   - [ ] Car
+  - [ ] Planar Quadrotor
   - [ ] Quadrotor
   - [ ] Quadruped
 - [x] State Estimation
@@ -58,17 +61,17 @@ Algorithms
   - [ ] SLAM
     - [ ] EKF SLAM
     - [ ] Fast SLAM
-    - [ ] Graph SLAM
+    - [ ] Graph-based SLAM
 - [ ] Planning
   - [x] Path Planning
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
   - [ ] Motion Planning
+    - [x] PRM
     - [x] RRT / RRT-Connect
     - [x] RRT\*
     - [ ] RRT\*-Connect
-    - [x] PRM
     - [ ] Informed RRT\*
     - [ ] BIT\*
   - [x] MDP
@@ -87,10 +90,10 @@ Algorithms
     - [x] LQR
     - [x] MPPI
     - [x] CEM-MPC
-    - [ ] Convex-MPC
-  - [ ] Other
-    - [ ] Time-elastic Band
+    - [x] Convex-MPC
+  - [ ] Domain-specific Path Follow Control
     - [ ] Regulated Pure Pursuit
+    - [ ] Time-elastic Band
 - [ ] Imitation learning
   - [ ] ACT
   - [ ] Diffusion-policy
@@ -113,8 +116,8 @@ Algorithms
   - [x] 2D navigation with differential drive
     - [x] Deterministic and fully-observable
     - [x] Stochastic and partially-observable
-    - [ ] With obstacle-distance cost
-  - [ ] 2D localization
+    - [x] With obstacle-distance cost
+  - [x] 2D localization
   - [ ] 2D SLAM
   - [ ] Multi-arm bandits (POMDP)
   - [ ] Tiger (POMDP)
