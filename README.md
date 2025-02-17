@@ -1,13 +1,14 @@
 # robotics_algorithms
 
-![logo](/doc/logo.jpg "logo")
+![logo](/doc/TIAGo_05.jpg "logo")
 
-This repository contains pure-python implementation for essential robotics algorithms.
+This repository contains my pure-python implementation of essential algorithms that make a mobile manipulator (and other robots) move.
 
-The main benefits are:
+While it is true that a lot of algorithms have been implemented by other projects, this repo serves these main benefits:
 
-1. Have a single source of truth of various algorithms with clear explanation.
-2. Implemented with clear separation between dynamics, environment and algorithm, emphasizing that a lot of algorithms, e.g planing under uncertainties, optimal control, share the same underlying problem formulation，eg. MDP.
+1. It achieves a good balance of width and depth. It covers a wide range of topics, while focusing on only key algorithms in each field.
+2. It is implemented with modular structure that cleanly separates algorithms from problems (like OMPL), at the same time emphasizing connection between different algorithms. For example, the design reflects that planing under uncertainties, optimal control and RL share the same underlying MDP formulation.
+3. Serves as a single source of truth of various algorithms so that I no longer need to search all over the Internet.
 
 ## Scope
 
