@@ -22,15 +22,16 @@ class PolicyTreeSearch:
         self.max_depth = max_depth
         self.discount_factor = discount_factor
 
-    def run(self, state: Any) -> Any:
+    def run(self, state: np.ndarray) -> np.ndarray:
         """Compute best action for the current state.
 
         Args:
-            state (Any): the current state
+            state (np.ndarray): the current state
 
         Returns:
-            action (Any): the best action
+            action (np.ndarray): the best action
         """
+        print("Searching")
         q, _ = self._compute_state_value(self.env, state, 0)
         print(q)
         actions = self.env.action_space.get_all()

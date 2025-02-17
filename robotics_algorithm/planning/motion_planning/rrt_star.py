@@ -38,6 +38,7 @@ class RRTStar:
         assert env.observability == EnvType.FULLY_OBSERVABLE.value
 
         self.env = env
+        self.num_of_samples = num_of_samples
         self._sample_func = sample_func
         self._vertex_expand_func = vertex_expand_func
         self._edge_col_check_func = edge_col_check_func
@@ -52,21 +53,21 @@ class RRTStar:
         self.g[root] = 0  # cost_to_come to itself is 0.
         self.tree.add_node(root)
 
-    def run(self, start: tuple, goal: tuple) -> tuple[bool, np.ndarray[tuple], float]:
+    def run(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, list, float]:
         """
         Run planner.
 
         Args:
-            start (tuple): the start state.
-            goal (tuple): the goal state.
+            start (np.ndarray): the start state.
+            goal (np.ndarray): the goal state.
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise.
-            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found.
+            shortest_path (list): a np.ndarray of vertices if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
-        start = tuple(start)
-        goal = tuple(goal)
+        start = tuple(start.tolist())
+        goal = tuple(goal.tolist())
 
         self.initialize_tree(start)
 
@@ -75,7 +76,7 @@ class RRTStar:
                 print("RRTStar/run, iteration {}".format(i))
 
             if np.random.uniform() > self.goal_bias:
-                v_target = self._sample_func(self.env)
+                v_target = tuple(self._sample_func(self.env).tolist())
             else:
                 v_target = goal
 
@@ -103,16 +104,15 @@ class RRTStar:
 
         """
         # Like A-Star, the notion here is dist[v] = g(s, v) + h(v, g). (total cost = cost to come + cost to go)
-        v_target = tuple(v_target)
 
         # RRT finds the nearest node in tree to v_target
-        all_nodes = np.ndarray(self.tree.nodes)
+        all_nodes = list(self.tree.nodes)
         nearest_neighbors = self.get_nearest_neighbors(all_nodes, v_target)
-        v_cur = tuple(nearest_neighbors[0])
+        v_cur = tuple(nearest_neighbors[0].tolist())
 
         # expand towards v_target
         v_new, path_len = self._vertex_expand_func(self.env, v_cur, v_target)
-        v_new = tuple(v_new)
+        v_new = tuple(v_new.tolist())
         # print(v_cur, v_target, v_new)
 
         # if expansion happens.
@@ -120,14 +120,14 @@ class RRTStar:
             raw_neighbors = self.get_nearest_neighbors(all_nodes, v_new, n_neighbors=10)
 
             # filter out neighbors that are not connectable
-            neighbors = [n for n in raw_neighbors if self._edge_col_check_func(self.env, n, v_new)[0]]
+            neighbors = [tuple(n.tolist()) for n in raw_neighbors if self._edge_col_check_func(self.env, n, np.array(v_new))[0]]
 
             # shortcut. Instead of connecting v_new to v_cur, connect to neighbor that has best cost-to-come
             best_cost_to_come = self.g[v_cur] + path_len
             best_neighbor = v_cur
             best_dist = path_len
             for neighbor in neighbors:
-                assert self._edge_col_check_func(self.env, v_new, neighbor)
+                # assert self._edge_col_check_func(self.env, v_new, neighbor)
                 dist = self._distance_func(self.env, neighbor, v_new)
                 if self.g[neighbor] + dist < best_cost_to_come:
                     best_cost_to_come = self.g[neighbor] + dist
@@ -170,64 +170,63 @@ class RRTStar:
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).
-        nbr_vertices = [tuple(v) for v in nbr_vertices]
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0)
         return nbr_vertices
 
     def get_tree(self):
         return self.tree
 
 
-# TODO
-class RRTStarConnect:
-    def __init__(self, num_of_samples):
-        self.num_of_samples = num_of_samples
-        self.start_rrt = RRTStar()
-        self.goal_rrt = RRTStar()
-        self.adj_list = defaultdict(dict)
+# # TODO
+# class RRTStarConnect:
+#     def __init__(self, num_of_samples):
+#         self.num_of_samples = num_of_samples
+#         self.start_rrt = RRTStar()
+#         self.goal_rrt = RRTStar()
+#         self.adj_list = defaultdict(dict)
 
-    def run(self, source, goal, sample_vertex_func, expand_func, delta, distance_func, check_link):
-        self.start_rrt.initialize_tree(source)
-        self.goal_rrt.initialize_tree(goal)
+#     def run(self, source, goal, sample_vertex_func, expand_func, delta, distance_func, check_link):
+#         self.start_rrt.initialize_tree(source)
+#         self.goal_rrt.initialize_tree(goal)
 
-        rrt1 = self.start_rrt
-        rrt2 = self.goal_rrt
-        reached = False
-        for i in range(self.num_of_samples):
-            if i % 100 == 0:
-                print("RRTConnect/run, iteration {}".format(i))
+#         rrt1 = self.start_rrt
+#         rrt2 = self.goal_rrt
+#         reached = False
+#         for i in range(self.num_of_samples):
+#             if i % 100 == 0:
+#                 print("RRTConnect/run, iteration {}".format(i))
 
-            v_target = sample_vertex_func()
-            res, v = rrt1.extend(v_target, expand_func, delta, distance_func, check_link)
-            if res != RRTStar.TRAPPED:
-                res = rrt2.connect(v, expand_func, delta, distance_func, check_link)
-                if res == RRTStar.REACHED:
-                    reached = True
+#             v_target = sample_vertex_func()
+#             res, v = rrt1.extend(v_target, expand_func, delta, distance_func, check_link)
+#             if res != RRTStar.TRAPPED:
+#                 res = rrt2.connect(v, expand_func, delta, distance_func, check_link)
+#                 if res == RRTStar.REACHED:
+#                     reached = True
 
-            rrt1, rrt2 = rrt2, rrt1
+#             rrt1, rrt2 = rrt2, rrt1
 
-        if reached:
-            return self.get_path(source, goal)
+#         if reached:
+#             return self.get_path(source, goal)
 
-        return False, None, None
+#         return False, None, None
 
-    def get_path(self, source, goal):
-        adj_list = self.get_tree()
+#     def get_path(self, source, goal):
+#         adj_list = self.get_tree()
 
-        # call dijkstra to find the path
-        path_exist, shortest_path, path_len = self._path_finder.run(adj_list, source, goal)
-        if not path_exist:
-            print("RRTStarConnect/get_path: No path is found, this should not happen!!!")
-            return False, None, None
-        else:
-            return True, shortest_path, path_len
+#         # call dijkstra to find the path
+#         path_exist, shortest_path, path_len = self._path_finder.run(adj_list, source, goal)
+#         if not path_exist:
+#             print("RRTStarConnect/get_path: No path is found, this should not happen!!!")
+#             return False, None, None
+#         else:
+#             return True, shortest_path, path_len
 
-    def get_tree(self):
-        # merge adj_list from two rrt
-        adj_list = self.start_rrt.adj_list.copy()
-        for key in self.goal_rrt.adj_list:
-            for key1, val1 in self.goal_rrt.adj_list[key].items():
-                adj_list[key][key1] = val1
-        self.adj_list = adj_list
+#     def get_tree(self):
+#         # merge adj_list from two rrt
+#         adj_list = self.start_rrt.adj_list.copy()
+#         for key in self.goal_rrt.adj_list:
+#             for key1, val1 in self.goal_rrt.adj_list[key].items():
+#                 adj_list[key][key1] = val1
+#         self.adj_list = adj_list
 
-        return self.adj_list
+#         return self.adj_list

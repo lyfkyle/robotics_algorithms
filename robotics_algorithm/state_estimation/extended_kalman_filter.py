@@ -6,6 +6,8 @@ from robotics_algorithm.env.base_env import BaseEnv, EnvType, FunctionType, Dist
 class ExtendedKalmanFilter:
     def __init__(self, env: BaseEnv):
         """
+        Extended Kalman filter.
+
         State Transition: X = transition_func(x, u) + sigma
         Measurement Z = measurement_func(x) + delta
         R: Process covariance matrix from sigma
@@ -32,7 +34,7 @@ class ExtendedKalmanFilter:
         self.state = np.array(state)
 
     def get_state(self) -> np.ndarray:
-        return self.state.
+        return self.state
 
     def run(self, action: np.ndarray, obs: np.ndarray):
         """
@@ -48,10 +50,8 @@ class ExtendedKalmanFilter:
         """
         @param control, control
         """
-        F = self.env.state_transition_jacobian(self.state., action)
-        mean_new_state, _ = self.env.state_transition_func(
-            self.state., action
-        )  # non-linear transition_func
+        F, _ = self.env.linearize_state_transition(self.state, action)
+        mean_new_state, _ = self.env.state_transition_func(self.state, action)  # non-linear transition_func
         new_covariance = F @ self.covariance @ F.transpose() + self.env.state_transition_cov_matrix
 
         self.state = np.array(mean_new_state)
@@ -62,10 +62,10 @@ class ExtendedKalmanFilter:
         @param obs, observation
         """
         obs_np = np.array(obs)
-        mean_obs, _ = self.env.observation_func(self.state.)
+        mean_obs, _ = self.env.observation_func(self.state)
         mean_obs_np = np.array(mean_obs)
 
-        H = self.env.observation_jacobian(self.state., obs)
+        H = self.env.linearize_observation(self.state, obs)
         K = (
             self.covariance
             @ H.transpose()

@@ -23,16 +23,16 @@ class HybridAStar:
         self._heuristic_func = heuristic_func
         self._state_key_func = state_key_func
 
-    def run(self, start: Any, goal: Any) -> tuple[bool, np.ndarray[Any], float]:
+    def run(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, np.ndarray, float]:
         """Run algorithm.
 
         Args:
-            start (Any): the start state
-            goal (Any): the goal state
+            start (np.ndarray): the start state
+            goal (np.ndarray): the goal state
 
         Returns:
             res (bool): return true if a path is found, return false otherwise.
-            shortest_path (np.ndarray[Any]): a np.ndarray of state if shortest path is found.
+            shortest_path (np.ndarray): a np.ndarray of state if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
 
@@ -79,6 +79,7 @@ class HybridAStar:
                 path_exist = True
                 break
 
+            # print(f"close set num: {len(close_set)}/81000")
             print(best_state, best_state_key, g[best_state_key])
             # Find possible transitions from best_state, and add them to queue ranked by heuristics.
             actions = self.env.action_space.get_all()
@@ -121,7 +122,7 @@ class HybridAStar:
                 shortest_path.append(prev_action)
                 state_key = prev_state_key
 
-            shortest_path = np.ndarray(reversed(shortest_path))
+            shortest_path = list(reversed(shortest_path))
             shortest_path_len = f[goal_key]
             return (True, shortest_path, shortest_path_len)
         else:

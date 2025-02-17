@@ -28,14 +28,12 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     Quadratic cost.
     """
 
-    def __init__(
-        self, size=10, use_discrete_time_model=True, observation_noise_std=0.01, state_transition_noise_std=0.01
-    ):
+    def __init__(self, size=10, observation_noise_std=0.01, state_transition_noise_std=0.01):
         super().__init__()
 
         self.size = size
 
-        self.robot_model = DoubleIntegrator(use_discrete_time_model=use_discrete_time_model)
+        self.robot_model = DoubleIntegrator()
         self.state_space = ContinuousSpace(low=[-self.size / 2, -1e10], high=[self.size / 2, 1e10])  # pos and vel
         self.action_space = ContinuousSpace(low=[-1e10], high=[1e10])  # accel
 
@@ -99,6 +97,10 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     @override
     def linearize_state_transition(self, state: np.ndarray, action: np.ndarray):
         return self.robot_model.linearize_state_transition(state, action)
+
+    @override
+    def linearize_observation(self, state, observation):
+        return self.H
 
     @override
     def sample_observation(self, state):

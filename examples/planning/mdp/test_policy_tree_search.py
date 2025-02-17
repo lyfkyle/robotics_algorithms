@@ -1,7 +1,7 @@
 import numpy as np
 
 from robotics_algorithm.env.frozen_lake import FrozenLake
-from robotics_algorithm.planning import PolicyTreeSearch
+from robotics_algorithm.planning.mdp.policy_tree_search import PolicyTreeSearch
 
 
 env = FrozenLake(dense_reward=True)

@@ -1,12 +1,12 @@
-from collections import defaultdict
 import random
+from collections import defaultdict
 from typing import Callable
 
-from sklearn.neighbors import NearestNeighbors
-import numpy as np
 import networkx as nx
+import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
-from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
+from robotics_algorithm.env.base_env import BaseEnv, EnvType, SpaceType
 
 
 class RRT:
@@ -38,21 +38,21 @@ class RRT:
     def initialize_tree(self, start_state: tuple):
         self.tree.add_node(start_state)
 
-    def run(self, start: tuple, goal: tuple) -> tuple[bool, np.ndarray[tuple], float]:
+    def run(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, list, float]:
         """
         Run planner.
 
         Args:
-            start (tuple): the start state.
-            goal (tuple): the goal state.
+            start (np.ndarray): the start state.
+            goal (np.ndarray): the goal state.
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise.
-            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found.
+            shortest_path (list): a np.ndarray of vertices if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
-        start = tuple(start)
-        goal = tuple(goal)
+        start = tuple(start.tolist())
+        goal = tuple(goal.tolist())
 
         self.initialize_tree(start)
 
@@ -62,7 +62,7 @@ class RRT:
                 print("RRT/run, iteration {}".format(i))
 
             if np.random.uniform() > self.goal_bias:
-                v_target = self._sample_func(self.env)
+                v_target = tuple(self._sample_func(self.env).tolist())
             else:
                 v_target = goal
 
@@ -91,13 +91,13 @@ class RRT:
         """
 
         # RRT finds the nearest node in tree to v_target
-        all_nodes = np.ndarray(self.tree.nodes)
+        all_nodes = list(self.tree.nodes)
         nearest_neighbors = self.get_nearest_neighbors(all_nodes, v_target)
-        v_cur = tuple(nearest_neighbors[0])
+        v_cur = tuple(nearest_neighbors[0].tolist())
 
         # expand towards v_target
         v_new, path_len = self._vertex_expand_func(self.env, v_cur, v_target)
-        v_new = tuple(v_new)
+        v_new = tuple(v_new.tolist())
         # print(v_cur, v_target, v_new)
 
         if v_new != v_cur:
@@ -128,8 +128,7 @@ class RRT:
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).
-        nbr_vertices = [tuple(v) for v in nbr_vertices]
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0)
         return nbr_vertices
 
     def get_tree(self):
@@ -158,21 +157,21 @@ class RRTConnect:
         self.tree = nx.Graph()
         self._sample_func = sample_func
 
-    def run(self, start: tuple, goal: tuple) -> tuple[bool, np.ndarray[tuple], float]:
+    def run(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, np.ndarray[tuple], float]:
         """
         Run planner.
 
         Args:
-            start (tuple): the start state.
-            goal (tuple): the goal state.
+            start (np.ndarray): the start state.
+            goal (np.ndarray): the goal state.
 
         Returns:
             success (boolean): return true if a path is found, return false otherwise.
-            shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found.
+            shortest_path (np.ndarray[np.ndarray]): a np.ndarray of vertices if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
-        start = tuple(start)
-        goal = tuple(goal)
+        start = tuple(start.tolist())
+        goal = tuple(goal.tolist())
 
         # Initialize two trees, one at start, and the other at goal.
         self.start_rrt.initialize_tree(start)
@@ -185,7 +184,7 @@ class RRTConnect:
             if i % 100 == 0:
                 print("RRTConnect/run, iteration {}".format(i))
 
-            v_target = self._sample_func(self.env)
+            v_target = tuple(self._sample_func(self.env).tolist())
             res, v = rrt1.extend(v_target)
             if res != RRT.TRAPPED:
                 res, _ = rrt2.extend(v)
@@ -196,10 +195,8 @@ class RRTConnect:
 
         return False, None, None
 
-    def _get_path(self, start, goal):
+    def _get_path(self, start: tuple, goal: tuple):
         self.combined_tree = self.get_tree()
-        start = tuple(start)
-        goal = tuple(goal)
 
         path = nx.shortest_path(self.combined_tree, start, goal, weight="weight")
         path_len = nx.shortest_path_length(self.combined_tree, start, goal, weight="weight")
@@ -212,7 +209,7 @@ class RRTConnect:
             (nx.Graph): the current planning tree.
         """
         combined = nx.Graph()
-        combined.add_edges_from(np.ndarray(self.start_rrt.tree.edges(data=True)) + np.ndarray(self.goal_rrt.tree.edges(data=True)))
+        combined.add_edges_from(list(self.start_rrt.tree.edges(data=True)) + list(self.goal_rrt.tree.edges(data=True)))
         nodes = set(self.start_rrt.tree.nodes())
         nodes.update(set(self.goal_rrt.tree.nodes()))
         combined.add_nodes_from(nodes)

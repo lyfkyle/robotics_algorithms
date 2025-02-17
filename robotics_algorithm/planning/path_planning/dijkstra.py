@@ -1,16 +1,17 @@
-from typing import Callable, Any
 import heapq
+from typing import Any, Callable
 
-from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
+import numpy as np
+
+from robotics_algorithm.env.base_env import BaseEnv, EnvType, SpaceType
 
 
-class AStar:
-    def __init__(self, env: BaseEnv, heuristic_func: Callable, state_key_func: Callable):
+class Dijkstra:
+    def __init__(self, env: BaseEnv, state_key_func: Callable):
         """Constructor.
 
         Args:
             env (BaseEnv): A planning env.
-            heuristic_func (Callable): a function to return estimated cost-to-go from a state to goal.
             state_key_func (Callable): a function to hash the state.
         """
         assert env.action_space.type == SpaceType.DISCRETE.value
@@ -19,10 +20,9 @@ class AStar:
         assert env.observability == EnvType.FULLY_OBSERVABLE.value
 
         self.env = env
-        self._heuristic_func = heuristic_func
         self._state_key_func = state_key_func
 
-    def run(self, start: Any, goal: Any) -> tuple[bool, np.ndarray[Any], float]:
+    def run(self, start: Any, goal: Any) -> tuple[bool, np.ndarray, float]:
         """Run algorithm.
 
         Args:
@@ -31,10 +31,10 @@ class AStar:
 
         Returns:
             res (bool): return true if a path is found, return false otherwise.
-            shortest_path (np.ndarray[Any]): a np.ndarray of state if shortest path is found.
+            shortest_path (np.ndarray): a np.ndarray of state if shortest path is found.
             shortest_path_len (float): the length of shortest path if found.
         """
-        # Astar gist: for every state, f[v] = g(s, v) + h(v, g)
+        # for every state, f[v] = g(s, v)
 
         # initialize
         unvisited_states = set()  # OPEN set. Nodes not in this set is in CLOSE set
@@ -42,9 +42,8 @@ class AStar:
         shortest_path = []
         shortest_path_len = 0
         g = {}  # cost-to-come from start to a state
-        f = {}  # cost-to-come + heuristic cost-to-go
         prev_state_dict = {}  # used to extract shortest path
-        state_dict = {}  # key is some state key, value is the actual state.
+        state_dict = {}  # key is some  state key, value is the actual state.
 
         start_key = self._state_key_func(start)
         goal_key = self._state_key_func(goal)
@@ -54,19 +53,18 @@ class AStar:
         for state in self.env.state_space.get_all():
             state_key = self._state_key_func(state)
             g[state_key] = float('inf')
-            f[state_key] = float('inf')
             state_dict[state_key] = state
-            unvisited_states.add(state_key)  # All states are unvisited
+            unvisited_states.add(state_key)
 
         g[start_key] = 0  # distance to source is 0
-        f[start_key] = self._heuristic_func(start, goal)  # cost from source to goal = g(s, s) + h(s, g) = 0 + h(s, g)
-        heapq.heappush(priority_q, (f[start_key], start))
+        heapq.heappush(priority_q, (g[start_key], start))
 
         # run algorithm
         path_exist = False
         while len(priority_q) > 0:
             # pop the best state found so far.
             _, best_state = heapq.heappop(priority_q)
+            best_state = np.array(best_state)
             best_state_key = self._state_key_func(best_state)
 
             # filter out state visited before. This may happen if multiple path leads to the same state with
@@ -82,9 +80,8 @@ class AStar:
                 break
 
             print(best_state, best_state_key, g[best_state_key])
-            # Find possible transitions from best_state, and add them to queue ranked by heuristics.
+            # Find possible transitions from best_state, and add them to queue
             actions = self.env.action_space.get_all()
-            # print(best_state, available_actions)
             for action in actions:
                 new_state, reward, term, _, info = self.env.sample_state_transition(best_state, action)
                 cost = -reward
@@ -97,15 +94,12 @@ class AStar:
                 new_state_key = self._state_key_func(new_state)
                 if new_state_key in unvisited_states:
                     g_new_state = g[best_state_key] + cost  # cost-to-come
-                    h_new_state = self._heuristic_func(new_state, goal)  # cost-to-go
-                    # print(new_state, h_new_state)
                     if g_new_state < g[new_state_key]:
                         g[new_state_key] = g_new_state
-                        f[new_state_key] = g_new_state + h_new_state
                         # NOTE: here we do not need to remove the the previous stored new_state with old best-to-come
                         #       value because of new_state will be marked as visited when first poped with the best
                         #       cost-to-come value.
-                        heapq.heappush(priority_q, (f[new_state_key], new_state))
+                        heapq.heappush(priority_q, (g[new_state_key], new_state.tolist()))
                         prev_state_dict[new_state_key] = best_state_key
 
         if path_exist:
@@ -117,7 +111,7 @@ class AStar:
                 shortest_path.append(state_dict[prev_state_key])
                 state_key = prev_state_key
 
-            shortest_path = np.ndarray(reversed(shortest_path))
+            shortest_path = list(reversed(shortest_path))
             shortest_path_len = g[goal_key]
             return (True, shortest_path, shortest_path_len)
         else:

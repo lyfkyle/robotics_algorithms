@@ -50,7 +50,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         # ! The dynamics is not linear strictly but at each step can be approximated by
         # ! linearization.
         # x_new = Ax + Bu (discrete time model)
-        self.state_transition_func_type = FunctionType.LINEAR.value
+        self.state_transition_func_type = FunctionType.GENERAL.value
 
         # declare quadratic cost
         # L = x.T @ Q @ x + u.T @ R @ u

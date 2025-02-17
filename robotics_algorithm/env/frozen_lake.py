@@ -91,7 +91,7 @@ class FrozenLake(MDPEnv):
             new_states.append((max(0, i - 1), j))
             new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
             new_states.append((max(0, i - 1), max(0, j - 1)))
-        probs = [0.8, 0.1, 0.1]
+        probs = [0.9, 0.05, 0.05]
 
         # results = []
         # for next_state in next_states:

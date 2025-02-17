@@ -17,7 +17,7 @@ from collections import deque
 from matplotlib import pyplot as plt
 
 from robotics_algorithm.env.continuous_2d.diff_drive_2d_planning import DiffDrive2DPlanningWithCost
-from robotics_algorithm.planning import HybridAStar
+from robotics_algorithm.planning.path_planning.hybrid_a_star import HybridAStar
 from robotics_algorithm.utils import math_utils
 
 # Initialize environment

@@ -202,7 +202,7 @@ class MCTS:
             self.total_q_value[parent_state][action] += future_return
             # print(state, parent_state, future_return, self._get_q_value(parent_state, action))
 
-            state_value = np.array(np.ndarray(self.total_q_value[parent_state])).max().item()
+            state_value = np.array(list(self.total_q_value[parent_state])).max().item()
             node = parent_node
             parent_node = parent_node.parent
 

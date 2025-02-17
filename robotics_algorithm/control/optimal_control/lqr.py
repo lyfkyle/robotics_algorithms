@@ -20,7 +20,8 @@ class LQR:
         """
         assert env.state_space.type == SpaceType.CONTINUOUS.value
         assert env.action_space.type == SpaceType.CONTINUOUS.value
-        assert env.state_transition_func_type == FunctionType.LINEAR.value
+        # Can be general because we can linearize dynamics around fixed point.
+        assert env.state_transition_func_type == FunctionType.LINEAR.value or FunctionType.GENERAL.value
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 
         self.env = env

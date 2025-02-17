@@ -161,6 +161,18 @@ class BaseEnv:
         """
         raise NotImplementedError()
 
+    def linearize_observation(self, state: np.ndarray, observation: np.ndarray) -> np.ndarray:
+        """Linearize observation function around current state and observation
+
+        Args:
+            state (np.ndarray): state
+            observation (np.ndarray): observation
+
+        Returns:
+            H such that Y = H(x)
+        """
+        raise NotImplementedError()
+
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         """Calculate the reward of apply action at a state.
 
@@ -182,6 +194,19 @@ class BaseEnv:
 
         Args:
             state (np.ndarray): state
+
+        Returns:
+            bool: return True if valid
+        """
+        raise NotImplementedError()
+
+    def is_state_transition_valid(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray) -> bool:
+        """Check whether a state transition is valid.
+
+        Args:
+            state (np.ndarray): state
+            action (np.ndarray): action
+            new_state (np.ndarray): the resultant new_state
 
         Returns:
             bool: return True if valid
@@ -284,7 +309,6 @@ class DeterministicEnv(BaseEnv):
             new_state (np.ndarray): the new state
         """
         raise NotImplementedError()
-
 
 class StochasticEnv(BaseEnv):
     def __init__(self):

@@ -23,12 +23,11 @@ class KalmanFilter:
         assert env.observation_dist_type == DistributionType.GAUSSIAN.value
 
         # state_transition_func: x = Ax + Bu + sigma
-        self.A = env.A
-        self.B = env.B
+        self.A, self.B = env.linearize_state_transition(None, None)  # As state transition is linear, A and B are constant
         self.R = env.state_transition_covariance_matrix
 
         # measurement function z = Hx + delta
-        self.H = env.H
+        self.H = env.linearize_observation(None, None)  # As observation is linear, H are constant
         self.Q = env.observation_covariance_matrix
 
         self.state = np.array(env.cur_state)
@@ -42,7 +41,7 @@ class KalmanFilter:
         self.state = np.array(state)
 
     def get_state(self) -> np.ndarray:
-        return self.state.
+        return self.state
 
     def run(self, action: np.ndarray, obs: np.ndarray):
         """

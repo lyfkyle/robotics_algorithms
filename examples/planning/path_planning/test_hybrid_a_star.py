@@ -1,8 +1,10 @@
-import time
 import math
+import time
+
+import numpy as np
 
 from robotics_algorithm.env.continuous_2d.diff_drive_2d_planning import DiffDrive2DPlanning
-from robotics_algorithm.planning import HybridAStar
+from robotics_algorithm.planning.path_planning.hybrid_a_star import HybridAStar
 
 # Initialize environment
 env = DiffDrive2DPlanning(discrete_action=True)  # use discrete action for Hybrid A*
@@ -13,13 +15,13 @@ FIX_MAZE = True
 
 # -------- Helper Functions -------------
 def heuristic_func(state, goal):
-    # simply the distance between v and goal
+    # simply the Euclidean distance between v and goal, which is an underestimate of the actual SE2 distance
     v_x, v_y, _ = state
     goal_x, goal_y, _ = goal
     return math.sqrt((goal_x - v_x) ** 2 + (goal_y - v_y) ** 2)
 
 
-def state_key_func(state):
+def state_key_func(state: np.ndarray):
     return env.calc_state_key(state)
 
 

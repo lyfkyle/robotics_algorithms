@@ -3,7 +3,7 @@ import numpy as np
 from robotics_algorithm.env.windy_grid_world import WindyGridWorld
 from robotics_algorithm.env.cliff_walking import CliffWalking
 from robotics_algorithm.env.frozen_lake import FrozenLake
-from robotics_algorithm.planning import PolicyIteration
+from robotics_algorithm.planning.mdp.value_iteration import ValueIteration
 
 envs = [
     FrozenLake(dense_reward=True),
@@ -16,7 +16,7 @@ for env in envs:
     env.render()
 
     # Plan
-    planner = PolicyIteration(env)
+    planner = ValueIteration(env)
     Q, policy = planner.run()
 
     print(Q)

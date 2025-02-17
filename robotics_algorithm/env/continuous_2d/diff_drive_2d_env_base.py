@@ -144,17 +144,13 @@ class DiffDrive2DEnv(BaseEnv):
     @override
     def is_state_valid(self, state: np.ndarray) -> bool:
         for obstacle in self.obstacles:
-            if np.linalg.norm(np.array(state[:2]) - np.array(obstacle[:2])) <= obstacle[2] + self.robot_radius:
+            if np.linalg.norm(state[:2] - np.array(obstacle[:2])) <= obstacle[2] + self.robot_radius:
                 return False
 
         return True
 
     def is_state_similar(self, state1: np.ndarray, state2: np.ndarray) -> bool:
-        # return self.calc_state_key(state1) == self.calc_state_key(state2)
         return np.linalg.norm(state1 - state2) < 0.2
-
-    def calc_state_key(self, state: np.ndarray) -> tuple[int, int, int]:
-        return (round(state[0] / 0.1), round(state[1] / 0.1), round((state[2] + math.pi) / math.radians(30)))
 
     def _random_obstacles(self, num_of_obstacles: int = 5):
         self.obstacles = []

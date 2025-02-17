@@ -50,21 +50,21 @@ class ProbabilisticRoadmap:
         while len(self.all_samples) < self.num_of_samples:
             collision_free = False
             while not collision_free:
-                v = self._sample_func(self.env)
-                collision_free = self._state_col_check_func(self.env, v)
+                sample = self._sample_func(self.env)
+                collision_free = self._state_col_check_func(self.env, sample)
 
-            self.all_samples.append(v)
+            self.all_samples.append(sample)
 
         print("PRM/compute_roadmap: finished adding {} of vertices".format(self.num_of_samples))
         # print(self.V)
 
-        for v in self.all_samples:
-            neighbors = self.get_nearest_neighbors(self.all_samples, v, self.num_neighbors)
+        for sample in self.all_samples:
+            neighbors = self.get_nearest_neighbors(self.all_samples, sample, self.num_neighbors)
             # print("neighbours {}".format(neighbours))
             for neighbor in neighbors:
-                can_link, length = self._edge_col_check_func(self.env, v, neighbor)
+                can_link, length = self._edge_col_check_func(self.env, sample, neighbor)
                 if can_link:
-                    self.roadmap.add_edge(tuple(v), tuple(neighbor), weight=length)
+                    self.roadmap.add_edge(tuple(sample.tolist()), tuple(neighbor.tolist()), weight=length)
 
     def get_nearest_neighbors(self, all_vertices: np.ndarray[tuple], v: tuple, n_neighbors: int = 1) -> np.ndarray[tuple]:
         """
@@ -86,8 +86,7 @@ class ProbabilisticRoadmap:
         nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
-        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0).
-        nbr_vertices = [tuple(v) for v in nbr_vertices]
+        nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0)
         return nbr_vertices
 
     def get_path(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, np.ndarray[tuple], float]:
@@ -103,14 +102,14 @@ class ProbabilisticRoadmap:
             shortest_path (np.ndarray[tuple]): a np.ndarray of vertices if shortest path is found
             shortest_path_len (float): the length of shortest path if found.
         """
-        start = tuple(start)
-        goal = tuple(goal)
+        start_tup = tuple(start.tolist())
+        goal_tup = tuple(goal.tolist())
 
         source_neighbors = self.get_nearest_neighbors(self.all_samples, start, self.num_neighbors)
         for neighbor in source_neighbors:
             can_link, length = self._edge_col_check_func(self.env, start, neighbor)
             if can_link:
-                self.roadmap.add_edge(start, tuple(neighbor), weight=length)
+                self.roadmap.add_edge(start_tup, tuple(neighbor.tolist()), weight=length)
                 break
         else:
             print("can't connect start to roadmap!!!")
@@ -120,15 +119,15 @@ class ProbabilisticRoadmap:
         for neighbor in goal_neighbors:
             can_link, length = self._edge_col_check_func(self.env, goal, neighbor)
             if can_link:
-                self.roadmap.add_edge(goal, tuple(neighbor), weight=length)
+                self.roadmap.add_edge(goal_tup, tuple(neighbor.tolist()), weight=length)
                 break
         else:
             print("can't connect goal to roadmap!!!")
             return False, None, None
 
         # path_exist, shortest_path, path_len = self._path_finder.run(self.adj_list, start, goal)
-        path = nx.shortest_path(self.roadmap, start, goal, weight="weight")
-        path_len = nx.shortest_path_length(self.roadmap, start, goal, weight="weight")
+        path = nx.shortest_path(self.roadmap, start_tup, goal_tup, weight="weight")
+        path_len = nx.shortest_path_length(self.roadmap, start_tup, goal_tup, weight="weight")
         print(path, path_len)
         return True, path, path_len
 

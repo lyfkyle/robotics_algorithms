@@ -1,10 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from typing_extensions import override
 
+from robotics_algorithm.robot.robot import Robot
 
-class DoubleIntegrator:
-    def __init__(self, use_discrete_time_model=True, dt=0.01):
+class DoubleIntegrator(Robot):
+    def __init__(self, dt=0.01):
         # Robot parameters
+        super().__init__(dt)
+
+        use_discrete_time_model = True  # Hardcode
 
         # x = [q, q_dot]
         # x_dot = [q_dot, q_dot_dot] = Ax + Bu
@@ -17,6 +22,7 @@ class DoubleIntegrator:
 
         self.use_discrete_time_model = use_discrete_time_model
 
+    @override
     def control(self, state: np.ndarray, control: np.ndarray, dt: float) -> np.ndarray:
         """Compute the end state given then current state and control.
 
@@ -41,6 +47,7 @@ class DoubleIntegrator:
 
         return new_state.reshape(-1)
 
+    @override
     def linearize_state_transition(self, state, action):
         return self.A, self.B
 

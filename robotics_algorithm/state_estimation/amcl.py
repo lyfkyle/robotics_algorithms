@@ -79,7 +79,7 @@ class AMCL(ParticleFilter):
             new_particles.append(new_particle)
 
             # check sample falls into which bin, and increment bin count
-            particle_key = tuple(np.floor(np.array(new_particle) / self.hist_res).astype(np.int32).)
+            particle_key = tuple(np.floor(np.array(new_particle) / self.hist_res).astype(np.int32).tolist())
             self.hist[particle_key] += 1
 
         self.particles = new_particles

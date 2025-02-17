@@ -1,3 +1,5 @@
+import numpy as np
+
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
 
 

@@ -3,16 +3,21 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from typing_extensions import override
+
+from robotics_algorithm.robot.robot import Robot
 
 
-class Pendulum():
+class Pendulum(Robot):
     def __init__(self, dt=0.01):
+        super().__init__(dt)
+
         # Constants
         self.g = 9.81  # acceleration due to gravity, in m/s^2
         self.L = 1.0   # length of the pendulum, in m
-        self.dt = dt
 
-    def control(self, state: np.ndarray, action: np.ndarray):
+    @override
+    def control(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
         theta, theta_dot = state
         theta += np.pi
 
@@ -24,7 +29,10 @@ class Pendulum():
 
         return np.array([new_theta, new_theta_dot])
 
+    @override
     def linearize_state_transition(self, state, action):
+        # linearize dynamics around state in discrete time -> x_new = Ax + Bu
+
         # discrete-time case: x_t+1 = Ax + Bu
         theta = state[0]
         theta += np.pi

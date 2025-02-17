@@ -1,6 +1,5 @@
 import random
 from collections import defaultdict
-from typing import Any
 from typing_extensions import override
 
 import numpy as np
@@ -556,15 +555,15 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         indices = np.indices((size, size))
         all_states = np.stack(indices, axis=-1).reshape(-1, 2)
 
-        self.state_space = DiscreteSpace(values=[tuple(s) for s in all_states])
+        self.state_space = DiscreteSpace(values=[np.array(s) for s in all_states])
         self.action_space = DiscreteSpace(values=[(0, 1), (0, -1), (1, 0), (-1, 0)])  # left, right, top and bottom
 
     @override
     def reset(self, random_env=True):
         if not random_env:
             self.add_default_obstacles()
-            self.start_state = DEFAULT_START
-            self.goal_state = DEFAULT_GOAL
+            self.start_state = np.array(DEFAULT_START)
+            self.goal_state = np.array(DEFAULT_GOAL)
         else:
             self.random_maze_obstacle_per_row()
             self.start_state = self.random_valid_state()
@@ -578,7 +577,7 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
 
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray, float]:
-        new_state = [state[0] + action[0], state[1] + action[1]]
+        new_state = state + action
         new_state[0] = max(min(new_state[0], self.size - 1), 0)
         new_state[1] = max(min(new_state[1], self.size - 1), 0)
 
