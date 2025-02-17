@@ -1,10 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from typing_extensions import override
 
+from robotics_algorithm.robot.robot import Robot
 
-class DoubleIntegrator:
-    def __init__(self, use_discrete_time_model=True, dt=0.01):
+class DoubleIntegrator(Robot):
+    def __init__(self, dt=0.01):
         # Robot parameters
+        super().__init__(dt)
+
+        use_discrete_time_model = True  # Hardcode
 
         # x = [q, q_dot]
         # x_dot = [q_dot, q_dot_dot] = Ax + Bu
@@ -17,12 +22,13 @@ class DoubleIntegrator:
 
         self.use_discrete_time_model = use_discrete_time_model
 
-    def control(self, state: list, control: list, dt: float) -> list:
+    @override
+    def control(self, state: np.ndarray, control: np.ndarray, dt: float) -> np.ndarray:
         """Compute the end state given then current state and control.
 
         Args:
-            state (list): [q, q_dot] robot's current state
-            control (list): left and right wheel velocities in radians
+            state (np.ndarray): [q, q_dot] robot's current state
+            control (np.ndarray): left and right wheel velocities in radians
             dt (float): time step
 
         Returns:
@@ -39,8 +45,11 @@ class DoubleIntegrator:
             # if discrete_time model is used, transition func directly gives new state
             new_state = self.A @ state + self.B @ control
 
-        return new_state.reshape(-1).tolist()
+        return new_state.reshape(-1)
 
+    @override
+    def linearize_state_transition(self, state, action):
+        return self.A, self.B
 
 if __name__ == "__main__":
     # Simulation parameters

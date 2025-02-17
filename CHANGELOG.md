@@ -1,5 +1,23 @@
 # Changelog
 
+## [v0.11.0]
+
+### Added
+
+- Added convex MPC.
+- Added inverted pendulum environment.
+- Added a robot parent class for different robots.
+- Added LQR and convex MPC for path follow and inverted pendulum.
+
+### Changed
+
+- Refactored folder structure to better group different components.
+- Changed all state, action, observation to be numpy array by default.
+
+### Fixed
+
+- Fixed diff_drive_2d_planning traversal cost calculation so euclidean distance is properly underestimating true cost.
+
 ## [v0.10.0]
 
 ### Added

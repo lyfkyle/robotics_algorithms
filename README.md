@@ -1,13 +1,14 @@
 # robotics_algorithms
 
-![logo](/doc/logo.jpg "logo")
+![logo](/doc/TIAGo_05.jpg "logo")
 
-This repository contains pure-python implementation for essential robotics algorithms.
+This repository contains my pure-python implementation of essential algorithms that make a mobile manipulator (and other robots) move.
 
-The main benefits are:
+While it is true that a lot of algorithms have been implemented by other projects, this repo serves these main benefits:
 
-1. Have a single source of truth of various algorithms with clear explanation.
-2. Implemented with clear separation between dynamics, environment and algorithm, emphasizing that a lot of algorithms, e.g planing under uncertainties, optimal control, share the same underlying problem formulation，eg. MDP.
+1. It achieves a good balance of width and depth. It covers a wide range of topics, while focusing on only key algorithms in each field.
+2. It is implemented with modular structure that cleanly separates algorithms from problems (like OMPL), at the same time emphasizing connection between different algorithms. For example, the design reflects that planing under uncertainties, optimal control and RL share the same underlying MDP formulation.
+3. Serves as a single source of truth of various algorithms so that I no longer need to search all over the Internet.
 
 ## Scope
 
@@ -26,12 +27,13 @@ python 3.10
 For example, to run a\* to find the shortest path between start and goal in a grid world
 
 ```python
-python examples/planning/test_a_star.py
+python examples/planning/path_planning/test_a_star.py
 ```
 
 ## News
 
-- 09/02/2025: Added cost-aware differential drive path planning
+- 17/02/2025: Added convex MPC, inverted pendulum and more path following examples.
+- 09/02/2025: Added cost-aware differential drive path planning.
 - Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
 
 ## Status
@@ -44,12 +46,14 @@ Algorithms
   - [x] Differential drive
   - [x] Cartpole
   - [x] Double Integrator
+  - [x] Inverted Pendulum
   - [ ] Arm
   - [ ] Car
+  - [ ] Planar Quadrotor
   - [ ] Quadrotor
   - [ ] Quadruped
 - [x] State Estimation
-  - [ ] Localizaion
+  - [x] Localizaion
     - [x] Discrete bayes filter
     - [x] Kalman filter
     - [x] Extended Kalman filter
@@ -58,17 +62,17 @@ Algorithms
   - [ ] SLAM
     - [ ] EKF SLAM
     - [ ] Fast SLAM
-    - [ ] Graph SLAM
+    - [ ] Graph-based SLAM
 - [ ] Planning
   - [x] Path Planning
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
   - [ ] Motion Planning
+    - [x] PRM
     - [x] RRT / RRT-Connect
     - [x] RRT\*
     - [ ] RRT\*-Connect
-    - [x] PRM
     - [ ] Informed RRT\*
     - [ ] BIT\*
   - [x] MDP
@@ -87,8 +91,10 @@ Algorithms
     - [x] LQR
     - [x] MPPI
     - [x] CEM-MPC
-  - [ ] Other
+    - [x] Convex-MPC
+  - [ ] Domain-specific Path Follow Control
     - [ ] Regulated Pure Pursuit
+    - [ ] Time-elastic Band
 - [ ] Imitation learning
   - [ ] ACT
   - [ ] Diffusion-policy
@@ -111,8 +117,8 @@ Algorithms
   - [x] 2D navigation with differential drive
     - [x] Deterministic and fully-observable
     - [x] Stochastic and partially-observable
-    - [ ] With obstacle-distance cost
-  - [ ] 2D localization
+    - [x] With obstacle-distance cost
+  - [x] 2D localization
   - [ ] 2D SLAM
   - [ ] Multi-arm bandits (POMDP)
   - [ ] Tiger (POMDP)

@@ -9,6 +9,7 @@ from robotics_algorithm.env.base_env import (
     FullyObservableEnv,
 )
 from robotics_algorithm.env.continuous_2d.diff_drive_2d_env_base import DiffDrive2DEnv
+from robotics_algorithm.utils import math_utils
 
 DEFAULT_OBSTACLES = [[2, 2, 0.5], [5, 5, 1], [3, 8, 0.5], [8, 3, 1]]
 DEFAULT_START = [0.5, 0.5, 0]
@@ -29,12 +30,12 @@ class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     In this mode, user provides start and goal. The reward encourages robot to reach goal via the shortest path.
     """
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, discrete_action=False):
         # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
         #       DiffDrive2DEnv last.
         DeterministicEnv.__init__(self)
         FullyObservableEnv.__init__(self)
-        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, ref_path, discrete_action)
+        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, discrete_action=discrete_action)
 
         self.state_samples = []
 
@@ -55,32 +56,35 @@ class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         if self.is_state_similar(new_state, self.goal_state):
             return 0
 
-        return -1
+        return -action[0] * self.action_dt  # Distance travelled is always lin_vel * action_dt
+
+    def calc_state_key(self, state: np.ndarray) -> tuple[int, int, int]:
+        return (round(state[0] / 0.1), round(state[1] / 0.1), round((state[2] + math.pi) / math.radians(30)))
 
     def add_action_path(self, action_path):
         """Add an action path for visualization.
 
         Args:
-            action_path (list(list)): the path consisting a list of consecutive action.
+            action_path (np.ndarray): the path consisting a np.ndarray of consecutive action.
         """
         interpolated_path = [self.start_state]
 
         state = self.start_state
-        num_sub_steps = round(self.action_dt / self.robot_model.time_res)
+        num_sub_steps = round(self.action_dt / self.robot_model.dt)
 
         # Run simulation
         for action in action_path:
             for _ in range(num_sub_steps):
-                state = self.robot_model.control_velocity(state, action[0], action[1], dt=self.robot_model.time_res)
+                state = self.robot_model.control(state, action, dt=self.robot_model.dt)
                 interpolated_path.append(state)
 
         self.path = interpolated_path
 
-    def add_state_path(self, path, id=None):
+    def add_state_path(self, path, id=None, interpolate=False):
         """Add a path for visualization.
 
         Args:
-            path (list(list)): the path.
+            path (np.ndarray(np.ndarray)): the path.
         """
         if id is None:
             self.path = path
@@ -167,10 +171,8 @@ class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
 
 class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
-    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, ref_path=None, discrete_action=False):
-        # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
-        #       DiffDrive2DEnv last.
-        super().__init__(size, robot_radius, action_dt, ref_path, discrete_action)
+    def __init__(self, size=10, robot_radius=0.2, action_dt=1.0, discrete_action=False):
+        super().__init__(size, robot_radius, action_dt, discrete_action=discrete_action)
 
         self._cost_map = {}
         self._costmap_res = 0.1
@@ -181,8 +183,8 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
     @override
     def reset(self):
         self.obstacles = [[4, 6, 1], [6, 4, 1]]
-        self.start_state = DEFAULT_START
-        self.goal_state = DEFAULT_GOAL
+        self.start_state = np.array(DEFAULT_START)
+        self.goal_state = np.array(DEFAULT_GOAL)
 
         self.cur_state = self.start_state.copy()
 
@@ -244,9 +246,11 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
         if self.is_state_similar(new_state, self.goal_state):
             return 0
 
-        return -1 * (1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost)  # cost-weighted distance.
+        return -action[0] * self.action_dt * (
+            1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost
+        )  # cost-weighted distance.
 
-    def render(self, draw_start=True, draw_goal=True, title="environment"):
+    def render(self, draw_start=True, draw_goal=True, title='environment'):
         if self.interactive_viz:
             if not self._fig_created:
                 plt.ion()

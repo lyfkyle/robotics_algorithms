@@ -23,28 +23,27 @@ class KalmanFilter:
         assert env.observation_dist_type == DistributionType.GAUSSIAN.value
 
         # state_transition_func: x = Ax + Bu + sigma
-        self.A = env.A
-        self.B = env.B
+        self.A, self.B = env.linearize_state_transition(None, None)  # As state transition is linear, A and B are constant
         self.R = env.state_transition_covariance_matrix
 
         # measurement function z = Hx + delta
-        self.H = env.H
+        self.H = env.linearize_observation(None, None)  # As observation is linear, H are constant
         self.Q = env.observation_covariance_matrix
 
         self.state = np.array(env.cur_state)
         self.covariance = np.eye(env.state_space.state_size)
 
-    def set_initial_state(self, state: list):
+    def set_initial_state(self, state: np.ndarray):
         """
         Set the initial state of filter.
         @param state, initial state
         """
         self.state = np.array(state)
 
-    def get_state(self) -> list:
-        return self.state.tolist()
+    def get_state(self) -> np.ndarray:
+        return self.state
 
-    def run(self, action: list, obs: list):
+    def run(self, action: np.ndarray, obs: np.ndarray):
         """
         Run one iteration of the Kalman filter.
 
@@ -54,7 +53,7 @@ class KalmanFilter:
         self.predict(action)
         self.update(obs)
 
-    def predict(self, action: list):
+    def predict(self, action: np.ndarray):
         """
         Predict the state of the Kalman filter.
 
@@ -66,7 +65,7 @@ class KalmanFilter:
         self.state = new_state
         self.covariance = new_covariance
 
-    def update(self, obs: list):
+    def update(self, obs: np.ndarray):
         """
         Update the state of the Kalman filter.
 

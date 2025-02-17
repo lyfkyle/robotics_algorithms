@@ -1,22 +1,25 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from typing_extensions import override
 
+from robotics_algorithm.robot.robot import Robot
 from robotics_algorithm.utils import math_utils
 
 
-class DiffDrive:
-    def __init__(self, wheel_radius: float, wheel_dist: float):
+class DiffDrive(Robot):
+    def __init__(self, wheel_radius: float, wheel_dist: float, dt=0.05):
+        super().__init__(dt)
+
         # Robot parameters
         self.wheel_radius = 0.05  # meters
         self.wheel_dist = 0.2  # meters
-        self.time_res = 0.05
 
-    def control_wheel_speed(self, state: list, control: list, dt: float) -> list:
+    def control_wheel_speed(self, state: np.ndarray, control: np.ndarray, dt: float) -> np.ndarray:
         """_summary_
 
         Args:
-            state (list): [x, y, theta] robot's current state
-            control (list): [v_l, v_r] left and right wheel velocities in radians
+            state (np.ndarray): [x, y, theta] robot's current state
+            control (np.ndarray): [v_l, v_r] left and right wheel velocities in radians
             dt (float): time step
 
         Returns:
@@ -26,36 +29,53 @@ class DiffDrive:
         lin_vel = self.wheel_radius * (v_r + v_l) / 2.0
         ang_vel = self.wheel_radius * (v_r - v_l) / self.wheel_dist
 
-        return self.control_velocity(state, lin_vel, ang_vel, dt)
+        return self.control(state, lin_vel, ang_vel, dt)
 
-    def control_velocity(self, state: list, lin_vel: float, ang_vel: float, dt: float) -> list:
+    @override
+    def control(self, state: np.ndarray, action: np.ndarray, dt: float) -> np.ndarray:
         """
         Update the robot state based on the differential drive kinematics.
 
         Args:
-            state (list): [x, y, theta] robot's current state.
-            lin_vel (float): linear velocity
-            ang_vel (float): angular velocity
+            state (np.ndarray): [x, y, theta] robot's current state.
+            action (np.ndarray): [lin_vel, ang_vel]
             dt (float): time step
 
         Returns:
             new state [x, y, theta]
         """
         x, y, theta = state
+        lin_vel, ang_vel = action
 
         t = 0
         while t < dt:
             # Update the state
-            x_new = x + lin_vel * np.cos(theta) * self.time_res
-            y_new = y + lin_vel * np.sin(theta) * self.time_res
-            theta_new = theta + ang_vel * self.time_res
+            x_new = x + lin_vel * np.cos(theta) * self.dt
+            y_new = y + lin_vel * np.sin(theta) * self.dt
+            theta_new = theta + ang_vel * self.dt
             theta_new = math_utils.normalize_angle(theta_new)
 
-            t += self.time_res
+            t += self.dt
             x, y, theta = x_new, y_new, theta_new
 
-        return [x_new.item(), y_new.item(), theta_new]
+        return np.array([x_new, y_new, theta_new])
 
+    @override
+    def linearize_state_transition(self, state, action):
+        # linearize dynamics around state in discrete time -> x_new = Ax + Bu
+
+        x, y, theta = state
+        lin_vel, ang_vel = action
+        A = np.array(
+            [
+                [1, 0, -lin_vel * np.sin(theta) * self.dt],
+                [0, 1, lin_vel * np.cos(theta) * self.dt],
+                [0, 0, 1]
+            ]
+        )
+        B = np.array([[np.cos(theta) * self.dt, 0], [np.sin(theta) * self.dt, 0], [0, self.dt]])
+
+        return A, B
 
 if __name__ == "__main__":
     # Simulation parameters
@@ -78,9 +98,9 @@ if __name__ == "__main__":
     for _ in range(num_steps):
         state1 = diff_drive_system.control_wheel_speed(state, control_inputs, dt)
 
-        num_sub_steps = int(dt / diff_drive_system.time_res)
+        num_sub_steps = int(dt / diff_drive_system.dt)
         for _ in range(num_sub_steps):
-            state = diff_drive_system.control_wheel_speed(state, control_inputs, dt=diff_drive_system.time_res)
+            state = diff_drive_system.control_wheel_speed(state, control_inputs, dt=diff_drive_system.dt)
             state_history.append(state)
 
         assert np.allclose(np.array(state1), np.array(state))

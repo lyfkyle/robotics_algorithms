@@ -27,14 +27,14 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
 
     ## Action Space
 
-    The action is a list with shape `(1,)` which can take values `{-10, 10.0}` indicating the force of the push.
+    The action is a np.ndarray with shape `(1,)` which can take values `{-10, 10.0}` indicating the force of the push.
 
     **Note**: The velocity that is reduced or increased by the applied force is not fixed and it depends on the angle
      the pole is pointing. The center of gravity of the pole varies the amount of energy needed to move the cart underneath it
 
     ## Observation Space
 
-    The observation is a `list` with shape `(4,)` with the values corresponding to the following positions and velocities:
+    The observation is a `np.ndarray` with shape `(4,)` with the values corresponding to the following positions and velocities:
 
     | Num | Observation           | Min                 | Max               |
     |-----|-----------------------|---------------------|-------------------|
@@ -116,7 +116,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def reset(self):
-        self.cur_state = (np.random.randn(4) * 0.05).tolist()  # near-upright position
+        self.cur_state = (np.random.randn(4) * 0.05)  # near-upright position
         self.goal_state = [0, 0, 0, 0]  # upright position
 
         self.steps_beyond_terminated = None
@@ -125,7 +125,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         return self.cur_state, {}
 
     @override
-    def step(self, action: list) -> tuple[list, float, bool, bool, dict]:
+    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         new_state, reward, term, trunc, info = super().step(action)
 
         self.step_cnt += 1
@@ -134,14 +134,14 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         return new_state, reward, term, trunc, info
 
     @override
-    def state_transition_func(self, state: list, action: list):
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray):
         assert self.cur_state is not None, "Call reset before using step method."
 
         new_state = self.robot_model.control(state, action)
         return new_state
 
     @override
-    def reward_func(self, state: list, action: list = None, new_state: list = None) -> float:
+    def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         x = new_state[0]
         theta = new_state[2]
 
