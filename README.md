@@ -42,12 +42,13 @@ This repository is undergoing significant development. Here is the status checkl
 
 Algorithms
 
-- [ ] Robot Dynamics
+- [ ] Robot Kinematic and Dynamics
   - [x] Differential drive
   - [x] Cartpole
   - [x] Double Integrator
   - [x] Inverted Pendulum
   - [ ] Arm
+    - [ ] FK and IK
   - [ ] Car
   - [ ] Planar Quadrotor
   - [ ] Quadrotor
