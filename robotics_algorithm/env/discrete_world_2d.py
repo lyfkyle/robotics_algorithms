@@ -591,14 +591,14 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         return -1
 
     @override
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
+    def get_state_transition_info(self, state, action, new_state):
         term = False
         info = {"success": False}
 
-        if self.maze[state[0], state[1]] == GridWorldMaze.OBSTACLE:
+        if self.maze[new_state[0], new_state[1]] == GridWorldMaze.OBSTACLE:
             term = True
 
-        if self.maze[state[0], state[1]] == GridWorldMaze.GOAL:
+        if self.maze[new_state[0], new_state[1]] == GridWorldMaze.GOAL:
             term = True
             info = {"success": True}
 

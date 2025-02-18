@@ -52,6 +52,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
     def reset(self):
         self.cur_state = np.random.randn(2) * 0.1  # near-upright position
         self.goal_state = np.array([0, 0])  # upright position
+        self.goal_action = np.zeros(1)
 
         self.step_cnt = 0
 
@@ -89,8 +90,8 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return reward
 
     @override
-    def get_state_info(self, state):
-        theta = state[0]
+    def get_state_transition_info(self, state, action, new_state):
+        theta = new_state[0]
 
         terminated = bool(theta < -self.theta_threshold_radians or theta > self.theta_threshold_radians)
 

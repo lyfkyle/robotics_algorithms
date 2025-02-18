@@ -1,4 +1,3 @@
-
 import numpy as np
 from collections import defaultdict
 from typing import Callable
@@ -41,13 +40,16 @@ class MCControlOnPolicy:
             action_prob = np.ones(num_actions, dtype=float) * epsilon / num_actions
 
             # (1 - epsilon) probability of picking the best action
-            best_action = np.argmax(self.Q[state])
+            state_key = tuple(state.tolist())
+            best_action = np.argmax(self.Q[state_key])
             action_prob[best_action] += 1 - epsilon
             return action_prob
 
         return policy_fn
 
-    def run(self, num_episodes: int = 500, discount_factor: float = 0.95, epsilon: float = 0.1) -> tuple[dict, Callable]:
+    def run(
+        self, num_episodes: int = 500, discount_factor: float = 0.95, epsilon: float = 0.1
+    ) -> tuple[dict, Callable]:
         """
         Monte Carlo Control using Epsilon-Greedy policies.
         Finds an optimal epsilon-greedy policy.
@@ -66,6 +68,8 @@ class MCControlOnPolicy:
         # to calculate an average. We could use an array to save all
         # returns (like in the book) but that's memory inefficient.
         state_action_visit_cnt = defaultdict(int)
+
+        all_actions = self.env.action_space.get_all()
 
         # for plotting
         self.episodes = []
@@ -90,9 +94,10 @@ class MCControlOnPolicy:
             for steps in range(self._max_episode_len):
                 # choose action according to epsilon-greedy policy
                 action_probs = policy(state)
-                action = np.random.choice(self.env.action_space.get_all(), p=action_probs)  # choose action
+                action_idx = np.random.choice(np.arange(len(all_actions)), p=action_probs)  # choose action
+                action = all_actions[action_idx]
                 next_state, reward, term, trunc, _ = self.env.step(action)
-                trajectory.append((state, action, reward))
+                trajectory.append((tuple(state.tolist()), tuple(action.tolist()), reward))
 
                 steps += 1
                 cumulative_reward += reward
@@ -100,7 +105,7 @@ class MCControlOnPolicy:
                 if term or trunc:
                     break
 
-                state = tuple(next_state)
+                state = next_state
 
             # every-visit MC Prediction
             # Find all states the we've visited in this episode
@@ -129,7 +134,7 @@ class MCControlOnPolicy:
             if i_episode % 1 == 0:
                 self.cumulative_rewards.append(cumulative_reward)
                 self.episodes.append(i_episode)
-                print("Episode {}/{}, reward : {}".format(i_episode, num_episodes, cumulative_reward))
+                print('Episode {}/{}, reward : {}'.format(i_episode, num_episodes, cumulative_reward))
 
         return self.Q, policy
 

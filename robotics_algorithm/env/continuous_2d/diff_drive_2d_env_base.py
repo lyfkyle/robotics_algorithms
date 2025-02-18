@@ -122,20 +122,20 @@ class DiffDrive2DEnv(BaseEnv):
         return new_state
 
     @override
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
+    def get_state_transition_info(self, state, action, new_state):
         # Compute term and info
         term = False
         info = {}
-        if state[0] <= 0 or state[0] >= self.size or state[1] <= 0 or state[1] >= self.size:
+        if new_state[0] <= 0 or new_state[0] >= self.size or new_state[1] <= 0 or new_state[1] >= self.size:
             term = True
             info = {'success': False}
 
-        if not self.is_state_valid(state):
+        if not self.is_state_valid(new_state):
             term = True
             info = {'success': False}
 
         # Check goal state reached for termination
-        if self.is_state_similar(state, self.goal_state):
+        if self.is_state_similar(new_state, self.goal_state):
             term = True
             info = {'success': True}
 

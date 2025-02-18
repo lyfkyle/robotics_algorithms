@@ -27,9 +27,9 @@ class CliffWalking(MDPEnv):
 
     def __init__(
         self,
-        start: tuple = (0, 0),
-        goal: tuple = (8, 0),
-        obstacles: np.ndarray[tuple] = OBSTACLES,
+        start: np.ndarray = np.array([0, 0]),
+        goal: np.ndarray = np.array([8, 0]),
+        obstacles: list[tuple] = OBSTACLES,
         dense_reward: bool = False,
     ):
         """Constructor.
@@ -37,14 +37,16 @@ class CliffWalking(MDPEnv):
         Args:
             start (tuple): the start position of agent.
             goal (tuple): the goal position.
-            obstacles (np.ndarray[tuple]): a np.ndarray of obstacle positions.
+            obstacles (list[tuple]): a list of obstacle positions.
             dense_reward (bool): whether to use dense reward for this env.
         """
         super().__init__()
 
         # Define spaces
-        self.state_space = DiscreteSpace([(i, j) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)])
-        self.action_space = DiscreteSpace([0, 1, 2, 3])  # action, 0: up, 1: right, 2: down, 3: left)
+        self.state_space = DiscreteSpace([np.array([i, j]) for i in range(GRID_WIDTH) for j in range(GRID_HEIGHT)])
+        self.action_space = DiscreteSpace(
+            [np.array([0]), np.array([1]), np.array([2]), np.array([3])]
+        )  # action, 0: up, 1: right, 2: down, 3: left)
         self.state_transition_dist_type = DistributionType.CATEGORICAL.value
 
         self.start_state = start
@@ -58,51 +60,50 @@ class CliffWalking(MDPEnv):
         self.dense_reward = dense_reward
 
     @override
-    def state_transition_func(self, state: tuple, action: int) -> tuple[np.ndarray[tuple], np.ndarray[float]]:
+    def reset(self):
+        self.cur_state = self.start_state
+        return self.cur_state, {}
+
+    @override
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[list[np.ndarray], list[float]]:
         i, j = state
 
         new_states = []
         if action == 0:
-            new_states.append((i, min(j + 1, GRID_HEIGHT - 1)))
-            new_states.append((max(0, i - 1), min(j + 1, GRID_HEIGHT - 1)))
-            new_states.append((min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT - 1)))
+            new_states.append(np.array([i, min(j + 1, GRID_HEIGHT - 1)]))
+            new_states.append(np.array([max(0, i - 1), min(j + 1, GRID_HEIGHT - 1)]))
+            new_states.append(np.array([min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT - 1)]))
         elif action == 1:
-            new_states.append((min(i + 1, GRID_WIDTH - 1), j))
-            new_states.append((min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT - 1)))
-            new_states.append((min(i + 1, GRID_WIDTH - 1), max(0, j - 1)))
+            new_states.append(np.array([min(i + 1, GRID_WIDTH - 1), j]))
+            new_states.append(np.array([min(i + 1, GRID_WIDTH - 1), min(j + 1, GRID_HEIGHT - 1)]))
+            new_states.append(np.array([min(i + 1, GRID_WIDTH - 1), max(0, j - 1)]))
         elif action == 2:
-            new_states.append((i, max(0, j - 1)))
-            new_states.append((max(0, i - 1), max(0, j - 1)))
-            new_states.append((min(i + 1, GRID_WIDTH - 1), max(0, j - 1)))
+            new_states.append(np.array([i, max(0, j - 1)]))
+            new_states.append(np.array([max(0, i - 1), max(0, j - 1)]))
+            new_states.append(np.array([min(i + 1, GRID_WIDTH - 1), max(0, j - 1)]))
         elif action == 3:
-            new_states.append((max(0, i - 1), j))
-            new_states.append((max(0, i - 1), min(j + 1, GRID_HEIGHT - 1)))
-            new_states.append((max(0, i - 1), max(0, j - 1)))
+            new_states.append(np.array([max(0, i - 1), j]))
+            new_states.append(np.array([max(0, i - 1), min(j + 1, GRID_HEIGHT - 1)]))
+            new_states.append(np.array([max(0, i - 1), max(0, j - 1)]))
         probs = [0.8, 0.1, 0.1]
-
-        # results = []
-        # for next_state in next_states:
-            # reward = self.reward_func(next_state)
-            # term, trunc, info = self.get_state_info(next_state)
-            # results.append([next_state, reward, term, trunc, info])
 
         return new_states, probs
 
     @override
-    def get_state_info(self, state: tuple) -> dict:
+    def get_state_transition_info(self, state, action, new_state):
         info = {}
         term = False
-        if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
+        if new_state[0] == self.goal_state[0] and new_state[1] == self.goal_state[1]:
             term = True
-            info["success"] = True
-        elif state in self.obstacles:
+            info['success'] = True
+        elif tuple(new_state.tolist()) in self.obstacles:
             term = True
-            info["success"] = False
+            info['success'] = False
         else:
             term = False
-            info["success"] = False
+            info['success'] = False
 
-        return term, False,info
+        return term, False, info
 
     @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
@@ -110,9 +111,9 @@ class CliffWalking(MDPEnv):
         # Transition to goal state gives goal reward.
         # Transition to obstacle gives obstacle reward.
         # Transition to free gives step reward.
-        if new_state[0] == self.goal_state[0] and new_state[1] == self.goal_state[1]:
+        if np.allclose(new_state, self.goal_state):
             reward = self.goal_reward
-        elif new_state in self.obstacles:
+        elif tuple(new_state.tolist()) in self.obstacles:
             reward = self.obstacle_reward
         else:
             if not self.dense_reward:
@@ -124,10 +125,7 @@ class CliffWalking(MDPEnv):
 
         return reward
 
-    @override
-    def reset(self):
-        self.cur_state = self.start_state
-        return self.cur_state, {}
+
 
     def add_path(self, path):
         self.path = path
@@ -149,18 +147,18 @@ class CliffWalking(MDPEnv):
         else:
             self.gridworld[GRID_HEIGHT - self.cur_state[1] - 1][self.cur_state[0]] = 4
 
-        self.colour_map = colors.ListedColormap(["white", "black", "yellow", "red", "green"])
+        self.colour_map = colors.ListedColormap(['white', 'black', 'yellow', 'red', 'green'])
         bounds = [0, 1, 2, 3, 4, 5]
         self.norm = colors.BoundaryNorm(bounds, self.colour_map.N)
 
         ax.imshow(self.gridworld, cmap=self.colour_map, norm=self.norm)
 
         # draw gridlines
-        ax.grid(which="major", axis="both", linestyle="-", color="k", linewidth=1)
+        ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=1)
         ax.set_xticks(np.arange(GRID_WIDTH) - 0.5)
         ax.set_xticklabels(np.array([str(i) for i in range(GRID_WIDTH)]))
         ax.set_yticks(np.flip(np.arange(GRID_HEIGHT) + 0.5))
         ax.set_yticklabels(np.array([str(i) for i in range(GRID_HEIGHT)]))
-        plt.tick_params(axis="both", labelsize=5, length=0)
+        plt.tick_params(axis='both', labelsize=5, length=0)
 
         plt.show()

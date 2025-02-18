@@ -1,7 +1,7 @@
 import numpy as np
 
-from robotics_algorithm.env.frozen_lake import FrozenLake
-from robotics_algorithm.env.cliff_walking import CliffWalking
+from robotics_algorithm.env.classic_mdp.frozen_lake import FrozenLake
+from robotics_algorithm.env.classic_mdp.cliff_walking import CliffWalking
 from robotics_algorithm.planning.mdp.mcts import MCTS
 
 env = FrozenLake(dense_reward=True)  # For online tree search, dense reward needs to be enabled.

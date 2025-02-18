@@ -1,9 +1,8 @@
+import matplotlib.pyplot as plt
+import numpy as np
 from typing_extensions import override
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-from robotics_algorithm.env.base_env import MDPEnv, DiscreteSpace, DistributionType
+from robotics_algorithm.env.base_env import DiscreteSpace, DistributionType, MDPEnv
 
 
 class FrozenLake(MDPEnv):
@@ -19,6 +18,7 @@ class FrozenLake(MDPEnv):
     Stochastic transition.
     Fully observable.
     """
+
     FREE = 0
     OBSTACLE = 1
 
@@ -47,15 +47,17 @@ class FrozenLake(MDPEnv):
         all_states = np.stack(indices, axis=-1).reshape(-1, 2)
 
         # Define spaces
-        self.state_space = DiscreteSpace([tuple(s) for s in all_states])
-        self.action_space = DiscreteSpace([0, 1, 2, 3])  #  0: up, 1: right, 2: down, 3: left
+        self.state_space = DiscreteSpace([s for s in all_states])
+        self.action_space = DiscreteSpace(
+            [np.array([0]), np.array([1]), np.array([2]), np.array([3])]
+        )  #  0: up, 1: right, 2: down, 3: left
         self.state_transition_dist_type = DistributionType.CATEGORICAL.value
 
     @override
-    def reset(self) -> tuple:
+    def reset(self):
         if not self.random_env:
-            self.start_state = (0, 0)
-            self.goal_state = (self.size - 1, self.size - 1)
+            self.start_state = np.array([0, 0])
+            self.goal_state = np.array([self.size - 1, self.size - 1])
             self.obstacles = [(1, 1), (3, 1), (1, 2), (4, 2), (4, 3), (2, 4)]
         else:
             for _ in range(self.num_of_obstacles):
@@ -67,57 +69,43 @@ class FrozenLake(MDPEnv):
         return self.cur_state, {}
 
     @override
-    def state_transition_func(self, state: tuple, action: float) -> tuple[tuple, float]:
-        # sanity check
-        term, trunc, info = self.get_state_info(state)
-        assert not term
-
+    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[list[np.ndarray], list[float]]:
         i, j = state
 
         new_states = []
         if action == 0:  # up
-            new_states.append((i, min(j + 1, self.size - 1)))
-            new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
-            new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
+            new_states.append(np.array([i, min(j + 1, self.size - 1)]))
+            new_states.append(np.array([max(0, i - 1), min(j + 1, self.size - 1)]))
+            new_states.append(np.array([min(i + 1, self.size - 1), min(j + 1, self.size - 1)]))
         elif action == 1:  # right
-            new_states.append((min(i + 1, self.size - 1), j))
-            new_states.append((min(i + 1, self.size - 1), min(j + 1, self.size - 1)))
-            new_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
+            new_states.append(np.array([min(i + 1, self.size - 1), j]))
+            new_states.append(np.array([min(i + 1, self.size - 1), min(j + 1, self.size - 1)]))
+            new_states.append(np.array([min(i + 1, self.size - 1), max(0, j - 1)]))
         elif action == 2:  # btm
-            new_states.append((i, max(0, j - 1)))
-            new_states.append((max(0, i - 1), max(0, j - 1)))
-            new_states.append((min(i + 1, self.size - 1), max(0, j - 1)))
+            new_states.append(np.array([i, max(0, j - 1)]))
+            new_states.append(np.array([max(0, i - 1), max(0, j - 1)]))
+            new_states.append(np.array([min(i + 1, self.size - 1), max(0, j - 1)]))
         elif action == 3:  # left
-            new_states.append((max(0, i - 1), j))
-            new_states.append((max(0, i - 1), min(j + 1, self.size - 1)))
-            new_states.append((max(0, i - 1), max(0, j - 1)))
+            new_states.append(np.array([max(0, i - 1), j]))
+            new_states.append(np.array([max(0, i - 1), min(j + 1, self.size - 1)]))
+            new_states.append(np.array([max(0, i - 1), max(0, j - 1)]))
         probs = [0.9, 0.05, 0.05]
-
-        # results = []
-        # for next_state in next_states:
-        #     reward = self.reward_func(next_state)
-        #     term, trunc, info = self.get_state_info(next_state)
-        #     results.append([next_state, reward, info["term"], False, info])
 
         return new_states, probs
 
     @override
-    def get_available_actions(self, state: tuple) -> np.ndarray[tuple]:
-        return self.action_space
-
-    @override
-    def get_state_info(self, state: tuple) -> dict:
+    def get_state_transition_info(self, state, action, new_state):
         info = {}
         term = False
-        if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
+        if new_state[0] == self.goal_state[0] and new_state[1] == self.goal_state[1]:
             term = True
-            info["success"] = True
-        elif state in self.obstacles:
+            info['success'] = True
+        elif tuple(new_state.tolist()) in self.obstacles:
             term = True
-            info["success"] = False
+            info['success'] = False
         else:
             term = False
-            info["success"] = False
+            info['success'] = False
 
         return term, False, info
 
@@ -127,9 +115,9 @@ class FrozenLake(MDPEnv):
         # Transition to goal state gives goal reward.
         # Transition to obstacle gives obstacle reward.
         # Transition to free gives step reward.
-        if new_state == self.goal_state:
+        if np.allclose(new_state, self.goal_state):
             reward = 100
-        elif new_state in self.obstacles:
+        elif tuple(new_state.tolist()) in self.obstacles:
             reward = -100
         else:
             if not self.dense_reward:
@@ -157,24 +145,24 @@ class FrozenLake(MDPEnv):
             [x[0] + 0.5 for x in self.obstacles],
             [x[1] + 0.5 for x in self.obstacles],
             s=s**2,
-            c="black",
-            marker="s",
+            c='black',
+            marker='s',
         )
         plt.scatter(
             [self.start_state[0] + 0.5],
             [self.start_state[1] + 0.5],
             s=s**2,
-            c="yellow",
-            marker="s",
+            c='yellow',
+            marker='s',
         )
         plt.scatter(
             [self.goal_state[0] + 0.5],
             [self.goal_state[1] + 0.5],
             s=s**2,
-            c="red",
-            marker="s",
+            c='red',
+            marker='s',
         )
-        plt.scatter(self.cur_state[0] + 0.5, self.cur_state[1] + 0.5, s=2500, c="blue", marker="s")
+        plt.scatter(self.cur_state[0] + 0.5, self.cur_state[1] + 0.5, s=2500, c='blue', marker='s')
 
         plt.grid()
         plt.xlim(0, self.size)

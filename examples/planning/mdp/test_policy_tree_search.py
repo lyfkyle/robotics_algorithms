@@ -1,6 +1,6 @@
 import numpy as np
 
-from robotics_algorithm.env.frozen_lake import FrozenLake
+from robotics_algorithm.env.classic_mdp.frozen_lake import FrozenLake
 from robotics_algorithm.planning.mdp.policy_tree_search import PolicyTreeSearch
 
 

@@ -51,7 +51,7 @@ class PolicyTreeSearch:
                 for i, new_state in enumerate(new_states):
                     # next_state, reward, term, trunc, info = result
                     reward = self.env.reward_func(state, action, new_state)
-                    term, trunc, info = env.get_state_info(new_state)
+                    term, trunc, info = env.get_state_transition_info(state, action, new_state)
 
                     if not term and not trunc:
                         _, new_state_value = self._compute_state_value(env, new_state, cur_depth + 1)

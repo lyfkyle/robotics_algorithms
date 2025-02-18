@@ -9,14 +9,22 @@ from robotics_algorithm.robot.planar_quadrotor import PlanarQuadrotor
 
 
 class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
-    """Inverted pendulum environment.
+    """A planar quadrotor hover must hover at a given height
 
-    State: [theta, theta_dot]
-    Action: [torque]
+    State: [x, z, theta, x_dot, z_dot, theta_dot]
+    Action: [left thrust, right thrust]
 
     """
 
-    def __init__(self, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=False):
+    def __init__(self, hover_pos=0.5, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=True):
+        """Constructor
+
+        Args:
+            hover_pos (float, optional): desired hover position. Defaults to 1.0.
+            hover_height (float, optional): desired hover height. Defaults to 1.0.
+            quadratic_reward (bool, optional): whether to use quadratic reward. Defaults to True.
+            term_if_constraints_violated (bool, optional): whether the environment should terminate if constrains are violated. Defaults to True.
+        """
         super().__init__()
 
         self.state_transition_func_type = FunctionType.LINEAR.value
@@ -29,13 +37,13 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         self.quadratic_reward = quadratic_reward
         if quadratic_reward:
             self.reward_func_type = FunctionType.QUADRATIC.value
-            self.Q = np.diag([100, 100, 100, 1, 1, 1])
+            self.Q = np.diag([1, 1, 1, 1, 1, 1])
             self.R = np.diag([1, 1])
 
         # robot model
         self.robot_model = PlanarQuadrotor()
         self.action_dt = self.robot_model.dt
-        self._ref_state = np.array([0, hover_height, 0, 0, 0, 0])  # hover at 1 meter height
+        self._ref_state = np.array([hover_pos, hover_height, 0, 0, 0, 0])  # hover at 1 meter height
 
         self.theta_threshold_radians = math.pi / 2
         self.max_steps = 1000
@@ -49,7 +57,9 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         self.cur_state = np.zeros(6)  # On the ground stationary
         self.goal_state = self._ref_state  # hover at 1 meter
         # ! In order to hover, net thrust must equal to gravitational force.
-        self.goal_action = np.array([0.5 * self.robot_model.g * self.robot_model.m, 0.5 * self.robot_model.g * self.robot_model.m])
+        self.goal_action = np.array(
+            [0.5 * self.robot_model.g * self.robot_model.m, 0.5 * self.robot_model.g * self.robot_model.m]
+        )
 
         self.step_cnt = 0
 

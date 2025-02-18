@@ -14,9 +14,10 @@ def make_greedy_policy(Q, num_actions):
         A function that takes the observation as an argument and returns the action
     """
 
-    def policy_fn(state):
+    def policy_fn(state: np.ndarray):
         action_prob = np.zeros(num_actions)
-        best_action_idx = np.argmax(Q[state], axis=-1)
+        state_key = tuple(state.tolist())
+        best_action_idx = np.argmax(Q[state_key], axis=-1)
         action_prob[best_action_idx] = 1.0
         return action_prob
 

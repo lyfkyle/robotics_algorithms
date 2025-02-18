@@ -59,6 +59,11 @@ class BaseEnv:
         self.state_transition_dist_type = DistributionType.NOT_APPLICABLE.value
         self.observation_dist_type = DistributionType.NOT_APPLICABLE.value
 
+        # start and goal
+        self.start_state = None
+        self.goal_state = None
+        self.goal_action = None
+
     def reset(self) -> tuple[np.ndarray, dict]:
         """Reset env."""
         self.cur_state = None
@@ -224,8 +229,8 @@ class BaseEnv:
 
         return res
 
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
-        """Returns additional flag and info associated with state
+    def get_state_transition_info(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray) -> tuple[bool, bool, dict]:
+        """Returns additional flag and info associated with state transition
 
         Args:
             state (np.ndarray): state
@@ -284,14 +289,10 @@ class DeterministicEnv(BaseEnv):
 
     @override
     def sample_state_transition(self, state, action) -> tuple[np.ndarray, float, bool, bool, dict]:
-        # Skip invalid action
-        if not self._is_action_valid(action):
-            raise Exception(f'action {action} is not within valid range!')
-
         new_state = self.state_transition_func(state, action)
 
         reward = self.reward_func(state, action, new_state)
-        term, trunc, info = self.get_state_info(new_state)
+        term, trunc, info = self.get_state_transition_info(state, action, new_state)
 
         return new_state, reward, term, trunc, info
 
@@ -310,6 +311,7 @@ class DeterministicEnv(BaseEnv):
         """
         raise NotImplementedError()
 
+
 class StochasticEnv(BaseEnv):
     def __init__(self):
         super().__init__()
@@ -317,10 +319,6 @@ class StochasticEnv(BaseEnv):
 
     @override
     def sample_state_transition(self, state, action) -> tuple[np.ndarray, float, bool, bool, dict]:
-        # Skip invalid action
-        if not self._is_action_valid(action):
-            raise Exception(f'action {action} is not within valid range!')
-
         if self.state_transition_dist_type == DistributionType.CATEGORICAL.value:
             assert self.state_space.type == SpaceType.DISCRETE.value
 
@@ -342,7 +340,7 @@ class StochasticEnv(BaseEnv):
 
         # compute reward
         reward = self.reward_func(state, action, new_state)
-        term, trunc, info = self.get_state_info(new_state)
+        term, trunc, info = self.get_state_transition_info(state, action, new_state)
 
         return new_state, reward, term, trunc, info
 

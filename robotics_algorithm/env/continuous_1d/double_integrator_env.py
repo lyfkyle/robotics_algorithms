@@ -133,22 +133,22 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         return -cost
 
     @override
-    def get_state_info(self, state):
+    def get_state_transition_info(self, state, action, new_state):
         term = False
         info = {"success": False}
         # Check bounds
         if (
-            state[0] <= self.state_space.space[0][0]
-            or state[0] >= self.state_space.space[1][0]
-            or state[1] <= self.state_space.space[0][1]
-            or state[1] >= self.state_space.space[1][1]
+            new_state[0] <= self.state_space.space[0][0]
+            or new_state[0] >= self.state_space.space[1][0]
+            or new_state[1] <= self.state_space.space[0][1]
+            or new_state[1] >= self.state_space.space[1][1]
         ):
             term = True
 
-            return state, -100, True, False, {"success": False}
+            return new_state, -100, True, False, {"success": False}
 
         # Check goal state reached for termination
-        if np.allclose(np.array(state), np.array(self.goal_state), atol=1e-4):
+        if np.allclose(np.array(new_state), np.array(self.goal_state), atol=1e-4):
             term = True
             info["success"] = True
 

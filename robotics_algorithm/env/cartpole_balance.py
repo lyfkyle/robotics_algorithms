@@ -118,6 +118,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
     def reset(self):
         self.cur_state = (np.random.randn(4) * 0.05)  # near-upright position
         self.goal_state = [0, 0, 0, 0]  # upright position
+        self.goal_action = np.zeros(1)  # upright position
 
         self.steps_beyond_terminated = None
         self.step_cnt = 0
@@ -172,9 +173,9 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         return reward
 
     @override
-    def get_state_info(self, state):
-        x = state[0]
-        theta = state[2]
+    def get_state_transition_info(self, state, action, new_state):
+        x = new_state[0]
+        theta = new_state[2]
 
         terminated = bool(
             x < -self.x_threshold

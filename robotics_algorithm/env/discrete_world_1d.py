@@ -89,14 +89,14 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         return obss, probs
 
     @override
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
+    def get_state_transition_info(self, state, action, new_state):
         term = False
         info = {}
         info["success"] = False
-        if state[0] < 0 or state[0] >= self.size:
+        if new_state[0] < 0 or new_state[0] >= self.size:
             term = True
 
-        if state[0] == self.goal_state[0]:
+        if new_state[0] == self.goal_state[0]:
             term = True
             info["success"] = True
 

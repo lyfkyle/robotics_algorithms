@@ -50,8 +50,9 @@ class MCTS:
         self.state_visit_cnt = defaultdict(int)
         self.total_q_value = defaultdict(lambda: defaultdict(int))
         self.state_action_visit_cnt = defaultdict(lambda: defaultdict(int))
+        self._all_actions = [tuple(a.tolist()) for a in self.env.action_space.get_all()]
 
-        state = copy.deepcopy(state)
+        state = tuple(state.tolist())
         self.tree = Tree()
         root = self.tree.add_node(state=state)
         start_time = time.time()
@@ -65,14 +66,15 @@ class MCTS:
         # Retrieve the best action from estimated q values
         best_action_val = float("-inf")
         best_action = None
-        for action in self.env.action_space.get_all():
+
+        for action in self._all_actions:
             action_value = self._get_q_value(state, action)
             if action_value > best_action_val:
                 best_action_val = action_value
                 best_action = action
             print(action, action_value)
 
-        return best_action
+        return np.array(best_action)
 
     def select_and_expand(self, node: TreeNode) -> TreeNode:
         """Perform both selection and expansion using Upper Confidence Bound (UCB).
@@ -87,8 +89,8 @@ class MCTS:
         state = node.attr["state"]
 
         ucb_action_values = []
-        actions = self.env.action_space.get_all()
-        for action in actions:
+
+        for action in self._all_actions:
             # if there is unexplored action, use it to sample a new state, return it
             if self.state_action_visit_cnt[state][action] == 0:
                 result, prob = self._sample_step(state, action)
@@ -111,7 +113,7 @@ class MCTS:
         # Select action according to UCB
         # print(state, ucb_action_values)
         best_action_idx = np.argmax(np.array(ucb_action_values))
-        best_action = actions[best_action_idx]
+        best_action = self._all_actions[best_action_idx]
 
         # Sample next state following best action
         result, prob = self._sample_step(state, best_action)
@@ -207,16 +209,16 @@ class MCTS:
             parent_node = parent_node.parent
 
     def _sample_step(self, state, action):
-        new_states, probs = self.env.state_transition_func(state, action)
+        new_states, probs = self.env.state_transition_func(np.array(state), np.array(action))
         idx = choice(np.arange(len(new_states)), 1, p=probs)[
             0
         ]  # choose new state according to the transition probability.
-
         new_state = new_states[idx]
-        reward = self.env.reward_func(state, action, new_state)
-        term, trunc, info = self.env.get_state_info(new_state)
 
-        return (new_state, reward, term, trunc, info), probs[idx]
+        reward = self.env.reward_func(state, action, new_state)
+        term, trunc, info = self.env.get_state_transition_info(state, action, new_state)
+
+        return (tuple(new_state.tolist()), reward, term, trunc, info), probs[idx]
 
     def _get_q_value(self, state, action):
         return self.total_q_value[state][action] / self.state_action_visit_cnt[state][action]

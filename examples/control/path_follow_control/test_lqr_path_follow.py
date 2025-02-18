@@ -12,7 +12,7 @@ PATH_DT = 0.1
 with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 env = DiffDrive2DControl(lookahead_dist=5, has_kinematics_constraint=False)  # ! LQR can't deal with constraints
-env.reset(shortest_path)
+env.reset(shortest_path, empty=False)
 env.interactive_viz = True
 
 # initialize controller
