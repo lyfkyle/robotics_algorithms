@@ -19,6 +19,9 @@ env.interactive_viz = True
 controller = LQR(env, horizon=100, discrete_time=True, solve_by_iteration=True)
 
 state = env.cur_state
+# ! Here we set reference action to be zero velocity, implying that each time LQR is trying to bring robot to stop
+# ! at the lookahead state. Optionally, if planned path contains velocity information, reference action can be read
+# ! from the path.
 ref_action = np.zeros(env.action_space.state_size)
 env.render()
 
