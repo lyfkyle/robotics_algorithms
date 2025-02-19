@@ -12,6 +12,7 @@ class ConvexMPC:
     Use convex optimization to explicitly solve the optimal sequence of action that minimizes cost of future trajectory,
     subject to linear state transition constraints.
     """
+
     def __init__(self, env: BaseEnv, horizon=100):
         """
         Constructor
@@ -25,18 +26,26 @@ class ConvexMPC:
         """
         assert env.state_space.type == SpaceType.CONTINUOUS.value
         assert env.action_space.type == SpaceType.CONTINUOUS.value
-        assert env.state_transition_func_type == FunctionType.LINEAR.value or env.state_transition_func_type == FunctionType.GENERAL.value
+        assert (
+            env.state_transition_func_type == FunctionType.LINEAR.value
+            or env.state_transition_func_type == FunctionType.GENERAL.value
+        )
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 
         self.env = env
-        self.T = horizon
+        self.horizon = horizon
 
         # ! Use LQR to calculate terminal cost. This makes sense as we assume after horizon, the system is brought
         # ! to good state where all constraints should be satisfied.
         self._lqr = LQR(env)
 
         # By default, default reference state and action is env.goal and zero action
-        self.A, self.B = self.env.linearize_state_transition(env.goal_state, np.zeros(env.action_space.state_size))
+        self.A, self.B = self.env.linearize_state_transition(env.goal_state, env.goal_action)
+
+        # Set up default constraints on input and state
+        self.default_constraints = []
+        self.x = cvxpy.Variable((self.horizon + 1, self.env.state_space.state_size))
+        self.u = cvxpy.Variable((self.horizon + 1, self.env.action_space.state_size))
 
     def set_ref_state_action(self, ref_state, ref_action):
         """
@@ -47,6 +56,15 @@ class ConvexMPC:
             ref_action (np.ndarray): the reference action
         """
         self.A, self.B = self.env.linearize_state_transition(ref_state, ref_action)
+
+    def get_decision_variables(self):
+        return self.x, self.u
+
+    def add_constraints(self, constraint):
+        if isinstance(constraint, list):
+            self.default_constraints += constraint
+        else:
+            self.default_constraints.append(constraint)
 
     def run(self, state: np.ndarray) -> np.ndarray:
         """Compute the current action based on the current state.
@@ -63,27 +81,30 @@ class ConvexMPC:
         # use lqr to get terminal cost
         P = self._lqr._solve_dare(A, B, Q, R)
 
-        x = cvxpy.Variable((self.T + 1, self.env.state_space.state_size))
-        u = cvxpy.Variable((self.T + 1, self.env.action_space.state_size))
-
+        constr = self.default_constraints.copy()
         cost = 0.0
-        constr = []
-        for t in range(self.T):
-            cost += cvxpy.quad_form(x[t], Q)
-            cost += cvxpy.quad_form(u[t], R)
-            constr += [x[t + 1].T == A @ x[t] + B @ u[t]]
+        for t in range(self.horizon):
+            cost += cvxpy.quad_form(self.x[t], Q)
+            cost += cvxpy.quad_form(self.u[t], R)
+            constr += [self.x[t + 1].T == A @ self.x[t] + B @ self.u[t]]
 
-        cost += cvxpy.quad_form(x[self.T], P)  # LQR terminal cost
-        constr += [x[0] == state]
+            # default constraints on state space and action space size
+            # constr += [self.x[t] <= self.env.state_space.high, self.x[t] >= self.env.state_space.low]
+            # constr += [self.u[t] <= self.env.action_space.high, self.u[t] >= self.env.action_space.low]
+
+        cost += cvxpy.quad_form(self.x[self.horizon], P)  # LQR terminal cost
+        constr += [self.x[0] == state]
         prob = cvxpy.Problem(cvxpy.Minimize(cost), constr)
 
         start = time.time()
         prob.solve(verbose=False)
         elapsed_time = time.time() - start
-        print(f"calc time:{elapsed_time:.6f} [sec]")
+        print(f'calc time:{elapsed_time:.6f} [sec]')
 
-        print("status:", prob.status)
+        print('status:', prob.status)
         # print("optimal value", prob.value)
-        # print("optimal var", x.value, u.value)
+        # print('optimal var')
+        # print(self.x.value)
+        # print(self.u.value)
 
-        return np.array(u.value[0])
+        return self.u.value[0]

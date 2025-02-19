@@ -149,7 +149,7 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
             term = True
 
         # Check goal state reached for termination
-        if np.allclose(np.array(state), np.array(self.goal_state), atol=1e-3):
+        if np.allclose(state, self.goal_state, atol=1e-3):
             term = True
 
         return term
@@ -157,7 +157,7 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
     @override
     def get_state_info(self, state):
         info = {'success': False}
-        if np.allclose(np.array(state), np.array(self.goal_state), atol=1e-3):
+        if np.allclose(state, self.goal_state, atol=1e-3):
             info = {'success': True}
 
         return info

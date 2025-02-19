@@ -23,7 +23,7 @@ class PlanarQuadrotor(Robot):
         # Constants
         self.g = 9.81
         self.m = 1.0
-        self.L = 0.4   # length of the , in m
+        self.L = 0.4  # length of the , in m
         self.I = self.m * self.L * self.L / 12.0  # Using moment of inertia of a thin rod
 
     @override
@@ -49,10 +49,10 @@ class PlanarQuadrotor(Robot):
         return np.array([new_x, new_y, new_theta, new_x_vel, new_z_vel, new_theta_vel])
 
     # def control_thrust(self, state, left_thrust, right_thrust):
-        # net_thrust = left_thrust + right_thrust
-        # net_moment = self.L / 2.0 * (right_thrust - left_thrust)
+    # net_thrust = left_thrust + right_thrust
+    # net_moment = self.L / 2.0 * (right_thrust - left_thrust)
 
-        # return self.control(state, np.array([net_thrust, net_moment]))
+    # return self.control(state, np.array([net_thrust, net_moment]))
 
     @override
     def linearize_state_transition(self, state, action):
@@ -62,25 +62,30 @@ class PlanarQuadrotor(Robot):
         u1, u2 = action
 
         # discrete-time case: x_t+1 = Ax + Bu
-        A = np.array([
-            [1, 0, 0, self.dt, 0, 0],
-            [0, 1, 0, 0, self.dt, 0],
-            [0, 0, 1, 0, 0, self.dt],
-            [0, 0, -u1 * math.cos(theta) / self.m * self.dt, 1, 0, 0],
-            [0, 0, u1 * math.sin(theta) / self.m * self.dt, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1]
-        ])
-        B = np.array([
-            [0, 0],
-            [0, 0],
-            [0, 0],
-            [-math.sin(theta) / self.m * self.dt, -math.sin(theta) / self.m * self.dt],
-            [math.cos(theta) / self.m * self.dt, math.cos(theta) / self.m * self.dt],
-            [-self.L / (2 * self.I), self.L / (2 * self.I)],
-        ])
+        A = np.array(
+            [
+                [1, 0, 0, self.dt, 0, 0],
+                [0, 1, 0, 0, self.dt, 0],
+                [0, 0, 1, 0, 0, self.dt],
+                [0, 0, -(u1 + u2) * math.cos(theta) / self.m * self.dt, 1, 0, 0],
+                [0, 0, (u1 + u2) * math.sin(theta) / self.m * self.dt, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1],
+            ]
+        )
+        B = np.array(
+            [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+                [-math.sin(theta) / self.m * self.dt, -math.sin(theta) / self.m * self.dt],
+                [math.cos(theta) / self.m * self.dt, math.cos(theta) / self.m * self.dt],
+                [-self.L / (2 * self.I), self.L / (2 * self.I)],
+            ]
+        )
         return A, B
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     env = PlanarQuadrotor()
 
     total_time = 10
@@ -89,8 +94,8 @@ if __name__ == "__main__":
     state = np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
     # Control inputs: constant thrusts
-    u1 = 5.0              # Thrust from left rotor (N)
-    u2 = 5.0              # Thrust from right rotor (N)
+    u1 = 5.0  # Thrust from left rotor (N)
+    u2 = 5.0  # Thrust from right rotor (N)
 
     # Simulation variables
     trajectory_x = []
@@ -110,8 +115,8 @@ if __name__ == "__main__":
     ax.set_ylim(-1, 3)
 
     # Quadrotor body and thrusters
-    body, = ax.plot([], [], 'o-', lw=4, markersize=10, label='Quadrotor Body')  # Quadrotor body
-    trajectory, = ax.plot([], [], 'b--', lw=1, label="Trajectory")             # Trajectory of the center of mass
+    (body,) = ax.plot([], [], 'o-', lw=4, markersize=10, label='Quadrotor Body')  # Quadrotor body
+    (trajectory,) = ax.plot([], [], 'b--', lw=1, label='Trajectory')  # Trajectory of the center of mass
 
     # Text for simulation time
     time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
@@ -148,15 +153,17 @@ if __name__ == "__main__":
         trajectory.set_data(trajectory_x, trajectory_z)
 
         # Update simulation time
-        time_text.set_text(f"Time: {i*env.dt:.2f}s")
+        time_text.set_text(f'Time: {i * env.dt:.2f}s')
 
         return body, trajectory, time_text
 
     # Run the animation
-    ani = FuncAnimation(fig, animate, frames=int(total_time / env.dt), interval=env.dt * 1000, init_func=init, blit=True)
+    ani = FuncAnimation(
+        fig, animate, frames=int(total_time / env.dt), interval=env.dt * 1000, init_func=init, blit=True
+    )
     plt.legend()
-    plt.xlabel("X Position (m)")
-    plt.ylabel("Z Position (m)")
-    plt.title("Planar Quadrotor Simulation")
+    plt.xlabel('X Position (m)')
+    plt.ylabel('Z Position (m)')
+    plt.title('Planar Quadrotor Simulation')
     plt.grid()
     plt.show()

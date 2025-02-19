@@ -30,6 +30,48 @@ class DistributionType(Enum):
     GAUSSIAN = 2
 
 
+class DiscreteSpace:
+    def __init__(self, values):
+        self.type = SpaceType.DISCRETE.value
+        self.space = values
+
+    @property
+    def size(self):
+        return len(self.space)
+
+    @property
+    def state_size(self):
+        return len(self.space[0])
+
+    def get_all(self):
+        return self.space
+
+    def sample(self):
+        idx = np.random.randint(len(self.space))
+        return self.space[idx]
+
+
+class ContinuousSpace:
+    def __init__(self, low, high):
+        self.type = SpaceType.CONTINUOUS.value
+        self.space = [low, high]
+
+    @property
+    def state_size(self):
+        return len(self.space[0])
+
+    def sample(self):
+        return np.random.uniform(np.nan_to_num(self.space[0]), np.nan_to_num(self.space[1]))
+
+    @property
+    def low(self):
+        return self.space[0]
+
+    @property
+    def high(self):
+        return self.space[1]
+
+
 class BaseEnv:
     """
     Base class for environment that is used for planning, control and learning.
@@ -232,9 +274,7 @@ class BaseEnv:
         if self.action_space.type == SpaceType.DISCRETE.value:
             res = action in self.action_space.space
         elif self.action_space.type == SpaceType.CONTINUOUS.value:
-            res = (np.array(action) >= np.array(self.action_space.space[0])).all() and (
-                np.array(action) <= np.array(self.action_space.space[1])
-            ).all()
+            res = (action >= self.action_space.low).all() and (action <= self.action_space.high).all()
 
         return res
 
@@ -263,40 +303,6 @@ class BaseEnv:
         # By default, if state equals to goal state, set success flag to true
         success = np.allclose(state, self.goal_state)
         return {'success': success}
-
-
-class DiscreteSpace:
-    def __init__(self, values):
-        self.type = SpaceType.DISCRETE.value
-        self.space = values
-
-    @property
-    def size(self):
-        return len(self.space)
-
-    @property
-    def state_size(self):
-        return len(self.space[0])
-
-    def get_all(self):
-        return self.space
-
-    def sample(self):
-        idx = np.random.randint(len(self.space))
-        return self.space[idx]
-
-
-class ContinuousSpace:
-    def __init__(self, low, high):
-        self.type = SpaceType.CONTINUOUS.value
-        self.space = [low, high]
-
-    @property
-    def state_size(self):
-        return len(self.space[0])
-
-    def sample(self):
-        return np.random.uniform(np.nan_to_num(self.space[0]), np.nan_to_num(self.space[1]))
 
 
 class DeterministicEnv(BaseEnv):

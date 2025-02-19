@@ -31,14 +31,14 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
 
         # state and action space
         self.state_space = ContinuousSpace(low=np.full(6, -np.inf), high=np.full(6, np.inf))
-        self.action_space = ContinuousSpace(low=[0, 0], high=[10, 10])  # torque
+        self.action_space = ContinuousSpace(low=np.array([0, 0]), high=np.array([10, 10]))  # torque
 
         # reward
         self.quadratic_reward = quadratic_reward
         if quadratic_reward:
             self.reward_func_type = FunctionType.QUADRATIC.value
-            self.Q = np.diag([1, 1, 1, 1, 1, 1])
-            self.R = np.diag([1, 1])
+            self.Q = np.diag([10, 10, 500, 1, 1, 1])  # theta cost has to be large to minimize linearization error
+            self.R = np.diag([0.01, 0.01])
 
         # robot model
         self.robot_model = PlanarQuadrotor()
@@ -68,10 +68,12 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
     def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         new_state, reward, term, trunc, info = super().step(action)
 
+        info['constraint_violated'] = False
         if not self._is_action_valid(action):
             print(f'action {action} is not within valid range!')
             if self.term_if_constraints_violated:
                 term = True
+            info['constraint_violated'] = True
 
         return new_state, reward, term, trunc, info
 
@@ -113,7 +115,18 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         if z < -1:
             terminated = True
 
+        if np.allclose(state, self.goal_state, atol=1e-2):
+            terminated = True
+
         return terminated
+
+    @override
+    def get_state_info(self, state):
+        info = {'success': False}
+        if np.allclose(state, self.goal_state, atol=1e-2):
+            info = {'success': True}
+
+        return info
 
     @override
     def linearize_state_transition(self, state, action):
@@ -124,7 +137,7 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         if not self._fig_created:
             # Create an animation of the pendulum
             plt.ion()
-            plt.figure()
+            plt.subplots(figsize=(10, 10), dpi=100)
 
             self._fig_created = True
 
@@ -144,7 +157,7 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         )  # Quadrotor body
 
         # Update simulation time
-        plt.text(0.02, 0.95, f'Time: {self.step_cnt * self.action_dt}s')
+        plt.text(0.02, -0.2, f'Time: {self.step_cnt * self.action_dt}s')
 
         # Run the animation
         plt.legend()
