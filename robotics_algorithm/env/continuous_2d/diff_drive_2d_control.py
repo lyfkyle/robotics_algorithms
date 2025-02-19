@@ -75,6 +75,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         self.start_state = ref_path[0]
         self.cur_state = ref_path[0]
         self.goal_state = ref_path[-1]
+        self.goal_action = np.zeros(2)  # robot should stop at goal
 
     @override
     def reset(self, ref_path, empty=True, random_env=False):

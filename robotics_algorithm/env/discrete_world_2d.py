@@ -525,6 +525,7 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
     Deterministic transition.
     Fully observable.
     """
+
     FREE_SPACE = 0
     OBSTACLE = 1
     START = 2
@@ -539,7 +540,7 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         self.size = size
         self.maze = np.full((size, size), GridWorldMaze.FREE_SPACE)
         self.adjacency_list = self.compute_adjacency_list()
-        self.colour_map = colors.ListedColormap(["white", "black", "red", "blue", "green", "yellow"])
+        self.colour_map = colors.ListedColormap(['white', 'black', 'red', 'blue', 'green', 'yellow'])
         bounds = [
             GridWorldMaze.FREE_SPACE,
             GridWorldMaze.OBSTACLE,
@@ -591,18 +592,13 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         return -1
 
     @override
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
+    def is_state_terminal(self, state):
         term = False
-        info = {"success": False}
 
         if self.maze[state[0], state[1]] == GridWorldMaze.OBSTACLE:
             term = True
 
-        if self.maze[state[0], state[1]] == GridWorldMaze.GOAL:
-            term = True
-            info = {"success": True}
-
-        return term, False, info
+        return term
 
     @override
     def get_available_actions(self, state: tuple) -> np.ndarray[tuple]:
@@ -655,21 +651,6 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
                 cnt += 1
         self.compute_adjacency_list()
 
-    def render(self):
-        fig, ax = plt.subplots()
-        ax.imshow(self.maze, cmap=self.colour_map, norm=self.norm)
-        # draw gridlines
-        ax.grid(which="major", axis="both", linestyle="-", color="k", linewidth=1)
-        ax.set_xticks(np.arange(0.5, self.size, 1))
-        ax.set_xticklabels(np.array([str(i) for i in range(self.size)]))
-        ax.set_yticks(np.arange(0.5, self.size, 1))
-        ax.set_yticklabels(np.array([str(i) for i in range(self.size)]))
-        # ax.axis('off')
-        plt.tick_params(axis="both", labelsize=5, length=0)
-
-        # fig.setsize_inches((8.5, 11), forward=False)
-        plt.show()
-
     def get_random_free_point(self):
         x = random.randint(0, self.size - 1)
         y = random.randint(0, self.size - 1)
@@ -688,11 +669,11 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
     def add_start(self, source):
         x, y = source
         if self.maze[x, y] == GridWorldMaze.OBSTACLE:
-            print("TwoDMaze/add_source: unable to add source on obstalce")
+            print('TwoDMaze/add_source: unable to add source on obstalce')
             return False
 
         if self.maze[x, y] == GridWorldMaze.GOAL:
-            print("TwoDMaze/add_source: unable to add source on goal")
+            print('TwoDMaze/add_source: unable to add source on goal')
             return False
 
         self.maze[x, y] = GridWorldMaze.START
@@ -701,11 +682,11 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
     def add_goal(self, goal):
         x, y = goal
         if self.maze[x, y] == GridWorldMaze.OBSTACLE:
-            print("TwoDMaze/add_source: unable to add source on obstalce")
+            print('TwoDMaze/add_source: unable to add source on obstalce')
             return False
 
         if self.maze[x, y] == GridWorldMaze.START:
-            print("TwoDMaze/add_source: unable to add source on source")
+            print('TwoDMaze/add_source: unable to add source on source')
             return False
 
         self.maze[x, y] = GridWorldMaze.GOAL
@@ -737,5 +718,21 @@ class GridWorldMaze(DeterministicEnv, FullyObservableEnv):
         if p_type >= GridWorldMaze.FREE_SPACE and p_type < GridWorldMaze.MAX_POINT_TYPE:
             self.maze[x, y] = p_type
         else:
-            print("TwoDMaze/add_point, invalid point type {}".format(p_type))
+            print('TwoDMaze/add_point, invalid point type {}'.format(p_type))
             return False
+
+    @override
+    def render(self):
+        fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
+        ax.imshow(self.maze, cmap=self.colour_map, norm=self.norm)
+        # draw gridlines
+        ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=1)
+        ax.set_xticks(np.arange(0.5, self.size, 1))
+        ax.set_xticklabels(np.array([str(i) for i in range(self.size)]))
+        ax.set_yticks(np.arange(0.5, self.size, 1))
+        ax.set_yticklabels(np.array([str(i) for i in range(self.size)]))
+        # ax.axis('off')
+        plt.tick_params(axis='both', labelsize=5, length=0)
+
+        # fig.setsize_inches((8.5, 11), forward=False)
+        plt.show()

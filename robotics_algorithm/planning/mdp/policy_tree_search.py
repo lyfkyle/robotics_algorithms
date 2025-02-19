@@ -31,7 +31,7 @@ class PolicyTreeSearch:
         Returns:
             action (np.ndarray): the best action
         """
-        print("Searching")
+        print('Searching...')
         q, _ = self._compute_state_value(self.env, state, 0)
         print(q)
         actions = self.env.action_space.get_all()
@@ -51,9 +51,9 @@ class PolicyTreeSearch:
                 for i, new_state in enumerate(new_states):
                     # next_state, reward, term, trunc, info = result
                     reward = self.env.reward_func(state, action, new_state)
-                    term, trunc, info = env.get_state_info(new_state)
+                    term = env.is_state_terminal(new_state)
 
-                    if not term and not trunc:
+                    if not term:
                         _, new_state_value = self._compute_state_value(env, new_state, cur_depth + 1)
                     else:
                         new_state_value = 0

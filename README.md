@@ -93,6 +93,8 @@ Algorithms
     - [x] MPPI
     - [x] CEM-MPC
     - [x] Convex-MPC
+  - [ ] Trajectory optimization
+    - [ ] iLQR
   - [ ] Domain-specific Path Follow Control
     - [ ] Regulated Pure Pursuit
     - [ ] Time-elastic Band
@@ -132,3 +134,4 @@ domain-specific components and strategies.
 ## Known issues
 
 - [ ] EKF gives high localisation error at some instances.
+- [ ] MCTS is not stable.

@@ -12,13 +12,16 @@ PATH_DT = 0.1
 with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 env = DiffDrive2DControl(lookahead_dist=5, has_kinematics_constraint=False)  # ! LQR can't deal with constraints
-env.reset(shortest_path)
+env.reset(shortest_path, empty=False)
 env.interactive_viz = True
 
 # initialize controller
 controller = LQR(env, horizon=100, discrete_time=True, solve_by_iteration=True)
 
 state = env.cur_state
+# ! Here we set reference action to be zero velocity, implying that each time LQR is trying to bring robot to stop
+# ! at the lookahead state. Optionally, if planned path contains velocity information, reference action can be read
+# ! from the path.
 ref_action = np.zeros(env.action_space.state_size)
 env.render()
 

@@ -89,15 +89,12 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         return obss, probs
 
     @override
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
+    def is_state_terminal(self, state):
         term = False
-        info = {}
-        info["success"] = False
         if state[0] < 0 or state[0] >= self.size:
             term = True
 
         if state[0] == self.goal_state[0]:
             term = True
-            info["success"] = True
 
-        return term, False, info
+        return term

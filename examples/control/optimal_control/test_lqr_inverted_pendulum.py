@@ -26,5 +26,3 @@ while True:
 
     if term or trunc:
         break
-
-

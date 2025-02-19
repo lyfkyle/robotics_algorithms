@@ -1,15 +1,11 @@
 import numpy as np
 
-from robotics_algorithm.env.windy_grid_world import WindyGridWorld
-from robotics_algorithm.env.cliff_walking import CliffWalking
-from robotics_algorithm.env.frozen_lake import FrozenLake
+from robotics_algorithm.env.classic_mdp.windy_grid_world import WindyGridWorld
+from robotics_algorithm.env.classic_mdp.cliff_walking import CliffWalking
+from robotics_algorithm.env.classic_mdp.frozen_lake import FrozenLake
 from robotics_algorithm.planning.mdp.value_iteration import ValueIteration
 
-envs = [
-    FrozenLake(dense_reward=True),
-    CliffWalking(),
-    WindyGridWorld()
-]
+envs = [FrozenLake(dense_reward=True), CliffWalking(), WindyGridWorld()]
 
 for env in envs:
     state, _ = env.reset()
@@ -23,10 +19,13 @@ for env in envs:
 
     # Execute
     path = []
+    all_actions = env.action_space.get_all()
     while True:
         # choose action according to epsilon-greedy policy
         action_probs = policy(state)
-        action = np.random.choice(env.action_space.get_all(), p=action_probs)  # choose action
+        action_idx = np.random.choice(np.arange(len(all_actions)), p=action_probs)  # choose action
+        action = all_actions[action_idx]
+
         next_state, reward, term, trunc, info = env.step(action)
         env.render()
 

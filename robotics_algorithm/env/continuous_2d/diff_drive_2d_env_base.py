@@ -58,7 +58,9 @@ class DiffDrive2DEnv(BaseEnv):
             if has_kinematics_constraint:
                 self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
             else:
-                self.action_space = ContinuousSpace(low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')])
+                self.action_space = ContinuousSpace(
+                    low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')]
+                )
         else:
             self.action_space = DiscreteSpace(
                 [
@@ -122,24 +124,28 @@ class DiffDrive2DEnv(BaseEnv):
         return new_state
 
     @override
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
+    def is_state_terminal(self, state):
         # Compute term and info
         term = False
-        info = {}
         if state[0] <= 0 or state[0] >= self.size or state[1] <= 0 or state[1] >= self.size:
             term = True
-            info = {'success': False}
 
         if not self.is_state_valid(state):
             term = True
-            info = {'success': False}
 
         # Check goal state reached for termination
         if self.is_state_similar(state, self.goal_state):
             term = True
-            info = {'success': True}
 
-        return term, False, info
+        return term
+
+    @override
+    def get_state_info(self, state):
+        info = {'success': False}
+        if self.is_state_similar(state, self.goal_state):
+            info['success'] = True
+
+        return info
 
     @override
     def is_state_valid(self, state: np.ndarray) -> bool:

@@ -50,8 +50,9 @@ class MCTS:
         self.state_visit_cnt = defaultdict(int)
         self.total_q_value = defaultdict(lambda: defaultdict(int))
         self.state_action_visit_cnt = defaultdict(lambda: defaultdict(int))
+        self._all_actions = [tuple(a.tolist()) for a in self.env.action_space.get_all()]
 
-        state = copy.deepcopy(state)
+        state = tuple(state.tolist())
         self.tree = Tree()
         root = self.tree.add_node(state=state)
         start_time = time.time()
@@ -61,18 +62,19 @@ class MCTS:
             total_return = self.simulate(expanded_node)
             self.backpropogate(expanded_node, total_return)
 
-        print("Timeout!")
+        print('Timeout!')
         # Retrieve the best action from estimated q values
-        best_action_val = float("-inf")
+        best_action_val = float('-inf')
         best_action = None
-        for action in self.env.action_space.get_all():
+
+        for action in self._all_actions:
             action_value = self._get_q_value(state, action)
             if action_value > best_action_val:
                 best_action_val = action_value
                 best_action = action
             print(action, action_value)
 
-        return best_action
+        return np.array(best_action)
 
     def select_and_expand(self, node: TreeNode) -> TreeNode:
         """Perform both selection and expansion using Upper Confidence Bound (UCB).
@@ -83,12 +85,12 @@ class MCTS:
         Returns:
             expanded node (TreeNode): the newly expanded node.
         """
-        print("[MCTS]: select...")
-        state = node.attr["state"]
+        print('[MCTS]: select...')
+        state = node.attr['state']
 
         ucb_action_values = []
-        actions = self.env.action_space.get_all()
-        for action in actions:
+
+        for action in self._all_actions:
             # if there is unexplored action, use it to sample a new state, return it
             if self.state_action_visit_cnt[state][action] == 0:
                 result, prob = self._sample_step(state, action)
@@ -111,7 +113,7 @@ class MCTS:
         # Select action according to UCB
         # print(state, ucb_action_values)
         best_action_idx = np.argmax(np.array(ucb_action_values))
-        best_action = actions[best_action_idx]
+        best_action = self._all_actions[best_action_idx]
 
         # Sample next state following best action
         result, prob = self._sample_step(state, best_action)
@@ -119,7 +121,7 @@ class MCTS:
 
         # If a new state is encountered, return it
         # new_node = node.get_children(new_state)
-        children_states = [c.attr["state"] for c in node.children]
+        children_states = [c.attr['state'] for c in node.children]
         if new_state not in children_states:
             new_node = self.tree.add_node(state=new_state, term=term)
             self.tree.add_child(node, new_node, action=best_action, reward=reward, prob=prob)
@@ -143,11 +145,11 @@ class MCTS:
         Returns:
             return (float): total return of the simulated episode.
         """
-        state = node.attr["state"]
-        print(f"[MCTS]: Simulate from {state}")
+        state = node.attr['state']
+        print(f'[MCTS]: Simulate from {state}')
 
         total_return = 0
-        if node.attr["term"]:
+        if node.attr['term']:
             return total_return
 
         current_discount_factor = self.discount_factor
@@ -172,28 +174,28 @@ class MCTS:
             node (TreeNode): The leaf node.
             total_return (float): total return of the simulated episode.
         """
-        print(f"[MCTS]: Backpropogate with total_return {total_return}")
-        state = node.attr["state"]
+        print(f'[MCTS]: Backpropogate with total_return {total_return}')
+        state = node.attr['state']
         self.state_visit_cnt[state] += 1
 
         state_value = total_return
         parent_node = node.parent
         while parent_node is not None:
-            state = node.attr["state"]
-            parent_state = parent_node.attr["state"]
+            state = node.attr['state']
+            parent_state = parent_node.attr['state']
 
             # # Increase state visit cnt
             self.state_visit_cnt[parent_state] += 1
 
             # Increase state action visit cnt
-            action = parent_node.transition_attr(node)["action"]
+            action = parent_node.transition_attr(node)['action']
             self.state_action_visit_cnt[parent_state][action] += 1
 
             # Increase state value, considering transition prob and discount factor.
-            prob = parent_node.transition_attr(node)["prob"]
-            reward = parent_node.transition_attr(node)["reward"]
+            prob = parent_node.transition_attr(node)['prob']
+            reward = parent_node.transition_attr(node)['reward']
 
-            print(f"[MCTS]: Backpropogate through {parent_state} with prob {prob} and reward {reward}")
+            print(f'[MCTS]: Backpropogate through {parent_state} with prob {prob} and reward {reward}')
 
             # Back up using Bellman optimality equation
             # Q(s, a) = p(s' | s, a) * (R(s, s') + lamda * V(s'))
@@ -207,16 +209,18 @@ class MCTS:
             parent_node = parent_node.parent
 
     def _sample_step(self, state, action):
-        new_states, probs = self.env.state_transition_func(state, action)
+        new_states, probs = self.env.state_transition_func(np.array(state), np.array(action))
         idx = choice(np.arange(len(new_states)), 1, p=probs)[
             0
         ]  # choose new state according to the transition probability.
-
         new_state = new_states[idx]
-        reward = self.env.reward_func(state, action, new_state)
-        term, trunc, info = self.env.get_state_info(new_state)
 
-        return (new_state, reward, term, trunc, info), probs[idx]
+        reward = self.env.reward_func(state, action, new_state)
+        term = self.env.is_state_terminal(new_state)
+        trunc = False
+        info = self.env.get_state_info(new_state)
+
+        return (tuple(new_state.tolist()), reward, term, trunc, info), probs[idx]
 
     def _get_q_value(self, state, action):
         return self.total_q_value[state][action] / self.state_action_visit_cnt[state][action]

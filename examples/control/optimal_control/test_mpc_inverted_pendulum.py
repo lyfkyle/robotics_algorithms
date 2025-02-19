@@ -9,9 +9,6 @@ env.reset()
 print('cur_state: ', env.cur_state)
 env.render()
 
-# TODO MPC only works if Q is large enough. Likely because we didn't add LQR cost after the horizon
-# env.Q = np.array([[1000, 0], [0, 1000]])
-
 # initialize controller
 controller = ConvexMPC(env, horizon=50)
 

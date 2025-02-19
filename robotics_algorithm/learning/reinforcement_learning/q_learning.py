@@ -39,7 +39,8 @@ class QLearning:
             action_prob = np.ones(num_actions, dtype=float) * epsilon / num_actions
 
             # (1 - epsilon) probability of picking the best action
-            best_action = np.argmax(self.Q[state])
+            state_key = tuple(state.tolist())
+            best_action = np.argmax(self.Q[state_key])
             action_prob[best_action] += 1 - epsilon
             return action_prob
 
@@ -63,6 +64,8 @@ class QLearning:
             policy is a function that takes an observation as an argument and returns
             action probabilities
         """
+        all_actions = self.env.action_space.get_all()
+
         # for plotting
         self.episodes = []
         self.cumulative_rewards = []
@@ -84,18 +87,22 @@ class QLearning:
             for steps in range(self._max_episode_len):
                 # Take action, observe reward and next state
                 action_probs = behaviour_policy(state)
-                action = np.random.choice(self.env.action_space.get_all(), p=action_probs)  # choose action
+                action_idx = np.random.choice(np.arange(len(all_actions)), p=action_probs)  # choose action
+                action = all_actions[action_idx]
                 next_state, reward, term, trunc, _ = self.env.step(action)
                 cumulative_reward += reward
 
                 # Perform TD Update
-                # NOTE: we perform TD update even if term or trunc is true. Although Q function for terminal
-                #       state does not make sense, this is needed so that the negative reward earned when transitioning
-                #       to terminal state is learned.
-                # NOTE: for q learning, next action is selected based on greedy policy, so here just use np.max
-                td_target = reward + discount_factor * np.max(self.Q[next_state]).item()
-                td_delta = td_target - self.Q[state][action]
-                self.Q[state][action] += alpha * td_delta
+                # ! we perform TD update even if term or trunc is true. Although Q function for terminal
+                # ! state does not make sense, this is needed so that the negative reward earned when transitioning
+                # ! to terminal state is learned.
+                # ! For q learning, next action is selected based on greedy policy, so here just use np.max
+                state_key = tuple(state.tolist())
+                action_key = tuple(action.tolist())
+                next_state_key = tuple(next_state.tolist())
+                td_target = reward + discount_factor * np.max(self.Q[next_state_key]).item()
+                td_delta = td_target - self.Q[state_key][action_key]
+                self.Q[state_key][action_key] += alpha * td_delta
 
                 # Print debug information every 1000 steps
                 # if steps % 1000 == 0:
@@ -105,7 +112,8 @@ class QLearning:
 
                 # Update state and action
                 state = next_state
-                # NOTE: for q-learning, action must be sampled using behaviour policy
+
+                # ! for q-learning, action must be sampled using behaviour policy
                 # action = next_action
 
                 # Check for termination

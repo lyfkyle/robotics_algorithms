@@ -38,12 +38,12 @@ planner = HybridAStar(env, heuristic_func, state_key_func)
 start_time = time.time()
 res, shortest_path, shortest_path_len = planner.run(start, goal)
 end_time = time.time()
-print("TestHybridAStar, takes {} seconds".format(end_time - start_time))
+print('TestHybridAStar, takes {} seconds'.format(end_time - start_time))
 
 if not res:
-    print("TestHybridAStar, no path is available!")
+    print('TestHybridAStar, no path is available!')
 else:
-    print("TestHybridAStar, found path of len {}".format(shortest_path_len))
+    print('TestHybridAStar, found path of len {}'.format(shortest_path_len))
     # visualize path
     path = []
     for v in shortest_path:

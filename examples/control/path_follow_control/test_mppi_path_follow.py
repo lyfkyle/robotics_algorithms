@@ -14,7 +14,7 @@ with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
 
 # Initialize environment
 env = DiffDrive2DControl(use_lookahead=False)
-env.reset(shortest_path)
+env.reset(shortest_path, empty=False)
 env.interactive_viz = True
 
 # Init controller

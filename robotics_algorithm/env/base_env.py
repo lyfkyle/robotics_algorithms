@@ -30,6 +30,48 @@ class DistributionType(Enum):
     GAUSSIAN = 2
 
 
+class DiscreteSpace:
+    def __init__(self, values):
+        self.type = SpaceType.DISCRETE.value
+        self.space = values
+
+    @property
+    def size(self):
+        return len(self.space)
+
+    @property
+    def state_size(self):
+        return len(self.space[0])
+
+    def get_all(self):
+        return self.space
+
+    def sample(self):
+        idx = np.random.randint(len(self.space))
+        return self.space[idx]
+
+
+class ContinuousSpace:
+    def __init__(self, low, high):
+        self.type = SpaceType.CONTINUOUS.value
+        self.space = [low, high]
+
+    @property
+    def state_size(self):
+        return len(self.space[0])
+
+    def sample(self):
+        return np.random.uniform(np.nan_to_num(self.space[0]), np.nan_to_num(self.space[1]))
+
+    @property
+    def low(self):
+        return self.space[0]
+
+    @property
+    def high(self):
+        return self.space[1]
+
+
 class BaseEnv:
     """
     Base class for environment that is used for planning, control and learning.
@@ -59,9 +101,19 @@ class BaseEnv:
         self.state_transition_dist_type = DistributionType.NOT_APPLICABLE.value
         self.observation_dist_type = DistributionType.NOT_APPLICABLE.value
 
+        # start and goal
+        self.start_state = None
+        self.goal_state = None
+        self.goal_action = None
+
+        # max steps
+        self.max_steps = float('inf')
+        self.step_cnt = 0
+
     def reset(self) -> tuple[np.ndarray, dict]:
         """Reset env."""
         self.cur_state = None
+        self.step_cnt = 0
 
         return self.sample_observation(self.cur_state), {}
 
@@ -86,6 +138,10 @@ class BaseEnv:
         """
         new_state, reward, term, trunc, info = self.sample_state_transition(self.cur_state, action)
         self.cur_state = new_state
+
+        # truncated if steps exceed maximum steps
+        self.step_cnt += 1
+        trunc = self.step_cnt >= self.max_steps
 
         # replace state with its observation
         new_obs = self.sample_observation(new_state)
@@ -218,56 +274,35 @@ class BaseEnv:
         if self.action_space.type == SpaceType.DISCRETE.value:
             res = action in self.action_space.space
         elif self.action_space.type == SpaceType.CONTINUOUS.value:
-            res = (np.array(action) >= np.array(self.action_space.space[0])).all() and (
-                np.array(action) <= np.array(self.action_space.space[1])
-            ).all()
+            res = (action >= self.action_space.low).all() and (action <= self.action_space.high).all()
 
         return res
 
-    def get_state_info(self, state: np.ndarray) -> tuple[bool, bool, dict]:
-        """Returns additional flag and info associated with state
+    def is_state_terminal(self, state: np.ndarray) -> bool:
+        """Check whether state is terminal
+
+        Args:
+            state (np.ndarray): _description_
+
+        Returns:
+            bool: _description_
+        """
+        # By default, if state reaches goal state, terminate
+        terminated = np.allclose(state, self.goal_state)
+        return terminated
+
+    def get_state_info(self, state: np.ndarray) -> dict:
+        """Returns additional info associated with state transition.
 
         Args:
             state (np.ndarray): state
 
         Returns:
-            tuple[bool, bool, dict]: term, trunc and info. In accordance to gymanasium convention.
+            dict
         """
-        raise NotImplementedError()
-
-
-class DiscreteSpace:
-    def __init__(self, values):
-        self.type = SpaceType.DISCRETE.value
-        self.space = values
-
-    @property
-    def size(self):
-        return len(self.space)
-
-    @property
-    def state_size(self):
-        return len(self.space[0])
-
-    def get_all(self):
-        return self.space
-
-    def sample(self):
-        idx = np.random.randint(len(self.space))
-        return self.space[idx]
-
-
-class ContinuousSpace:
-    def __init__(self, low, high):
-        self.type = SpaceType.CONTINUOUS.value
-        self.space = [low, high]
-
-    @property
-    def state_size(self):
-        return len(self.space[0])
-
-    def sample(self):
-        return np.random.uniform(np.nan_to_num(self.space[0]), np.nan_to_num(self.space[1]))
+        # By default, if state equals to goal state, set success flag to true
+        success = np.allclose(state, self.goal_state)
+        return {'success': success}
 
 
 class DeterministicEnv(BaseEnv):
@@ -284,16 +319,13 @@ class DeterministicEnv(BaseEnv):
 
     @override
     def sample_state_transition(self, state, action) -> tuple[np.ndarray, float, bool, bool, dict]:
-        # Skip invalid action
-        if not self._is_action_valid(action):
-            raise Exception(f'action {action} is not within valid range!')
-
         new_state = self.state_transition_func(state, action)
 
         reward = self.reward_func(state, action, new_state)
-        term, trunc, info = self.get_state_info(new_state)
+        term = self.is_state_terminal(new_state)
+        info = self.get_state_info(new_state)
 
-        return new_state, reward, term, trunc, info
+        return new_state, reward, term, False, info
 
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
@@ -310,6 +342,7 @@ class DeterministicEnv(BaseEnv):
         """
         raise NotImplementedError()
 
+
 class StochasticEnv(BaseEnv):
     def __init__(self):
         super().__init__()
@@ -317,10 +350,6 @@ class StochasticEnv(BaseEnv):
 
     @override
     def sample_state_transition(self, state, action) -> tuple[np.ndarray, float, bool, bool, dict]:
-        # Skip invalid action
-        if not self._is_action_valid(action):
-            raise Exception(f'action {action} is not within valid range!')
-
         if self.state_transition_dist_type == DistributionType.CATEGORICAL.value:
             assert self.state_space.type == SpaceType.DISCRETE.value
 
@@ -342,9 +371,10 @@ class StochasticEnv(BaseEnv):
 
         # compute reward
         reward = self.reward_func(state, action, new_state)
-        term, trunc, info = self.get_state_info(new_state)
+        term = self.is_state_terminal(new_state)
+        info = self.get_state_info(new_state)
 
-        return new_state, reward, term, trunc, info
+        return new_state, reward, term, False, info
 
     @override
     def state_transition_func(

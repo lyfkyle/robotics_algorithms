@@ -30,7 +30,7 @@ class LQR:
         self.solve_by_iteration = solve_by_iteration
 
         # By default, default reference state and action is env.goal and zero action
-        self.A, self.B = self.env.linearize_state_transition(env.goal_state, np.zeros(env.action_space.state_size))
+        self.A, self.B = self.env.linearize_state_transition(env.goal_state, env.goal_action)
 
     def set_ref_state_action(self, ref_state, ref_action):
         self.A, self.B = self.env.linearize_state_transition(ref_state, ref_action)
