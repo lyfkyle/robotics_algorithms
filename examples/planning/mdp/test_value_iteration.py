@@ -5,11 +5,7 @@ from robotics_algorithm.env.classic_mdp.cliff_walking import CliffWalking
 from robotics_algorithm.env.classic_mdp.frozen_lake import FrozenLake
 from robotics_algorithm.planning.mdp.value_iteration import ValueIteration
 
-envs = [
-    FrozenLake(dense_reward=True),
-    CliffWalking(),
-    WindyGridWorld()
-]
+envs = [FrozenLake(dense_reward=True), CliffWalking(), WindyGridWorld()]
 
 for env in envs:
     state, _ = env.reset()

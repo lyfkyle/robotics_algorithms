@@ -102,7 +102,7 @@ class PolicyIteration:
                     q_sa = 0
                     for i, new_state in enumerate(new_states):
                         new_state_key = tuple(new_state.tolist())
-                        term, _, _ = env.get_state_transition_info(state, action, new_state)
+                        term = env.is_state_terminal(new_state)
                         if term:
                             self.terminal_states.add(new_state_key)
 

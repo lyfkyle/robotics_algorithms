@@ -246,8 +246,8 @@ class DiffDrive2DPlanningWithCost(DiffDrive2DPlanning):
         if self.is_state_similar(new_state, self.goal_state):
             return 0
 
-        return -action[0] * self.action_dt * (
-            1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost
+        return (
+            -action[0] * self.action_dt * (1.0 + self.cost_penalty * self.get_cost(new_state) / self.max_cost)
         )  # cost-weighted distance.
 
     def render(self, draw_start=True, draw_goal=True, title='environment'):

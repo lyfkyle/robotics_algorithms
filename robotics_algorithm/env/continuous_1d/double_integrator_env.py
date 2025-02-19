@@ -84,12 +84,16 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         self.start_state = self.random_state()
         self.start_state[1] = 0.0  # zero velocity
         self.goal_state = [0, 0]  # fixed
+        self.goal_action = [0]
         self.cur_state = np.copy(self.start_state)
+        self.step_cnt = 0
 
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
+    def state_transition_func(
+        self, state: np.ndarray, action: np.ndarray
+    ) -> tuple[np.ndarray, float, bool, bool, dict]:
         new_state_mean = self.robot_model.control(state, action, dt=0.01)
         new_state_var = [self.state_transition_noise_var, 1e-10]
         return new_state_mean, new_state_var
@@ -133,37 +137,41 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         return -cost
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
+    def is_state_terminal(self, state):
         term = False
-        info = {"success": False}
         # Check bounds
         if (
-            new_state[0] <= self.state_space.space[0][0]
-            or new_state[0] >= self.state_space.space[1][0]
-            or new_state[1] <= self.state_space.space[0][1]
-            or new_state[1] >= self.state_space.space[1][1]
+            state[0] <= self.state_space.space[0][0]
+            or state[0] >= self.state_space.space[1][0]
+            or state[1] <= self.state_space.space[0][1]
+            or state[1] >= self.state_space.space[1][1]
         ):
             term = True
 
-            return new_state, -100, True, False, {"success": False}
-
         # Check goal state reached for termination
-        if np.allclose(np.array(new_state), np.array(self.goal_state), atol=1e-4):
+        if np.allclose(np.array(state), np.array(self.goal_state), atol=1e-3):
             term = True
-            info["success"] = True
 
-        return term, False, info
+        return term
+
+    @override
+    def get_state_info(self, state):
+        info = {'success': False}
+        if np.allclose(np.array(state), np.array(self.goal_state), atol=1e-3):
+            info = {'success': True}
+
+        return info
 
     @override
     def render(self):
         fig, ax = plt.subplots(2, 1, dpi=100)
-        ax[0].plot(0, self.start_state[0], "o")
-        ax[1].plot(0, self.start_state[1], "o")
+        ax[0].plot(0, self.start_state[0], 'o')
+        ax[1].plot(0, self.start_state[1], 'o')
 
         if self.path:
             for i, state in enumerate(self.path):
-                ax[0].plot(i, state[0], "o")
-                ax[1].plot(i, state[1], "o")
+                ax[0].plot(i, state[0], 'o')
+                ax[1].plot(i, state[1], 'o')
 
         ax[0].set_ylim(-self.size / 2, self.size / 2)
         plt.show()

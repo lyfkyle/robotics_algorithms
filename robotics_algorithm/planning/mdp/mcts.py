@@ -62,9 +62,9 @@ class MCTS:
             total_return = self.simulate(expanded_node)
             self.backpropogate(expanded_node, total_return)
 
-        print("Timeout!")
+        print('Timeout!')
         # Retrieve the best action from estimated q values
-        best_action_val = float("-inf")
+        best_action_val = float('-inf')
         best_action = None
 
         for action in self._all_actions:
@@ -85,8 +85,8 @@ class MCTS:
         Returns:
             expanded node (TreeNode): the newly expanded node.
         """
-        print("[MCTS]: select...")
-        state = node.attr["state"]
+        print('[MCTS]: select...')
+        state = node.attr['state']
 
         ucb_action_values = []
 
@@ -121,7 +121,7 @@ class MCTS:
 
         # If a new state is encountered, return it
         # new_node = node.get_children(new_state)
-        children_states = [c.attr["state"] for c in node.children]
+        children_states = [c.attr['state'] for c in node.children]
         if new_state not in children_states:
             new_node = self.tree.add_node(state=new_state, term=term)
             self.tree.add_child(node, new_node, action=best_action, reward=reward, prob=prob)
@@ -145,11 +145,11 @@ class MCTS:
         Returns:
             return (float): total return of the simulated episode.
         """
-        state = node.attr["state"]
-        print(f"[MCTS]: Simulate from {state}")
+        state = node.attr['state']
+        print(f'[MCTS]: Simulate from {state}')
 
         total_return = 0
-        if node.attr["term"]:
+        if node.attr['term']:
             return total_return
 
         current_discount_factor = self.discount_factor
@@ -174,28 +174,28 @@ class MCTS:
             node (TreeNode): The leaf node.
             total_return (float): total return of the simulated episode.
         """
-        print(f"[MCTS]: Backpropogate with total_return {total_return}")
-        state = node.attr["state"]
+        print(f'[MCTS]: Backpropogate with total_return {total_return}')
+        state = node.attr['state']
         self.state_visit_cnt[state] += 1
 
         state_value = total_return
         parent_node = node.parent
         while parent_node is not None:
-            state = node.attr["state"]
-            parent_state = parent_node.attr["state"]
+            state = node.attr['state']
+            parent_state = parent_node.attr['state']
 
             # # Increase state visit cnt
             self.state_visit_cnt[parent_state] += 1
 
             # Increase state action visit cnt
-            action = parent_node.transition_attr(node)["action"]
+            action = parent_node.transition_attr(node)['action']
             self.state_action_visit_cnt[parent_state][action] += 1
 
             # Increase state value, considering transition prob and discount factor.
-            prob = parent_node.transition_attr(node)["prob"]
-            reward = parent_node.transition_attr(node)["reward"]
+            prob = parent_node.transition_attr(node)['prob']
+            reward = parent_node.transition_attr(node)['reward']
 
-            print(f"[MCTS]: Backpropogate through {parent_state} with prob {prob} and reward {reward}")
+            print(f'[MCTS]: Backpropogate through {parent_state} with prob {prob} and reward {reward}')
 
             # Back up using Bellman optimality equation
             # Q(s, a) = p(s' | s, a) * (R(s, s') + lamda * V(s'))
@@ -216,7 +216,9 @@ class MCTS:
         new_state = new_states[idx]
 
         reward = self.env.reward_func(state, action, new_state)
-        term, trunc, info = self.env.get_state_transition_info(state, action, new_state)
+        term = self.env.is_state_terminal(new_state)
+        trunc = False
+        info = self.env.get_state_info(new_state)
 
         return (tuple(new_state.tolist()), reward, term, trunc, info), probs[idx]
 

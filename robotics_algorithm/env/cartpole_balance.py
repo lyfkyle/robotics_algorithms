@@ -75,7 +75,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
     """
 
     metadata = {
-        "render_fps": 50,
+        'render_fps': 50,
     }
 
     def __init__(self, sutton_barto_reward: bool = False):
@@ -116,7 +116,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def reset(self):
-        self.cur_state = (np.random.randn(4) * 0.05)  # near-upright position
+        self.cur_state = np.random.randn(4) * 0.05  # near-upright position
         self.goal_state = [0, 0, 0, 0]  # upright position
         self.goal_action = np.zeros(1)  # upright position
 
@@ -136,22 +136,14 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray):
-        assert self.cur_state is not None, "Call reset before using step method."
+        assert self.cur_state is not None, 'Call reset before using step method.'
 
         new_state = self.robot_model.control(state, action)
         return new_state
 
     @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
-        x = new_state[0]
-        theta = new_state[2]
-
-        terminated = bool(
-            x < -self.x_threshold
-            or x > self.x_threshold
-            or theta < -self.theta_threshold_radians
-            or theta > self.theta_threshold_radians
-        )
+        terminated = self.is_state_terminal(new_state)
 
         if not terminated:
             reward = 0.0 if self._sutton_barto_reward else 1.0
@@ -173,9 +165,9 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         return reward
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
-        x = new_state[0]
-        theta = new_state[2]
+    def is_state_terminal(self, state):
+        x = state[0]
+        theta = state[2]
 
         terminated = bool(
             x < -self.x_threshold
@@ -184,7 +176,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
             or theta > self.theta_threshold_radians
         )
 
-        return terminated, False, {}
+        return terminated
 
     def render(self):
         if self.screen is None:
@@ -254,7 +246,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         self.screen.blit(self.surf, (0, 0))
 
         pygame.event.pump()
-        self.clock.tick(self.metadata["render_fps"])
+        self.clock.tick(self.metadata['render_fps'])
         pygame.display.flip()
 
     def close(self):
@@ -266,7 +258,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
             self.isopen = False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     env = CartPoleEnv()  # For online tree search, dense reward needs to be enabled.
     # env = CliffWalking(dense_reward=True)  # For online tree search, dense reward needs to be enabled.
     state = env.reset()

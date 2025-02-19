@@ -6,7 +6,6 @@ from robotics_algorithm.control.optimal_control.lqr import LQR
 # Test 1
 # discrete time model, solve dare using scipy
 env = DoubleIntegratorEnv(observation_noise_std=0, state_transition_noise_std=0)
-
 env.reset()
 print('cur_state: ', env.start_state)
 env.render()

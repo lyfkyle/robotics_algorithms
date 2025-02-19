@@ -64,9 +64,14 @@ class BaseEnv:
         self.goal_state = None
         self.goal_action = None
 
+        # max steps
+        self.max_steps = float('inf')
+        self.step_cnt = 0
+
     def reset(self) -> tuple[np.ndarray, dict]:
         """Reset env."""
         self.cur_state = None
+        self.step_cnt = 0
 
         return self.sample_observation(self.cur_state), {}
 
@@ -91,6 +96,10 @@ class BaseEnv:
         """
         new_state, reward, term, trunc, info = self.sample_state_transition(self.cur_state, action)
         self.cur_state = new_state
+
+        # truncated if steps exceed maximum steps
+        self.step_cnt += 1
+        trunc = self.step_cnt >= self.max_steps
 
         # replace state with its observation
         new_obs = self.sample_observation(new_state)
@@ -229,16 +238,31 @@ class BaseEnv:
 
         return res
 
-    def get_state_transition_info(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray) -> tuple[bool, bool, dict]:
-        """Returns additional flag and info associated with state transition
+    def is_state_terminal(self, state: np.ndarray) -> bool:
+        """Check whether state is terminal
+
+        Args:
+            state (np.ndarray): _description_
+
+        Returns:
+            bool: _description_
+        """
+        # By default, if state reaches goal state, terminate
+        terminated = np.allclose(state, self.goal_state)
+        return terminated
+
+    def get_state_info(self, state: np.ndarray) -> dict:
+        """Returns additional info associated with state transition.
 
         Args:
             state (np.ndarray): state
 
         Returns:
-            tuple[bool, bool, dict]: term, trunc and info. In accordance to gymanasium convention.
+            dict
         """
-        raise NotImplementedError()
+        # By default, if state equals to goal state, set success flag to true
+        success = np.allclose(state, self.goal_state)
+        return {'success': success}
 
 
 class DiscreteSpace:
@@ -292,9 +316,10 @@ class DeterministicEnv(BaseEnv):
         new_state = self.state_transition_func(state, action)
 
         reward = self.reward_func(state, action, new_state)
-        term, trunc, info = self.get_state_transition_info(state, action, new_state)
+        term = self.is_state_terminal(new_state)
+        info = self.get_state_info(new_state)
 
-        return new_state, reward, term, trunc, info
+        return new_state, reward, term, False, info
 
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
@@ -340,9 +365,10 @@ class StochasticEnv(BaseEnv):
 
         # compute reward
         reward = self.reward_func(state, action, new_state)
-        term, trunc, info = self.get_state_transition_info(state, action, new_state)
+        term = self.is_state_terminal(new_state)
+        info = self.get_state_info(new_state)
 
-        return new_state, reward, term, trunc, info
+        return new_state, reward, term, False, info
 
     @override
     def state_transition_func(

@@ -4,12 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing_extensions import override
 
-from robotics_algorithm.env.base_env import (
-    ContinuousSpace,
-    DeterministicEnv,
-    FullyObservableEnv,
-    FunctionType
-)
+from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv, FunctionType
 from robotics_algorithm.robot.pendulum import Pendulum
 
 
@@ -43,7 +38,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         self._ref_state = np.array([-np.pi, 0])
 
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
-        self.max_steps = 1000
+        self.max_steps = 500
 
         # others
         self._fig_created = False
@@ -53,7 +48,6 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         self.cur_state = np.random.randn(2) * 0.1  # near-upright position
         self.goal_state = np.array([0, 0])  # upright position
         self.goal_action = np.zeros(1)
-
         self.step_cnt = 0
 
         return self.sample_observation(self.cur_state), {}
@@ -75,9 +69,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
-        theta = new_state[0]
-
-        terminated = bool(theta < -self.theta_threshold_radians or theta > self.theta_threshold_radians)
+        terminated = self.is_state_terminal(new_state)
 
         if not terminated:
             if self.quadratic_reward:
@@ -90,12 +82,12 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return reward
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
-        theta = new_state[0]
+    def is_state_terminal(self, state):
+        theta = state[0]
 
-        terminated = bool(theta < -self.theta_threshold_radians or theta > self.theta_threshold_radians)
+        term = bool(theta < -self.theta_threshold_radians or theta > self.theta_threshold_radians)
 
-        return terminated, False, {}
+        return term
 
     @override
     def linearize_state_transition(self, state, action):

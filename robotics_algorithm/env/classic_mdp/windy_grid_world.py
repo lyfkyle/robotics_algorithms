@@ -84,19 +84,6 @@ class WindyGridWorld(MDPEnv):
         return new_states, probs
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
-        info = {}
-        term = False
-        if new_state[0] == self.goal_state[0] and new_state[1] == self.goal_state[1]:
-            term = True
-            info['success'] = True
-        else:
-            term = False
-            info['success'] = False
-
-        return term, False, info
-
-    @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         # R(s, s')
         # Transition to goal state gives goal reward.

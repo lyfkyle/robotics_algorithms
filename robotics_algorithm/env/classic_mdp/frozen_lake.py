@@ -94,20 +94,14 @@ class FrozenLake(MDPEnv):
         return new_states, probs
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
-        info = {}
+    def is_state_terminal(self, state):
         term = False
-        if new_state[0] == self.goal_state[0] and new_state[1] == self.goal_state[1]:
+        if state[0] == self.goal_state[0] and state[1] == self.goal_state[1]:
             term = True
-            info['success'] = True
-        elif tuple(new_state.tolist()) in self.obstacles:
+        elif tuple(state.tolist()) in self.obstacles:
             term = True
-            info['success'] = False
-        else:
-            term = False
-            info['success'] = False
 
-        return term, False, info
+        return term
 
     @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:

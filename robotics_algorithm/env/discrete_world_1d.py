@@ -89,15 +89,12 @@ class DiscreteWorld1D(StochasticEnv, PartiallyObservableEnv):
         return obss, probs
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
+    def is_state_terminal(self, state):
         term = False
-        info = {}
-        info["success"] = False
-        if new_state[0] < 0 or new_state[0] >= self.size:
+        if state[0] < 0 or state[0] >= self.size:
             term = True
 
-        if new_state[0] == self.goal_state[0]:
+        if state[0] == self.goal_state[0]:
             term = True
-            info["success"] = True
 
-        return term, False, info
+        return term

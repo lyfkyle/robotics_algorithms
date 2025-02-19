@@ -46,7 +46,7 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         self._ref_state = np.array([hover_pos, hover_height, 0, 0, 0, 0])  # hover at 1 meter height
 
         self.theta_threshold_radians = math.pi / 2
-        self.max_steps = 1000
+        self.max_steps = 500
         self.term_if_constraints_violated = term_if_constraints_violated
 
         # others
@@ -60,7 +60,6 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         self.goal_action = np.array(
             [0.5 * self.robot_model.g * self.robot_model.m, 0.5 * self.robot_model.g * self.robot_model.m]
         )
-
         self.step_cnt = 0
 
         return self.sample_observation(self.cur_state), {}
@@ -69,8 +68,10 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
     def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         new_state, reward, term, trunc, info = super().step(action)
 
-        self.step_cnt += 1
-        trunc = self.step_cnt > self.max_steps  # set truncated flag
+        if not self._is_action_valid(action):
+            print(f'action {action} is not within valid range!')
+            if self.term_if_constraints_violated:
+                term = True
 
         return new_state, reward, term, trunc, info
 
@@ -82,15 +83,11 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
-        _, z, theta, _, _, _ = new_state
+        terminated = self.is_state_terminal(new_state)
 
-        terminated = False
-        # quadcopter is too tilted
-        if theta < -self.theta_threshold_radians or theta > self.theta_threshold_radians:
-            terminated = True
-        # falls below floor
-        if z < -1:
-            terminated = True
+        if not self._is_action_valid(action):
+            if self.term_if_constraints_violated:
+                terminated = True
 
         if not terminated:
             state_error = new_state - self.goal_state
@@ -105,8 +102,8 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         return reward
 
     @override
-    def get_state_transition_info(self, state, action, new_state):
-        _, z, theta, _, _, _ = new_state
+    def is_state_terminal(self, state):
+        _, z, theta, _, _, _ = state
 
         terminated = False
         # quadcopter is too tilted
@@ -116,12 +113,7 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         if z < -1:
             terminated = True
 
-        if not self._is_action_valid(action):
-            print(f'action {action} is not within valid range!')
-            if self.term_if_constraints_violated:
-                terminated = True
-
-        return terminated, False, {}
+        return terminated
 
     @override
     def linearize_state_transition(self, state, action):
