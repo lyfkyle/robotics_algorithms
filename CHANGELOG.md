@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.11.1]
+
+### Added
+
+- Added planar quadrotor
+- Added LQR and convex MPC example for planar quadrotor
+
+### Changed
+
+- Changed all state, action, observation to be numpy array by default (cont).
+- Separated is_state_terminal() from get_state_info().
+
 ## [v0.11.0]
 
 ### Added

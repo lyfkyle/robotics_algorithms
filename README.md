@@ -32,6 +32,7 @@ python examples/planning/path_planning/test_a_star.py
 
 ## News
 
+- 20/02/2025: Added LQR and convex MPC for planar quadrotor.
 - 17/02/2025: Added convex MPC, inverted pendulum and more path following examples.
 - 09/02/2025: Added cost-aware differential drive path planning.
 - Added [AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) from v0.9.0 onwards.
@@ -50,7 +51,7 @@ Algorithms
   - [ ] Arm
     - [ ] FK and IK
   - [ ] Car
-  - [ ] Planar Quadrotor
+  - [x] Planar Quadrotor
   - [ ] Quadrotor
   - [ ] Quadruped
 - [x] State Estimation
@@ -135,3 +136,4 @@ domain-specific components and strategies.
 
 - [ ] EKF gives high localisation error at some instances.
 - [ ] MCTS is not stable.
+- [ ] Recursive feasibility in convex MPC

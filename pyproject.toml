@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "robotics_algorithm"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
     "numpy",
     "matplotlib",
@@ -12,12 +12,10 @@ dependencies = [
     "typing_extensions",
     "networkx",
     "pygame",
-    "cvxpy"
+    "cvxpy",
 ]
 requires-python = ">=3.10"
-authors = [
-    { name = "Lu Yunfan", email = "luyunfan44@gmail.com" },
-]
+authors = [{ name = "Lu Yunfan", email = "luyunfan44@gmail.com" }]
 maintainers = [{ name = "Lu Yunfan", email = "luyunfan44@gmail.com" }]
 description = "A collection of robotics algorithms"
 readme = "README.md"
