@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.11.2]
+
+### Added
+
+- Added DWA
+
 ## [v0.11.1]
 
 ### Added
