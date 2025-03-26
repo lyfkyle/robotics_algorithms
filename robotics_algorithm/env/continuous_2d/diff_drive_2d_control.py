@@ -12,6 +12,7 @@ from robotics_algorithm.utils import math_utils
 
 DEFAULT_OBSTACLES = [[2, 2, 0.5], [5, 5, 1], [3, 8, 0.5], [8, 3, 1]]
 
+
 class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     """A differential drive robot must reach goal state in a 2d maze with obstacles.
 
@@ -27,25 +28,32 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     goal.
     """
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, use_lookahead=True, lookahead_dist=5, has_kinematics_constraint=True):
+    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, lookahead_index=5, has_kinematics_constraint=True):
         """Constructor
 
         Args:
             size (int, optional): size of the environment. Defaults to 10.
             robot_radius (float, optional): robot radius. Defaults to 0.2.
             action_dt (float, optional): action dt. Defaults to 0.05.
-            lookahead_dist (int, optional): lookahead distance. Defaults to -1.
+            lookahead_dist (int, optional): lookahead index. If it is larger than 0, then a carrot pose will be chosen as
+                the pose on the global path that is lookahead_index steps ahead of the robot. Defaults to -1.
         """
         # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
         #       DiffDrive2DEnv last.
         DeterministicEnv.__init__(self)
         FullyObservableEnv.__init__(self)
-        DiffDrive2DEnv.__init__(self, size, robot_radius, action_dt, discrete_action=False, has_kinematics_constraint=has_kinematics_constraint)
+        DiffDrive2DEnv.__init__(
+            self,
+            size,
+            robot_radius,
+            action_dt,
+            discrete_action=False,
+            has_kinematics_constraint=has_kinematics_constraint,
+        )
 
         self.ref_path = None
         self.cur_ref_path_idx = 0
-        self.use_lookahead = use_lookahead
-        self.lookahead_index = lookahead_dist
+        self.lookahead_index = lookahead_index
 
         # declare linear state transition
         # ! The dynamics is not linear strictly but at each step can be approximated by
@@ -70,7 +78,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         """
         self.ref_path = ref_path
         self.cur_ref_path_idx = 0
-        self.cur_lookahead_idx = self.lookahead_index
+        self.cur_carrot_pose_index = self.lookahead_index
 
         self.start_state = ref_path[0]
         self.cur_state = ref_path[0]
@@ -97,14 +105,14 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         res = super().step(action)
 
         # update current reference path index if reference path is present
-        if self.ref_path is not None:
+        if self.ref_path is not None and self.lookahead_index > 0:
             self.cur_ref_path_idx = self.get_nearest_waypoint_to_state(res[0])
-            self.cur_lookahead_idx = min(self.cur_ref_path_idx + self.lookahead_index, len(self.ref_path) - 1)
+            self.cur_carrot_pose_index = min(self.cur_ref_path_idx + self.lookahead_index, len(self.ref_path) - 1)
 
         return res
 
     def get_cur_lookahead_state(self):
-        return self.ref_path[self.cur_lookahead_idx]
+        return self.ref_path[self.cur_carrot_pose_index]
 
     @override
     def reward_func(self, state, action=None, new_state=None):
@@ -221,7 +229,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 s=(s * self.robot_radius * 2) ** 2,
                 c='blue',
                 marker='o',
-                zorder=2.5
+                zorder=2.5,
             )
             plt.arrow(
                 self.cur_state[0],
@@ -232,7 +240,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 head_length=0.2,
                 fc='r',
                 ec='r',
-                zorder=2.5
+                zorder=2.5,
             )
         if self.ref_path is not None:
             plt.plot(
@@ -243,7 +251,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 c='green',
                 marker='o',
             )
-        if self.use_lookahead:
+        if self.lookahead_index > 0:
             cur_ref_state = self.get_cur_lookahead_state()
             plt.scatter(
                 cur_ref_state[0],
@@ -252,7 +260,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
                 s=(s * 0.1 * 2) ** 2,
                 c='orange',
                 marker='o',
-                zorder=2.5
+                zorder=2.5,
             )
         if self.local_plan:
             for state in self.local_plan:
