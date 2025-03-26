@@ -98,6 +98,7 @@ Algorithms
     - [ ] iLQR
   - [ ] Domain-specific Path Follow Control
     - [ ] Regulated Pure Pursuit
+    - [x] Dynamic Window Approach
     - [ ] Time-elastic Band
 - [ ] Imitation learning
   - [ ] ACT
