@@ -13,7 +13,7 @@ with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 
 # Initialize environment
-env = DiffDrive2DControl(use_lookahead=False)
+env = DiffDrive2DControl(lookahead_index=-1)
 env.reset(shortest_path, empty=False)
 env.interactive_viz = True
 

@@ -36,7 +36,7 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
             robot_radius (float, optional): robot radius. Defaults to 0.2.
             action_dt (float, optional): action dt. Defaults to 0.05.
             lookahead_dist (int, optional): lookahead index. If it is larger than 0, then a carrot pose will be chosen as
-                the pose on the global path that is lookahead_index steps ahead of the robot. Defaults to -1.
+                the pose on the global path that is lookahead_index steps ahead of the robot. Defaults to 5.
         """
         # NOTE: MRO ensures DiffDrive2DEnv methods are always checked first. However, during init, we manually init
         #       DiffDrive2DEnv last.

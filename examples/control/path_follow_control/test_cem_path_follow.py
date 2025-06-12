@@ -13,7 +13,7 @@ with open(osp.join(CUR_DIR, 'example_path.json'), 'r') as f:
     shortest_path = json.load(f)
 
 # Initialize environment
-env = DiffDrive2DControl(use_lookahead=False)
+env = DiffDrive2DControl(lookahead_index=-1)
 env.reset(shortest_path, empty=False)
 
 controller = CEMMPC(env, action_mean=[0.25, 0], action_std=[0.25, math.radians(30)])
