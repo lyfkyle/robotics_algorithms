@@ -28,7 +28,14 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
     goal.
     """
 
-    def __init__(self, size=10, robot_radius=0.2, action_dt=0.05, lookahead_index=5, has_kinematics_constraint=True):
+    def __init__(
+        self,
+        size=10,
+        robot_radius=0.2,
+        action_dt=0.05,
+        lookahead_index=5,
+        has_kinematics_constraint=True,
+    ):
         """Constructor
 
         Args:
