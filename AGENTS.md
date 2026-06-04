@@ -10,10 +10,10 @@ reinforcement learning, robot dynamics, and robotics environments.
 - `examples/` contains runnable scripts that demonstrate and lightly test individual algorithms.
 - `robotics_algorithm/env/` defines shared environment abstractions and concrete robotics/MDP environments.
 - `robotics_algorithm/robot/` contains robot dynamics and kinematics models.
-- `robotics_algorithm/planning/` contains path planning, motion planning, and MDP planning algorithms.
-- `robotics_algorithm/control/` contains classical, optimal, and path-following controllers.
-- `robotics_algorithm/state_estimation/` contains Bayes/Kalman/particle-filter localization algorithms.
-- `robotics_algorithm/learning/` contains reinforcement learning algorithms.
+- `robotics_algorithm/planning/` contains algorithms related to search, such as path planning, motion planning, and MDP/POMDP planning.
+- `robotics_algorithm/control/` contains algorithms related to control, such as classical control, optimal control and robot navigation controller
+- `robotics_algorithm/state_estimation/` contains algorithms related to state estimation, such as SLAM.
+- `robotics_algorithm/learning/` contains learning-based algorithms, such as reinforcement learning, behaviour cloning.
 - `robotics_algorithm/utils/` contains shared math, MDP, tree, and model helpers.
 
 ## Design Intent
