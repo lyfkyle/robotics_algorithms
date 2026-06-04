@@ -95,8 +95,11 @@ Algorithms
     - [x] CEM-MPC
     - [x] Convex-MPC
   - [ ] Trajectory optimization
+    - [ ] Direct collocation
+    - [ ] Direct shooting
     - [ ] iLQR
-  - [ ] Domain-specific Path Follow Control
+    - [ ] DDP
+  - [ ] Navigation Path Follow Control
     - [ ] Regulated Pure Pursuit
     - [x] Dynamic Window Approach
     - [ ] Time-elastic Band
