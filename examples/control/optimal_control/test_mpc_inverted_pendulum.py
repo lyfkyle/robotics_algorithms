@@ -4,7 +4,7 @@ from robotics_algorithm.env.inverted_pendulum import InvertedPendulumEnv
 from robotics_algorithm.control.optimal_control.convex_mpc import ConvexMPC
 
 # discrete time model
-env = InvertedPendulumEnv()
+env = InvertedPendulumEnv(mode='swing_up')
 env.reset()
 print('cur_state: ', env.cur_state)
 env.render()
@@ -26,5 +26,3 @@ while True:
 
     if term or trunc:
         break
-
-

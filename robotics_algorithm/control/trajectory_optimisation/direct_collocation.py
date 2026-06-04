@@ -10,8 +10,9 @@ class DirectCollocation:
         env: BaseEnv,
         horizon=100,
         max_iter=1000,
-        dynamics_penalty=1e6,
-        constraint_tolerance=1e-2,
+        path_cost_w=1.0,
+        dynamics_cost_w=1e9,
+        constraint_tolerance=1e-3,
     ):
         """Constructor.
 
@@ -19,7 +20,8 @@ class DirectCollocation:
             env (BaseEnv): A planning env.
             horizon (int): number of control intervals in the trajectory.
             max_iter (int): maximum number of optimizer iterations.
-            dynamics_penalty (float): penalty weight for dynamics constraint violations.
+            path_cost_w (float): weight for path cost.
+            dynamics_cost_w (float): weight for dynamics constraint violations.
             constraint_tolerance (float): maximum accepted constraint violation.
         """
         assert horizon >= 1
@@ -31,18 +33,25 @@ class DirectCollocation:
         self.env = env
         self.horizon = horizon
         self.max_iter = max_iter
-        self.dynamics_penalty = dynamics_penalty
+        self.path_cost_w = path_cost_w
+        self.dynamics_cost_w = dynamics_cost_w
         self.constraint_tolerance = constraint_tolerance
-        self.state_path = None
-        self.action_path = None
         self.optimization_result = None
 
-    def run(self, start: np.ndarray, goal: np.ndarray) -> tuple[bool, np.ndarray, float]:
+    def run(
+        self,
+        start: np.ndarray,
+        goal: np.ndarray,
+        initial_state_path: np.ndarray = None,
+        initial_action_path: np.ndarray = None,
+    ) -> tuple[bool, np.ndarray, float]:
         """Run algorithm.
 
         Args:
             start (np.ndarray): the start state
             goal (np.ndarray): the goal state
+            initial_state_path (np.ndarray): initial guess for the state trajectory
+            initial_action_path (np.ndarray): initial guess for the action trajectory
 
         Returns:
             res (bool): return true if optimisation is found, return false otherwise.
@@ -53,6 +62,9 @@ class DirectCollocation:
         goal = np.asarray(goal)
         state_size = self.env.state_space.state_size
         action_size = self.env.action_space.state_size
+
+        # * scipy expects a flat array
+        # * The first few variables represent state guess, followed by action guess
         intermediate_state_var_size = (self.horizon - 1) * state_size
 
         def unpack(decision_vars):
@@ -69,20 +81,20 @@ class DirectCollocation:
             for i in range(self.horizon):
                 path_cost += self.env.reward_func(states[i], actions[i], states[i + 1]) * -1.0
 
-            defects = dynamics_defects(states, actions)
-            dynamics_cost = np.sum(defects**2)
+            dynamics_cost = calc_dynamics_cost(states, actions)
 
-            total_cost = path_cost + self.dynamics_penalty * dynamics_cost
+            total_cost = self.path_cost_w * path_cost + self.dynamics_cost_w * dynamics_cost
 
             return total_cost
 
-        def dynamics_defects(states, actions):
-            defects = []
+        def calc_dynamics_cost(states, actions):
+            dynamic_cost = 0
             for i in range(self.horizon):
                 predicted_state = self.env.state_transition_func(states[i], actions[i])
-                defects.append(states[i + 1] - predicted_state)
+                diff = states[i + 1] - predicted_state
+                dynamic_cost += np.dot(diff, diff)
 
-            return np.concatenate(defects)
+            return dynamic_cost
 
         def variable_bounds():
             def bound_pair(low, high):
@@ -107,8 +119,18 @@ class DirectCollocation:
             return bounds
 
         # initial guess
-        state_guess = np.linspace(start, goal, self.horizon + 1)
-        action_guess = np.zeros((self.horizon, action_size))
+        if initial_action_path is not None:
+            assert initial_action_path.shape == (self.horizon, action_size)
+            action_guess = initial_action_path
+        else:
+            action_guess = np.zeros((self.horizon, action_size))
+
+        if initial_state_path is not None:
+            assert initial_state_path.shape == (self.horizon + 1, state_size)
+            state_guess = initial_state_path
+        else:
+            state_guess = np.linspace(start, goal, self.horizon + 1)
+
         initial_guess = np.concatenate([state_guess[1:-1].reshape(-1), action_guess.reshape(-1)])
 
         # Convert equality constraints to quadratic penalties. L-BFGS-B handles box bounds directly.
@@ -117,13 +139,15 @@ class DirectCollocation:
             initial_guess,
             method='L-BFGS-B',
             bounds=variable_bounds(),
-            options={'maxiter': self.max_iter, 'ftol': 1e-6},
+            options={'maxiter': self.max_iter, 'ftol': 1e-6, 'maxfun': 1000000},
         )
         self.optimization_result = res
+        print(res)
 
         # Extract result
-        self.state_path, self.action_path = unpack(res.x)
-        max_constraint_violation = np.max(np.abs(dynamics_defects(self.state_path, self.action_path)))
-        success = res.success and max_constraint_violation < self.constraint_tolerance
+        state_path, action_path = unpack(res.x)
+        total_dynamic_cost = calc_dynamics_cost(state_path, action_path)
+        print(total_dynamic_cost)
+        success = res.success and total_dynamic_cost < self.constraint_tolerance
 
-        return success, self.state_path, res.fun
+        return success, state_path, action_path, res.fun
