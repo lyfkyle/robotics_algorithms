@@ -2,7 +2,7 @@
 
 ![logo](/doc/TIAGo_05.jpg "logo")
 
-This repository contains my pure-python implementation of essential algorithms that make a mobile manipulator (and other robots) move.
+This repository contains my pure-python implementation of essential algorithms that make a mobile manipulator (and other robots) move. It is mainly for my own personal learnings, which means the implementation may not be the cleanest or the most stable.
 
 While it is true that a lot of algorithms have been implemented by other projects, this repo serves these main benefits:
 
@@ -95,8 +95,11 @@ Algorithms
     - [x] CEM-MPC
     - [x] Convex-MPC
   - [ ] Trajectory optimization
+    - [x] Direct collocation
+    - [x] Direct shooting
     - [ ] iLQR
-  - [ ] Domain-specific Path Follow Control
+    - [ ] DDP
+  - [ ] Navigation Path Follow Control
     - [ ] Regulated Pure Pursuit
     - [x] Dynamic Window Approach
     - [ ] Time-elastic Band
