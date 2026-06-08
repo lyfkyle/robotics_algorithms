@@ -11,7 +11,7 @@ import numpy as np
 import pygame
 from pygame import gfxdraw
 
-from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv
+from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv, FunctionType
 from robotics_algorithm.robot.cartpole import Cartpole
 
 
@@ -78,12 +78,23 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         'render_fps': 50,
     }
 
-    def __init__(self, sutton_barto_reward: bool = False):
+    def __init__(self, sutton_barto_reward: bool = False, quadratic_reward: bool = False, dt=0.02):
         super().__init__()
 
         self.robot_model = Cartpole()
+        self.action_dt = dt
+        self._implicit_step_cnt = int(
+            self.action_dt / self.robot_model.dt
+        )  # number of internal robot steps per environment step
 
+        # reward
         self._sutton_barto_reward = sutton_barto_reward
+        self._quadratic_reward = quadratic_reward
+        if quadratic_reward:
+            # Follows https://gymnasium.farama.org/environments/classic_control/pendulum/
+            self.reward_func_type = FunctionType.QUADRATIC.value
+            self.Q = np.diag([1.0, 0.1, 1.0, 0.1])
+            self.R = np.array([[0.001]])
 
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
@@ -138,13 +149,22 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
     def state_transition_func(self, state: np.ndarray, action: np.ndarray):
         assert self.cur_state is not None, 'Call reset before using step method.'
 
-        new_state = self.robot_model.control(state, action)
-        return new_state
+        # compute next state
+        for _ in range(self._implicit_step_cnt):
+            state = self.robot_model.control(state, action)
+
+        return state
 
     @override
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         terminated = self.is_state_terminal(new_state)
 
+        # Quadratic for optimal control
+        if self._quadratic_reward:
+            reward = -new_state.T @ self.Q @ new_state - action.T @ self.R @ action
+            return reward
+
+        # Scalar reward for RL/sampling-based methods
         if not terminated:
             reward = 0.0 if self._sutton_barto_reward else 1.0
         elif self.steps_beyond_terminated is None:

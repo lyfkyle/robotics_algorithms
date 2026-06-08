@@ -2,19 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from robotics_algorithm.control.trajectory_optimisation.direct_shooting import DirectShooting
-from robotics_algorithm.env.inverted_pendulum import InvertedPendulumEnv
+from robotics_algorithm.env.cartpole_balance import CartPoleEnv
 
-
-env = InvertedPendulumEnv(mode='swing_up', dt=0.1)
+# Use quadratic reward for trajectory optimization
+# Increase dt to balance for longer time.
+env = CartPoleEnv(quadratic_reward=True, dt=0.02)
 env.reset()
 
-start = np.array([3.0, 0.0])  # start from downward position
-goal = np.array([0.0, 0.0])
-env.goal_state = goal
-env.goal_action = np.zeros(1)
+start = env.cur_state.copy()
+goal = env.goal_state.copy()
 
 # For trajectory optimization, the most important parameter is the horizon, the initial path guess and the cost function weights.
-optimizer = DirectShooting(env, horizon=40, path_cost_w=1.0)
+optimizer = DirectShooting(env, horizon=50, path_cost_w=1.0)
 # Here we use zero action as the initial action guess.
 initial_action_path = np.zeros((optimizer.horizon, env.action_space.state_size))
 success, state_path, action_path, initial_cost, final_cost = optimizer.run(start, goal, initial_action_path)
@@ -27,7 +26,6 @@ print('goal state:', goal)
 print('first action:', action_path[0])
 
 # Open loop execution of the optimized trajectory in the environment
-env.cur_state = start.copy()
 env.render()
 
 actual_state_path = [start.copy()]

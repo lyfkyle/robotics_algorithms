@@ -5,10 +5,10 @@ from robotics_algorithm.robot.robot import Robot
 
 
 class Cartpole(Robot):
-    def __init__(self, dt=0.02):
+    def __init__(self, dt=0.01):
         super().__init__(dt)
 
-        self.kinematics_integrator = "euler"
+        self.kinematics_integrator = 'euler'
         self.gravity = 9.8
         self.masscart = 1.0
         self.masspole = 0.1
@@ -33,7 +33,7 @@ class Cartpole(Robot):
         )
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
-        if self.kinematics_integrator == "euler":
+        if self.kinematics_integrator == 'euler':
             x = x + self.dt * x_dot
             x_dot = x_dot + self.dt * xacc
             theta = theta + self.dt * theta_dot
