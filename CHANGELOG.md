@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.12.0]
+
+### Added
+
+- Added direct collocation and direct shooting.
+
 ## [v0.11.2]
 
 ### Added
