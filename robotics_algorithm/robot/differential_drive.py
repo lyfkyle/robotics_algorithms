@@ -61,23 +61,18 @@ class DiffDrive(Robot):
         return np.array([x_new, y_new, theta_new])
 
     @override
-    def linearize_state_transition(self, state, action):
+    def state_transition_jacobian(self, state, action):
         # linearize dynamics around state in discrete time -> x_new = Ax + Bu
 
         x, y, theta = state
         lin_vel, ang_vel = action
-        A = np.array(
-            [
-                [1, 0, -lin_vel * np.sin(theta) * self.dt],
-                [0, 1, lin_vel * np.cos(theta) * self.dt],
-                [0, 0, 1]
-            ]
-        )
+        A = np.array([[1, 0, -lin_vel * np.sin(theta) * self.dt], [0, 1, lin_vel * np.cos(theta) * self.dt], [0, 0, 1]])
         B = np.array([[np.cos(theta) * self.dt, 0], [np.sin(theta) * self.dt, 0], [0, self.dt]])
 
         return A, B
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     # Simulation parameters
     dt = 1.0  # time step
     total_time = 10.0  # total simulation time
@@ -111,11 +106,11 @@ if __name__ == "__main__":
 
     # Plot results
     plt.figure()
-    plt.plot(state_history[:, 0], state_history[:, 1], label="Robot Path")
-    plt.xlabel("X position (m)")
-    plt.ylabel("Y position (m)")
-    plt.title("Differential Drive Robot Path")
+    plt.plot(state_history[:, 0], state_history[:, 1], label='Robot Path')
+    plt.xlabel('X position (m)')
+    plt.ylabel('Y position (m)')
+    plt.title('Differential Drive Robot Path')
     plt.legend()
-    plt.axis("equal")
+    plt.axis('equal')
     plt.grid()
     plt.show()

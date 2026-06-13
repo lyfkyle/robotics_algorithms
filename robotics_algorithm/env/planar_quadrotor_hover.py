@@ -129,8 +129,8 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         return info
 
     @override
-    def linearize_state_transition(self, state, action):
-        return self.robot_model.linearize_state_transition(state, action)
+    def state_transition_jacobian(self, state, action):
+        return self.robot_model.state_transition_jacobian(state, action)
 
     @override
     def render(self):

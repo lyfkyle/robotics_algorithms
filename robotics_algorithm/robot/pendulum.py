@@ -14,7 +14,7 @@ class Pendulum(Robot):
 
         # Constants
         self.g = 9.81  # acceleration due to gravity, in m/s^2
-        self.L = 1.0   # length of the pendulum, in m
+        self.L = 1.0  # length of the pendulum, in m
 
     @override
     def control(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
@@ -30,18 +30,18 @@ class Pendulum(Robot):
         return np.array([new_theta, new_theta_dot])
 
     @override
-    def linearize_state_transition(self, state, action):
+    def state_transition_jacobian(self, state, action):
         # linearize dynamics around state in discrete time -> x_new = Ax + Bu
 
         # discrete-time case: x_t+1 = Ax + Bu
         theta = state[0]
         theta += np.pi
         A = np.array([[1, self.dt], [-self.g / self.L * math.cos(theta) * self.dt, 1]])
-        B = np.array([0, 1 / (self.L ** 2) * self.dt]).reshape(2, 1)
+        B = np.array([0, 1 / (self.L**2) * self.dt]).reshape(2, 1)
         return A, B
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     env = Pendulum()
 
     # Time vector
@@ -52,11 +52,11 @@ if __name__ == "__main__":
     x[0] = [0, 0]
 
     # Control input (constant or time-varying)
-    u = np.ones(len(t)) * 20 # example: no control input
+    u = np.ones(len(t)) * 20  # example: no control input
     # u = np.sin(t)  # example: sinusoidal control input
 
     for i in range(1, len(t)):
-        x[i] = env.control(x[i-1], u[i-1])
+        x[i] = env.control(x[i - 1], u[i - 1])
 
     # Extract theta and omega for plotting
     theta = x[:, 0]
@@ -64,20 +64,20 @@ if __name__ == "__main__":
 
     # Create an animation of the pendulum
     fig, ax = plt.subplots()
-    ax.set_xlim(-env.L-0.1, env.L+0.1)
-    ax.set_ylim(-env.L-0.1, env.L+0.1)
+    ax.set_xlim(-env.L - 0.1, env.L + 0.1)
+    ax.set_ylim(-env.L - 0.1, env.L + 0.1)
     ax.set_aspect('equal')
-    line, = ax.plot([], [], 'o-', lw=2)
+    (line,) = ax.plot([], [], 'o-', lw=2)
 
     def init():
         line.set_data([], [])
-        return line,
+        return (line,)
 
     def update(frame):
         x_pendulum = env.L * np.sin(theta[frame] + np.pi)
         y_pendulum = -env.L * np.cos(theta[frame] + np.pi)
         line.set_data([0, x_pendulum], [0, y_pendulum])
-        return line,
+        return (line,)
 
-    ani = FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=env.dt*1000)
+    ani = FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=env.dt * 1000)
     plt.show()

@@ -11,7 +11,8 @@ class LQR:
     Given a system with linear state transition function and quadratic cost function, the optimal control strategy
     can be computed analytically and has the form: u = -Kx
     """
-    def __init__(self, env: BaseEnv, discrete_time=True, horizon=float("inf"), solve_by_iteration=False):
+
+    def __init__(self, env: BaseEnv, discrete_time=True, horizon=float('inf'), solve_by_iteration=False):
         """
         State transition:
         x_dot = A * X + B * U
@@ -21,7 +22,10 @@ class LQR:
         assert env.state_space.type == SpaceType.CONTINUOUS.value
         assert env.action_space.type == SpaceType.CONTINUOUS.value
         # Can be general because we can linearize dynamics around fixed point.
-        assert env.state_transition_func_type == FunctionType.LINEAR.value or env.state_transition_func_type == FunctionType.GENERAL.value
+        assert (
+            env.state_transition_func_type == FunctionType.LINEAR.value
+            or env.state_transition_func_type == FunctionType.GENERAL.value
+        )
         assert env.reward_func_type == FunctionType.QUADRATIC.value
 
         self.env = env
@@ -30,10 +34,10 @@ class LQR:
         self.solve_by_iteration = solve_by_iteration
 
         # By default, default reference state and action is env.goal and zero action
-        self.A, self.B = self.env.linearize_state_transition(env.goal_state, env.goal_action)
+        self.A, self.B = self.env.state_transition_jacobian(env.goal_state, env.goal_action)
 
     def set_ref_state_action(self, ref_state, ref_action):
-        self.A, self.B = self.env.linearize_state_transition(ref_state, ref_action)
+        self.A, self.B = self.env.state_transition_jacobian(ref_state, ref_action)
 
     def run(self, state: np.ndarray) -> np.ndarray:
         """Compute the current action based on the current state.
@@ -63,7 +67,7 @@ class LQR:
 
     def _solve_dare(self, A, B, Q, R):
         # we can call scipy library.
-        if self.horizon == float("inf") or not self.solve_by_iteration:
+        if self.horizon == float('inf') or not self.solve_by_iteration:
             return scipy.linalg.solve_discrete_are(A, B, Q, R)
 
         # Alternatively, discrete-time algebraic Riccati equation can be solved by iteration

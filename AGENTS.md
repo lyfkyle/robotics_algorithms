@@ -100,7 +100,7 @@ no suitable pattern already.
 - Use NumPy arrays for states, actions, observations, and trajectories unless an existing local API requires otherwise.
 - Preserve the existing modular boundary between algorithm logic, robot dynamics, and environment-specific details.
 - Prefer structured environment methods such as `sample_state_transition`, `state_transition_func`, `reward_func`,
-  `observation_func`, and `linearize_state_transition` instead of duplicating environment mechanics inside algorithms.
+  `observation_func`, and `state_transition_jacobian` instead of duplicating environment mechanics inside algorithms.
 - If an algorithm requires assumptions, assert or check them near construction, following existing files such as A\*,
   Dijkstra, LQR, and MPC implementations.
 - Add or update an example script when adding a new algorithm or behavior that benefits from visual/manual validation.

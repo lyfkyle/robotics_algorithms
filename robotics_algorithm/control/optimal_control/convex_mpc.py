@@ -40,7 +40,7 @@ class ConvexMPC:
         self._lqr = LQR(env)
 
         # By default, default reference state and action is env.goal and zero action
-        self.A, self.B = self.env.linearize_state_transition(env.goal_state, env.goal_action)
+        self.A, self.B = self.env.state_transition_jacobian(env.goal_state, env.goal_action)
 
         # Set up default constraints on input and state
         self.default_constraints = []
@@ -55,7 +55,7 @@ class ConvexMPC:
             ref_state (np.ndarray): the reference state
             ref_action (np.ndarray): the reference action
         """
-        self.A, self.B = self.env.linearize_state_transition(ref_state, ref_action)
+        self.A, self.B = self.env.state_transition_jacobian(ref_state, ref_action)
 
     def get_decision_variables(self):
         return self.x, self.u

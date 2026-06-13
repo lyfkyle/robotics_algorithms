@@ -55,7 +55,7 @@ class PlanarQuadrotor(Robot):
     # return self.control(state, np.array([net_thrust, net_moment]))
 
     @override
-    def linearize_state_transition(self, state, action):
+    def state_transition_jacobian(self, state, action):
         # linearize dynamics around state in discrete time -> x_new = Ax + Bu
 
         x, z, theta, x_vel, z_vel, theta_vel = state
