@@ -116,11 +116,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
     @override
     def reward_jacobian(self, state, action):
         if self.mode == 'swing_up':
-            # linearise reward around state error using wrapped angle
-            theta_err = ((state[0] + np.pi) % (2 * np.pi)) - np.pi
-            state_err = np.array([theta_err, state[1]])
-            # derivative w.r.t. original state: d(theta_err)/dtheta ~= 1 for small errors
-            self.l_x = -2 * self.Q @ state_err
+            self.l_x = -2 * self.Q @ state
             self.l_u = -2 * self.R @ action
             return self.l_x, self.l_u
         else:

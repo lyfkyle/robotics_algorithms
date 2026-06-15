@@ -61,14 +61,6 @@ class iLQR:
             state_path[n + 1] = self.env.state_transition_func(state_path[n], action_path[n])
             old_cost -= self.env.reward_func(state_path[n], action_path[n], state_path[n + 1])
 
-        # Quadratic approximation of the cost-to-go function
-        # V(x0 + dx) = V(x0) + V_x.T @ dx + 0.5 * dx.T @ V_xx @ dx
-        # At terminal state, V(x) = l(x), so V_x = l_x, V_xx = l_xx
-        V_x, _ = self.env.reward_jacobian(state_path[-1], action_path[-1])
-        V_xx, _ = self.env.reward_hessian(state_path[-1], action_path[-1])
-        V_x = -V_x  # flip due to reward to cost
-        V_xx = -V_xx  # flip due to reward to cost
-
         regu = 0.1
         regu_mod_factor = self.init_regu_mod_factor
         ks = np.empty(action_path.shape)
@@ -76,6 +68,14 @@ class iLQR:
 
         for _ in range(self.max_iter):
             iter_success = True
+
+            # Quadratic approximation of the cost-to-go function
+            # V(x0 + dx) = V(x0) + V_x.T @ dx + 0.5 * dx.T @ V_xx @ dx
+            # At terminal state, V(x) = l(x), so V_x = l_x, V_xx = l_xx
+            V_x, _ = self.env.reward_jacobian(state_path[-1], action_path[-1])
+            V_xx, _ = self.env.reward_hessian(state_path[-1], action_path[-1])
+            V_x = -V_x  # flip due to reward to cost
+            V_xx = -V_xx  # flip due to reward to cost
 
             # backward pass
             regu_I = regu * np.eye(V_xx.shape[0])
@@ -107,53 +107,13 @@ class iLQR:
                 try:
                     Q_uu_inv = np.linalg.inv(Q_uu_regu)
                 except np.linalg.LinAlgError:
-                    # if self.debug:
-                    #     try:
-                    #         Q_sym = 0.5 * (Q_uu_regu + Q_uu_regu.T)
-                    #         eigs = np.linalg.eigvalsh(Q_sym)
-                    #         print(f'Backward n={n}: Q_uu_regu symmetric eigenvalues: {eigs}')
-                    #     except Exception:
-                    #         print(f'Backward n={n}: Q_uu_regu not invertible (no eigenvalues)')
-                    # print('Q_uu_regu is not invertible, increase regularization')
+                    print('Q_uu_regu is not invertible, increase regularization')
                     iter_success = False
                     break
 
                 k = -Q_uu_inv @ Q_u
                 K = -Q_uu_inv @ Q_ux_regu
                 ks[n], Ks[n] = k, K
-
-                # # debug diagnostics for backward pass
-                # if self.debug:
-                #     try:
-                #         q_u_norm = float(np.linalg.norm(Q_u))
-                #     except Exception:
-                #         q_u_norm = float('nan')
-                #     try:
-                #         Q_uu_sym = 0.5 * (Q_uu + Q_uu.T)
-                #         min_eig_Q_uu = float(np.min(np.linalg.eigvalsh(Q_uu_sym)))
-                #     except Exception:
-                #         min_eig_Q_uu = float('nan')
-                #     try:
-                #         Q_uu_regu_sym = 0.5 * (Q_uu_regu + Q_uu_regu.T)
-                #         min_eig_Q_uu_reg = float(np.min(np.linalg.eigvalsh(Q_uu_regu_sym)))
-                #         cond_Q_uu_reg = float(np.linalg.cond(Q_uu_regu_sym))
-                #     except Exception:
-                #         min_eig_Q_uu_reg = float('nan')
-                #         cond_Q_uu_reg = float('nan')
-                #     try:
-                #         k_norm = float(np.linalg.norm(k))
-                #     except Exception:
-                #         k_norm = float('nan')
-                #     try:
-                #         step_reduction = float(Q_u.T @ k + 0.5 * k.T @ Q_uu @ k)
-                #     except Exception:
-                #         step_reduction = float('nan')
-
-                #     print(
-                #         f'Backward n={n}: ||Q_u||={q_u_norm:.4e}, min_eig(Q_uu)={min_eig_Q_uu:.4e}, '
-                #         f'min_eig(Q_uu_reg)={min_eig_Q_uu_reg:.4e}, cond(Q_uu_reg)={cond_Q_uu_reg:.4e}, '
-                #         f'||k||={k_norm:.4e}, step_red={step_reduction:.4e}'
-                #     )
 
                 # V_terms
                 V_x = Q_x + K.T @ Q_u + Q_ux.T @ k + K.T @ Q_uu @ k
