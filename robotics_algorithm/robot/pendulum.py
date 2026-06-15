@@ -6,6 +6,7 @@ from matplotlib.animation import FuncAnimation
 from typing_extensions import override
 
 from robotics_algorithm.robot.robot import Robot
+from robotics_algorithm.utils import math_utils
 
 
 class Pendulum(Robot):
@@ -26,6 +27,8 @@ class Pendulum(Robot):
         # Forward euler
         new_theta = theta + self.dt * theta_dot - np.pi
         new_theta_dot = theta_dot + self.dt * theta_dot_dot
+
+        new_theta = math_utils.normalize_angle(new_theta)  # wrap angle to [-pi, pi]
 
         return np.array([new_theta, new_theta_dot])
 

@@ -6,6 +6,7 @@ from typing_extensions import override
 
 from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv, FunctionType
 from robotics_algorithm.robot.pendulum import Pendulum
+from robotics_algorithm.utils import math_utils
 
 
 class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
@@ -65,14 +66,14 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
 
         return self.sample_observation(self.cur_state), {}
 
-    @override
-    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
-        new_state, reward, term, trunc, info = super().step(action)
+    # @override
+    # def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
+    #     new_state, reward, term, trunc, info = super().step(action)
 
-        self.step_cnt += 1
-        trunc = self.step_cnt > self.max_steps  # set truncated flag
+    #     self.step_cnt += 1
+    #     trunc = self.step_cnt > self.max_steps  # set truncated flag
 
-        return new_state, reward, term, trunc, info
+    #     return new_state, reward, term, trunc, info
 
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
@@ -115,7 +116,11 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
     @override
     def reward_jacobian(self, state, action):
         if self.mode == 'swing_up':
-            self.l_x = -2 * self.Q @ state
+            # linearise reward around state error using wrapped angle
+            theta_err = ((state[0] + np.pi) % (2 * np.pi)) - np.pi
+            state_err = np.array([theta_err, state[1]])
+            # derivative w.r.t. original state: d(theta_err)/dtheta ~= 1 for small errors
+            self.l_x = -2 * self.Q @ state_err
             self.l_u = -2 * self.R @ action
             return self.l_x, self.l_u
         else:
@@ -124,6 +129,7 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
     @override
     def reward_hessian(self, state, action):
         if self.mode == 'swing_up':
+            # Hessian is constant for quadratic cost in the state error
             self.l_xx = -2 * self.Q
             self.l_uu = -2 * self.R
             return self.l_xx, self.l_uu
