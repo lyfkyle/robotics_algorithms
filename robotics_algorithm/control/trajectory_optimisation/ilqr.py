@@ -1,5 +1,4 @@
 import numpy as np
-import scipy
 
 from robotics_algorithm.env.base_env import BaseEnv, EnvType, SpaceType
 
@@ -10,7 +9,6 @@ class iLQR:
         env: BaseEnv,
         horizon=100,
         max_iter=100,
-        debug: bool = False,
     ):
         """Constructor.
 
@@ -28,7 +26,6 @@ class iLQR:
         self.env = env
         self.horizon = horizon
         self.max_iter = max_iter
-        self.debug = debug
 
         self.init_regu_mod_factor = 2.0
         self.min_regu = 1e-6
@@ -36,14 +33,12 @@ class iLQR:
     def run(
         self,
         start: np.ndarray,
-        goal: np.ndarray,
         initial_action_path: np.ndarray = None,
     ) -> tuple[bool, np.ndarray, float]:
         """Run algorithm.
 
         Args:
             start (np.ndarray): the start state
-            goal (np.ndarray): the goal state
             initial_action_path (np.ndarray, optional): the initial action path
 
         Returns:
@@ -66,6 +61,7 @@ class iLQR:
         ks = np.empty(action_path.shape)
         Ks = np.empty((action_path.shape[0], action_path.shape[1], state_path.shape[1]))
 
+        # Iterate until convergence
         for _ in range(self.max_iter):
             iter_success = True
 
@@ -84,9 +80,8 @@ class iLQR:
                 f_x, f_u = self.env.state_transition_jacobian(state_path[n], action_path[n])
                 # reward depends on the next state in this env API, so evaluate at state_path[n+1]
                 l_x, l_u = self.env.reward_jacobian(state_path[n + 1], action_path[n])
-                # flip first-order reward derivatives to cost derivatives
-                l_x = -l_x
-                l_u = -l_u
+                l_x = -l_x  # flip due to reward to cost
+                l_u = -l_u  # flip due to reward to cost
                 l_xx, l_uu = self.env.reward_hessian(state_path[n + 1], action_path[n])
                 l_xx = -l_xx  # flip due to reward to cost
                 l_uu = -l_uu  # flip due to reward to cost
@@ -94,13 +89,17 @@ class iLQR:
                 # print(f_x.shape, f_u.shape, l_x.shape, l_u.shape, l_xx.shape, l_uu.shape)
 
                 # Q_terms for the cost-to-go function
+                # This is due to Bellman Equation
+                # Q(u, x) = L(u, x) + V'(f(x, u))
                 Q_x = l_x + f_x.T @ V_x
                 Q_u = l_u + f_u.T @ V_x
                 Q_xx = l_xx + f_x.T @ V_xx @ f_x
                 Q_ux = l_ux + f_u.T @ V_xx @ f_x
                 Q_uu = l_uu + f_u.T @ V_xx @ f_u
 
-                # gains
+                # Apply regularisation.
+                # * Regularisation is applied to V not Q according to original paper
+                # * https://roboti.us/lab/papers/TassaIROS12.pdf
                 f_u_dot_regu = f_u.T @ regu_I
                 Q_ux_regu = Q_ux + f_u_dot_regu @ f_x
                 Q_uu_regu = Q_uu + f_u_dot_regu @ f_u
@@ -111,6 +110,7 @@ class iLQR:
                     iter_success = False
                     break
 
+                # Gains
                 k = -Q_uu_inv @ Q_u
                 K = -Q_uu_inv @ Q_ux_regu
                 ks[n], Ks[n] = k, K
@@ -118,7 +118,6 @@ class iLQR:
                 # V_terms
                 V_x = Q_x + K.T @ Q_u + Q_ux.T @ k + K.T @ Q_uu @ k
                 V_xx = Q_xx + K.T @ Q_ux + Q_ux.T @ K + K.T @ Q_uu @ K
-                # V_xx = 0.5 * (V_xx + V_xx.T)  # ensure symmetry
 
                 # expected cost reduction
                 expected_delta_V += Q_u.T @ k + 0.5 * k.T @ Q_uu @ k
@@ -129,7 +128,7 @@ class iLQR:
                 break
 
             # forward pass
-            # Alpha line search (allow smaller steps)
+            # line search, if cost does not reduce, reduce alpha
             alpha = 1.0
             while iter_success and alpha > 1e-4:
                 new_state_path = np.empty(state_path.shape)
@@ -159,7 +158,7 @@ class iLQR:
 
             # update regularization
             if iter_success:
-                # decrease regularization
+                # decrease regularization if iteration is successful
                 old_cost = new_cost
                 regu_mod_factor = min(regu_mod_factor, 1.0) / self.init_regu_mod_factor
                 regu *= regu_mod_factor

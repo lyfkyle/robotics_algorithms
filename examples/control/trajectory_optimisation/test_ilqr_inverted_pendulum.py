@@ -19,7 +19,7 @@ optimizer = iLQR(env, horizon=400, max_iter=100)
 initial_action_path = np.zeros((optimizer.horizon, env.action_space.state_size))
 # * Below will create a two-swing solution
 # initial_action_path = 5 * np.sin(np.linspace(0, 3 * np.pi, optimizer.horizon)).reshape(-1, 1)
-state_path, action_path = optimizer.run(start, goal, initial_action_path)
+state_path, action_path = optimizer.run(start, initial_action_path)
 
 print('start state:', state_path[0])
 print('goal state:', state_path[-1])
@@ -46,20 +46,18 @@ actual_state_path = np.array(actual_state_path)
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
 # Angle plot
-axes[0].plot(state_path[:, 0], label='Imagined', marker='o', markersize=4)
 axes[0].plot(actual_state_path[:, 0], label='Actual', marker='s', markersize=4)
 axes[0].set_xlabel('Time Step')
 axes[0].set_ylabel('Angle (rad)')
-axes[0].set_title('Angle: Imagined vs Actual')
+axes[0].set_title('Angle')
 axes[0].legend()
 axes[0].grid(True)
 
 # Angular velocity plot
-axes[1].plot(state_path[:, 1], label='Imagined', marker='o', markersize=4)
 axes[1].plot(actual_state_path[:, 1], label='Actual', marker='s', markersize=4)
 axes[1].set_xlabel('Time Step')
 axes[1].set_ylabel('Angular Velocity (rad/s)')
-axes[1].set_title('Angular Velocity: Imagined vs Actual')
+axes[1].set_title('Angular Velocity')
 axes[1].legend()
 axes[1].grid(True)
 
