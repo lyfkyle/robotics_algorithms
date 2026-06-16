@@ -99,10 +99,6 @@ class DoubleIntegratorEnv(StochasticEnv, PartiallyObservableEnv):
         return new_state_mean, new_state_var
 
     @override
-    def state_transition_jacobian(self, state: np.ndarray, action: np.ndarray):
-        return self.robot_model.state_transition_jacobian(state, action)
-
-    @override
     def observation_jacobian(self, state, observation):
         return self.H
 

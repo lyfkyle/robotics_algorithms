@@ -129,10 +129,6 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         return info
 
     @override
-    def state_transition_jacobian(self, state, action):
-        return self.robot_model.state_transition_jacobian(state, action)
-
-    @override
     def render(self):
         if not self._fig_created:
             # Create an animation of the pendulum

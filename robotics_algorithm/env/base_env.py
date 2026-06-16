@@ -200,11 +200,26 @@ class BaseEnv:
 
         Args:
             state (np.ndarray): state
+            action (np.ndarray): action
 
         Returns:
             f_x, f_u such that new_state = f_x @ state + f_u @ action
         """
-        raise NotImplementedError()
+        self.f_x, self.f_u = self.robot_model.state_transition_jacobian(state, action)
+        return self.f_x, self.f_u
+
+    def state_transition_hessian(self, state: np.ndarray, action: np.ndarray):
+        """Quadratic approximation of the state transition function around current state
+
+        Args:
+            state (np.ndarray): state
+            action (np.ndarray): action
+
+        Returns:
+            f_xx, f_ux, f_uu such that new_state = first order terms + 0.5 * state.T @ f_xx @ state + action.T @ f_ux @ state + 0.5 * action.T @ f_uu @ action.
+        """
+        self.f_xx, self.f_ux, self.f_uu = self.robot_model.state_transition_hessian(state, action)
+        return self.f_xx, self.f_ux, self.f_uu
 
     def observation_func(self, state: np.ndarray) -> np.ndarray:
         """Calculate the possible observations for a given state.

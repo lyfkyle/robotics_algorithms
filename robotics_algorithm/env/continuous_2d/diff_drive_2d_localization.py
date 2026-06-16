@@ -67,29 +67,6 @@ class DiffDrive2DLocalization(DiffDrive2DEnv, StochasticEnv, PartiallyObservable
         # Reward function is not defined in localization environment.
         return 0
 
-    @override
-    def state_transition_jacobian(self, state, action):
-        return self.robot_model.state_transition_jacobian(state, action)
-
-    # def state_transition_jacobian(self, state, action):
-    #     """
-    #     Return jocobian matrix of transition function wrt state at control
-    #     @state, state
-    #     @action, action
-    #     @return A, jacobian matrix
-    #     """
-    #     lin_vel = action[0]
-    #     theta = state[2]
-
-    #     self.F = np.array(
-    #         [
-    #             [1, 0, -lin_vel * np.sin(theta) * self.action_dt],
-    #             [0, 1, lin_vel * np.cos(theta) * self.action_dt],
-    #             [0, 0, 1],
-    #         ]
-    #     )
-    #     return self.F
-
     def observation_jacobian(self, state: np.ndarray, observation: np.ndarray) -> np.ndarray:
         """Return observation jacobian matrix."""
         self.H = np.eye(3, dtype=np.float32)

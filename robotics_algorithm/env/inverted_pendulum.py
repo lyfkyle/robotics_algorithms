@@ -109,11 +109,6 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return term
 
     @override
-    def state_transition_jacobian(self, state, action):
-        self.f_x, self.f_u = self.robot_model.state_transition_jacobian(state, action)
-        return self.f_x, self.f_u
-
-    @override
     def reward_jacobian(self, state, action):
         if self.mode == 'swing_up':
             self.l_x = -2 * self.Q @ state

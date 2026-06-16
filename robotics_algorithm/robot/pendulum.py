@@ -43,6 +43,33 @@ class Pendulum(Robot):
         B = np.array([0, 1 / (self.L**2) * self.dt]).reshape(2, 1)
         return A, B
 
+    @override
+    def state_transition_hessian(self, state, action):
+        """Second derivatives of the discrete-time dynamics for pendulum control (single robot step).
+
+        Returns f_xx, f_ux, f_uu with shapes:
+          f_xx: (n_x, n_x, n_x)  -- for each output i, Hessian w.r.t state (n_x x n_x)
+          f_ux: (n_x, n_u, n_x)  -- for each output i, mixed Hessian w.r.t u then x (n_u x n_x)
+          f_uu: (n_x, n_u, n_u)  -- for each output i, Hessian w.r.t action (n_u x n_u)
+
+        Note: this uses the robot's internal timestep `robot_model.dt` (single internal step),
+        consistent with `state_transition_jacobian`.
+        """
+        n_x = 2
+        n_u = 1
+
+        # initialize zeros
+        f_xx = np.zeros((n_x, n_x, n_x))
+        f_ux = np.zeros((n_x, n_u, n_x))
+        f_uu = np.zeros((n_x, n_u, n_u))
+
+        # Only non-zero second derivative is for output index 1 (theta_dot) w.r.t theta twice.
+        # d^2 f2 / d theta^2 = dt * g / L * sin(theta)
+        f_xx[1, 0, 0] = self.dt * self.g / self.L * math.sin(state[0])
+
+        # mixed and control Hessians are zero for this model (d^2 f / dudx = 0, d^2 f / du^2 = 0)
+        return f_xx, f_ux, f_uu
+
 
 if __name__ == '__main__':
     env = Pendulum()
