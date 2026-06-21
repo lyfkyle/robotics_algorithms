@@ -1,16 +1,17 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-from robotics_algorithm.env.inverted_pendulum import InvertedPendulumEnv
-from robotics_algorithm.control.optimal_control.convex_mpc import ConvexMPC
+from robotics_algorithm.control.optimal_control.lqr import LQR
+from robotics_algorithm.env.cartpole_balance import CartPoleEnv
 
-# discrete time model
-env = InvertedPendulumEnv(mode='swing_up')
+
+env = CartPoleEnv(quadratic_reward=True)
 env.reset()
 print('cur_state: ', env.cur_state)
 env.render()
 
 # initialize controller
-controller = ConvexMPC(env, horizon=20)
+controller = LQR(env, discrete_time=True)
 
 # run controller
 state = env.cur_state
@@ -18,6 +19,7 @@ path = [state]
 while True:
     action = controller.run(state)
     next_state, reward, term, trunc, info = env.step(action)
+
     print(state, action, next_state, reward, term, trunc, info, env.step_cnt)
     env.render()
 

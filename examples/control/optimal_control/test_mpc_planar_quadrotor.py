@@ -12,7 +12,8 @@ print('cur_state: ', env.cur_state)
 env.render()
 
 # initialize controller
-controller = ConvexMPC(env, horizon=20)
+# We enforce bounds manually later
+controller = ConvexMPC(env, horizon=20, enforce_bounds=False)
 
 # ! Add additional theta constraint so that linearization is always valid and thrust constraints are satisfied.
 # ! Compared to LQR, we don't have to manually increase theta cost in Q any more.
@@ -43,8 +44,7 @@ while True:
 
     next_state, reward, term, trunc, info = env.step(action)
 
-    print(state, action, next_state, reward, term, trunc)
-
+    print(state, action, next_state, reward, term, trunc, info, env.step_cnt)
     env.render()
 
     state = next_state

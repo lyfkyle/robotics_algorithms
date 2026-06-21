@@ -9,6 +9,7 @@ class DDP:
         env: BaseEnv,
         horizon=100,
         max_iter=100,
+        enforce_bounds=True,
     ):
         """Constructor.
 
@@ -16,6 +17,7 @@ class DDP:
             env (BaseEnv): A planning env.
             horizon (int): number of control intervals in the trajectory.
             max_iter (int): maximum number of optimizer iterations.
+            enforce_bounds (bool): if True, clip actions to environment bounds in forward pass.
         """
         assert horizon >= 1
         assert env.action_space.type == SpaceType.CONTINUOUS.value
@@ -26,9 +28,16 @@ class DDP:
         self.env = env
         self.horizon = horizon
         self.max_iter = max_iter
+        self.enforce_bounds = enforce_bounds
 
         self.init_regu_mod_factor = 2.0
         self.min_regu = 1e-6
+
+        if self.enforce_bounds:
+            print(
+                '[W]/iQR: enforce bounds will clip new action and new state during forward pass. This might affect'
+                'correctness of optimisation'
+            )
 
     def run(
         self,
@@ -55,6 +64,8 @@ class DDP:
         for n in range(self.horizon):
             state_path[n + 1] = self.env.state_transition_func(state_path[n], action_path[n])
             old_cost -= self.env.reward_func(state_path[n], action_path[n], state_path[n + 1])
+
+        print('[I]/DDP: Initial traj cost is ', old_cost)
 
         regu = 0.1
         regu_mod_factor = self.init_regu_mod_factor
@@ -124,7 +135,7 @@ class DDP:
                 # V_terms
                 V_x = Q_x + K.T @ Q_u + Q_ux.T @ k + K.T @ Q_uu @ k
                 V_xx = Q_xx + K.T @ Q_ux + Q_ux.T @ K + K.T @ Q_uu @ K
-                V_xx = 0.5 * (V_xx + V_xx.T)  # ensure symmetry
+                # V_xx = 0.5 * (V_xx + V_xx.T)  # ensure symmetry
 
                 # expected cost reduction
                 expected_delta_V += Q_u.T @ k + 0.5 * k.T @ Q_uu @ k
@@ -145,7 +156,31 @@ class DDP:
                 new_cost = 0
                 for n in range(self.horizon):
                     new_action_path[n] = action_path[n] + alpha * ks[n] + Ks[n] @ (new_state_path[n] - state_path[n])
+
+                    # Enforce action bounds if requested
+                    if self.enforce_bounds:
+                        new_action_path[n] = np.clip(
+                            new_action_path[n], self.env.action_space.low, self.env.action_space.high
+                        )
+                    elif (
+                        new_action_path[n] < self.env.action_space.low
+                        or new_action_path[n] > self.env.action_space.high
+                    ):
+                        print('[W]/DDP: action exceeds bounds in forward pass!')
+
                     new_state_path[n + 1] = self.env.state_transition_func(new_state_path[n], new_action_path[n])
+
+                    # Enforce action bounds if requested
+                    if self.enforce_bounds:
+                        new_state_path[n + 1] = np.clip(
+                            new_state_path[n + 1], self.env.state_space.low, self.env.state_space.high
+                        )
+                    elif (
+                        new_state_path[n + 1] < self.env.state_space.low
+                        or new_state_path[n + 1] > self.env.state_space.high
+                    ):
+                        print('[W]/DDP: state exceeds bounds in forward pass!')
+
                     new_cost -= self.env.reward_func(new_state_path[n], new_action_path[n], new_state_path[n + 1])
 
                 # compute cost reduction

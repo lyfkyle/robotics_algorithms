@@ -13,7 +13,7 @@ while True:
     action = controller.run(state)
 
     next_state, reward, term, trunc, info = env.step(action)
-    print(state, action, next_state, reward)
+    print(state, action, next_state, reward, term, trunc, info, env.step_cnt)
 
     env.render()
     state = next_state

@@ -91,15 +91,14 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         self._sutton_barto_reward = sutton_barto_reward
         self._quadratic_reward = quadratic_reward
         if quadratic_reward:
-            # Follows https://gymnasium.farama.org/environments/classic_control/pendulum/
             self.reward_func_type = FunctionType.QUADRATIC.value
-            self.Q = np.diag([1.0, 0.1, 1.0, 0.1])
-            self.R = np.array([[0.001]])
+            self.Q = np.diag([1.0, 0.1, 10.0, 0.1])
+            self.R = np.array([[0.0001]])
 
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
         self.x_threshold = 2.4
-        self.max_steps = 1000
+        self.max_steps = 500
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
         # is still within bounds.
@@ -197,6 +196,27 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
         )
 
         return terminated
+
+    @override
+    def reward_jacobian(self, state, action):
+        if self._quadratic_reward:
+            self.l_x = -2 * self.Q @ state
+            self.l_u = -2 * self.R @ action
+            return self.l_x, self.l_u
+        else:
+            raise NotImplementedError('First order approximation of reward is not implemented for non quadratic reward')
+
+    @override
+    def reward_hessian(self, state, action):
+        if self._quadratic_reward:
+            # Hessian is constant for quadratic cost in the state error
+            self.l_xx = -2 * self.Q
+            self.l_uu = -2 * self.R
+            return self.l_xx, self.l_uu
+        else:
+            raise NotImplementedError(
+                'Second order approximation of reward is not implemented for non quadratic reward'
+            )
 
     def render(self):
         if self.screen is None:

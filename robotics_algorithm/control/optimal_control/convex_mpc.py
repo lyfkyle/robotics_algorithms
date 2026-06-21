@@ -13,13 +13,14 @@ class ConvexMPC:
     subject to linear state transition constraints.
     """
 
-    def __init__(self, env: BaseEnv, horizon=100):
+    def __init__(self, env: BaseEnv, horizon=100, enforce_bounds=True):
         """
         Constructor
 
         Args:
             env (BaseEnv): the env
             horizon (int, optional): the lookahead distance. Defaults to 100.
+            enforce_bounds(bool): whether to add state action bounds as constraints
 
         Raises:
             AssertionError: if env does not satisfy the assumptions of ConvexMPC
@@ -46,6 +47,7 @@ class ConvexMPC:
         self.default_constraints = []
         self.x = cvxpy.Variable((self.horizon + 1, self.env.state_space.state_size))
         self.u = cvxpy.Variable((self.horizon + 1, self.env.action_space.state_size))
+        self._enforce_bound = enforce_bounds
 
     def set_ref_state_action(self, ref_state, ref_action):
         """
@@ -89,8 +91,9 @@ class ConvexMPC:
             constr += [self.x[t + 1].T == A @ self.x[t] + B @ self.u[t]]
 
             # default constraints on state space and action space size
-            # constr += [self.x[t] <= self.env.state_space.high, self.x[t] >= self.env.state_space.low]
-            # constr += [self.u[t] <= self.env.action_space.high, self.u[t] >= self.env.action_space.low]
+            if self._enforce_bound:
+                constr += [self.x[t] <= self.env.state_space.high, self.x[t] >= self.env.state_space.low]
+                constr += [self.u[t] <= self.env.action_space.high, self.u[t] >= self.env.action_space.low]
 
         cost += cvxpy.quad_form(self.x[self.horizon], P)  # LQR terminal cost
         constr += [self.x[0] == state]
