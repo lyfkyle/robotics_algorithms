@@ -32,11 +32,11 @@ python examples/planning/path_planning/test_a_star.py
 
 ## News
 
+- 21/06/2026: Added iLQR and DDP for trajectory optimisation (v0.13.0).
 - 08/06/2026: Added direct shooting and direct collocation trajectory optimisation (v0.12.0).
 - 26/03/2025: Added DWA (v0.11.2).
 - 20/02/2025: Added LQR and convex MPC for planar quadrotor (v0.11.1).
 - 17/02/2025: Added convex MPC, inverted pendulum and more path following examples (v0.11.0).
-- 09/02/2025: Added cost-aware differential drive path planning (v0.10.0).
 
 ## Status
 
@@ -98,8 +98,8 @@ Algorithms
   - [ ] Trajectory optimization
     - [x] Direct collocation
     - [x] Direct shooting
-    - [ ] iLQR
-    - [ ] DDP
+    - [x] iLQR
+    - [x] DDP
   - [ ] Navigation Path Follow Control
     - [ ] Regulated Pure Pursuit
     - [x] Dynamic Window Approach
