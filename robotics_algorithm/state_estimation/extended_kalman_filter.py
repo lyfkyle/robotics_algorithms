@@ -50,7 +50,7 @@ class ExtendedKalmanFilter:
         """
         @param control, control
         """
-        F, _ = self.env.linearize_state_transition(self.state, action)
+        F, _ = self.env.state_transition_jacobian(self.state, action)
         mean_new_state, _ = self.env.state_transition_func(self.state, action)  # non-linear transition_func
         new_covariance = F @ self.covariance @ F.transpose() + self.env.state_transition_cov_matrix
 
@@ -65,7 +65,7 @@ class ExtendedKalmanFilter:
         mean_obs, _ = self.env.observation_func(self.state)
         mean_obs_np = np.array(mean_obs)
 
-        H = self.env.linearize_observation(self.state, obs)
+        H = self.env.observation_jacobian(self.state, obs)
         K = (
             self.covariance
             @ H.transpose()

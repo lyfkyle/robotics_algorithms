@@ -17,7 +17,7 @@ class Robot:
         """
         raise NotImplementedError()
 
-    def linearize_state_transition(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def state_transition_jacobian(self, state: np.ndarray, action: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Linearize dynamics in discrete time so that x_new = A @ x + B @ u
 
         Args:

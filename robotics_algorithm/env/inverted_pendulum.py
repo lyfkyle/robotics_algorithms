@@ -6,6 +6,7 @@ from typing_extensions import override
 
 from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv, FunctionType
 from robotics_algorithm.robot.pendulum import Pendulum
+from robotics_algorithm.utils import math_utils
 
 
 class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
@@ -66,15 +67,6 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return self.sample_observation(self.cur_state), {}
 
     @override
-    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
-        new_state, reward, term, trunc, info = super().step(action)
-
-        self.step_cnt += 1
-        trunc = self.step_cnt > self.max_steps  # set truncated flag
-
-        return new_state, reward, term, trunc, info
-
-    @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
         # compute next state
         for _ in range(self._implicit_step_cnt):
@@ -86,13 +78,14 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
     def reward_func(self, state: np.ndarray, action: np.ndarray = None, new_state: np.ndarray = None) -> float:
         terminated = self.is_state_terminal(new_state)
 
-        if not terminated:
-            if self.mode == 'swing_up':
-                reward = -new_state.T @ self.Q @ new_state - action.T @ self.R @ action
-            else:
+        # ! Should operate on state error. However, since the goal state is [0, 0], we can directly use new_state.
+        if self.mode == 'swing_up':
+            reward = -new_state.T @ self.Q @ new_state - action.T @ self.R @ action
+        else:  # keep upright
+            if not terminated:
                 reward = 1.0
-        else:
-            reward = -1.0
+            else:
+                reward = -1.0
 
         return reward
 
@@ -107,8 +100,23 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
         return term
 
     @override
-    def linearize_state_transition(self, state, action):
-        return self.robot_model.linearize_state_transition(state, action)
+    def reward_jacobian(self, state, action):
+        if self.mode == 'swing_up':
+            self.l_x = -2 * self.Q @ state
+            self.l_u = -2 * self.R @ action
+            return self.l_x, self.l_u
+        else:
+            raise NotImplementedError('First order approximation of reward is not implemented for keep_upright mode')
+
+    @override
+    def reward_hessian(self, state, action):
+        if self.mode == 'swing_up':
+            # Hessian is constant for quadratic cost in the state error
+            self.l_xx = -2 * self.Q
+            self.l_uu = -2 * self.R
+            return self.l_xx, self.l_uu
+        else:
+            raise NotImplementedError('Second order approximation of reward is not implemented for keep_upright mode')
 
     @override
     def render(self):

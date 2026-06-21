@@ -195,16 +195,31 @@ class BaseEnv:
         """
         raise NotImplementedError()
 
-    def linearize_state_transition(self, state: np.ndarray, action: np.ndarray):
+    def state_transition_jacobian(self, state: np.ndarray, action: np.ndarray):
         """Linearize the state transition function around current state
 
         Args:
             state (np.ndarray): state
+            action (np.ndarray): action
 
         Returns:
-            A, B such that new_state = A @ state + B @ action
+            f_x, f_u such that new_state = f_x @ state + f_u @ action
         """
-        raise NotImplementedError()
+        self.f_x, self.f_u = self.robot_model.state_transition_jacobian(state, action)
+        return self.f_x, self.f_u
+
+    def state_transition_hessian(self, state: np.ndarray, action: np.ndarray):
+        """Quadratic approximation of the state transition function around current state
+
+        Args:
+            state (np.ndarray): state
+            action (np.ndarray): action
+
+        Returns:
+            f_xx, f_ux, f_uu such that new_state = first order terms + 0.5 * state.T @ f_xx @ state + action.T @ f_ux @ state + 0.5 * action.T @ f_uu @ action.
+        """
+        self.f_xx, self.f_ux, self.f_uu = self.robot_model.state_transition_hessian(state, action)
+        return self.f_xx, self.f_ux, self.f_uu
 
     def observation_func(self, state: np.ndarray) -> np.ndarray:
         """Calculate the possible observations for a given state.
@@ -217,15 +232,15 @@ class BaseEnv:
         """
         raise NotImplementedError()
 
-    def linearize_observation(self, state: np.ndarray, observation: np.ndarray) -> np.ndarray:
-        """Linearize observation function around current state and observation
+    def observation_jacobian(self, state: np.ndarray, observation: np.ndarray) -> np.ndarray:
+        """Linearize observation function around current state and observation.
 
         Args:
             state (np.ndarray): state
             observation (np.ndarray): observation
 
         Returns:
-            H such that Y = H(x)
+            h_x such that Y = h_x @ X
         """
         raise NotImplementedError()
 
@@ -242,6 +257,32 @@ class BaseEnv:
 
         Returns:
             reward (float)
+        """
+        raise NotImplementedError()
+
+    def reward_jacobian(self, state: np.ndarray, action: np.ndarray):
+        """Linearize the reward function around current state and action
+
+        Args:
+            state (np.ndarray): state
+            action (np.ndarray): action
+
+        Returns:
+            r_x, r_u such that reward = r_x @ state + r_u @ action
+        """
+        raise NotImplementedError()
+
+    def reward_hessian(self, state: np.ndarray, action: np.ndarray):
+        """Quadratic approximation of the reward function around current state.
+
+        Note that we assume there is no cross term between state and action for simplicity.
+
+        Args:
+            state (np.ndarray): state
+            action (np.ndarray): action
+
+        Returns:
+            r_xx, r_uu such that reward = state.T @ r_xx @ state + action.T @ r_uu @ action
         """
         raise NotImplementedError()
 
@@ -282,10 +323,10 @@ class BaseEnv:
         """Check whether state is terminal
 
         Args:
-            state (np.ndarray): _description_
+            state (np.ndarray): current state
 
         Returns:
-            bool: _description_
+            bool: return True if terminal
         """
         # By default, if state reaches goal state, terminate
         terminated = np.allclose(state, self.goal_state)

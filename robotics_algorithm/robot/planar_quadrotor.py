@@ -55,33 +55,35 @@ class PlanarQuadrotor(Robot):
     # return self.control(state, np.array([net_thrust, net_moment]))
 
     @override
-    def linearize_state_transition(self, state, action):
-        # linearize dynamics around state in discrete time -> x_new = Ax + Bu
+    def state_transition_jacobian(self, state, action):
 
         x, z, theta, x_vel, z_vel, theta_vel = state
         u1, u2 = action
 
-        # discrete-time case: x_t+1 = Ax + Bu
+        T = u1 + u2
+
         A = np.array(
             [
                 [1, 0, 0, self.dt, 0, 0],
                 [0, 1, 0, 0, self.dt, 0],
                 [0, 0, 1, 0, 0, self.dt],
-                [0, 0, -(u1 + u2) * math.cos(theta) / self.m * self.dt, 1, 0, 0],
-                [0, 0, (u1 + u2) * math.sin(theta) / self.m * self.dt, 0, 1, 0],
+                [0, 0, -T * np.cos(theta) / self.m * self.dt, 1, 0, 0],
+                [0, 0, -T * np.sin(theta) / self.m * self.dt, 0, 1, 0],
                 [0, 0, 0, 0, 0, 1],
             ]
         )
+
         B = np.array(
             [
                 [0, 0],
                 [0, 0],
                 [0, 0],
-                [-math.sin(theta) / self.m * self.dt, -math.sin(theta) / self.m * self.dt],
-                [math.cos(theta) / self.m * self.dt, math.cos(theta) / self.m * self.dt],
-                [-self.L / (2 * self.I), self.L / (2 * self.I)],
+                [-np.sin(theta) / self.m * self.dt, -np.sin(theta) / self.m * self.dt],
+                [np.cos(theta) / self.m * self.dt, np.cos(theta) / self.m * self.dt],
+                [-self.L / (2 * self.I) * self.dt, self.L / (2 * self.I) * self.dt],
             ]
         )
+
         return A, B
 
 

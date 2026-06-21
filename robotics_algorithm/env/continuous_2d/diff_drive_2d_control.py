@@ -173,10 +173,6 @@ class DiffDrive2DControl(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
 
         return nearest_idx
 
-    @override
-    def linearize_state_transition(self, state, action):
-        return self.robot_model.linearize_state_transition(state, action)
-
     def set_local_plan(self, local_plan: np.ndarray[np.ndarray]):
         """Set current local plan of controller
 

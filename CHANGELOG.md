@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.13.0]
+
+- Added iLQR and DDP. Tested on `inverted_pendulum`, `cartpole` and `planar_quadrotor` envs.
+- Also added test script of LQR and ConvexMPC on `cartpole` env.
+- Changed `linearize_*` API names to `*_jacobian`. Added `*_hessian` functions.
+- Fixed jacobian calculation in `planar_quodrotor` env.
+- Moved `state_transition_jacobian` and `state_transition_hessian` to robot_models instead of env.
+
 ## [v0.12.0]
 
 ### Added

@@ -6,6 +6,7 @@ from matplotlib.animation import FuncAnimation
 from typing_extensions import override
 
 from robotics_algorithm.robot.robot import Robot
+from robotics_algorithm.utils import math_utils
 
 
 class Pendulum(Robot):
@@ -14,7 +15,7 @@ class Pendulum(Robot):
 
         # Constants
         self.g = 9.81  # acceleration due to gravity, in m/s^2
-        self.L = 1.0   # length of the pendulum, in m
+        self.L = 1.0  # length of the pendulum, in m
 
     @override
     def control(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
@@ -27,21 +28,50 @@ class Pendulum(Robot):
         new_theta = theta + self.dt * theta_dot - np.pi
         new_theta_dot = theta_dot + self.dt * theta_dot_dot
 
+        new_theta = math_utils.normalize_angle(new_theta)  # wrap angle to [-pi, pi]
+
         return np.array([new_theta, new_theta_dot])
 
     @override
-    def linearize_state_transition(self, state, action):
+    def state_transition_jacobian(self, state, action):
         # linearize dynamics around state in discrete time -> x_new = Ax + Bu
 
         # discrete-time case: x_t+1 = Ax + Bu
         theta = state[0]
         theta += np.pi
         A = np.array([[1, self.dt], [-self.g / self.L * math.cos(theta) * self.dt, 1]])
-        B = np.array([0, 1 / (self.L ** 2) * self.dt]).reshape(2, 1)
+        B = np.array([0, 1 / (self.L**2) * self.dt]).reshape(2, 1)
         return A, B
 
+    @override
+    def state_transition_hessian(self, state, action):
+        """Second derivatives of the discrete-time dynamics for pendulum control (single robot step).
 
-if __name__ == "__main__":
+        Returns f_xx, f_ux, f_uu with shapes:
+          f_xx: (n_x, n_x, n_x)  -- for each output i, Hessian w.r.t state (n_x x n_x)
+          f_ux: (n_x, n_u, n_x)  -- for each output i, mixed Hessian w.r.t u then x (n_u x n_x)
+          f_uu: (n_x, n_u, n_u)  -- for each output i, Hessian w.r.t action (n_u x n_u)
+
+        Note: this uses the robot's internal timestep `robot_model.dt` (single internal step),
+        consistent with `state_transition_jacobian`.
+        """
+        n_x = 2
+        n_u = 1
+
+        # initialize zeros
+        f_xx = np.zeros((n_x, n_x, n_x))
+        f_ux = np.zeros((n_x, n_u, n_x))
+        f_uu = np.zeros((n_x, n_u, n_u))
+
+        # Only non-zero second derivative is for output index 1 (theta_dot) w.r.t theta twice.
+        # d^2 f2 / d theta^2 = dt * g / L * sin(theta)
+        f_xx[1, 0, 0] = self.dt * self.g / self.L * math.sin(state[0])
+
+        # mixed and control Hessians are zero for this model (d^2 f / dudx = 0, d^2 f / du^2 = 0)
+        return f_xx, f_ux, f_uu
+
+
+if __name__ == '__main__':
     env = Pendulum()
 
     # Time vector
@@ -52,11 +82,11 @@ if __name__ == "__main__":
     x[0] = [0, 0]
 
     # Control input (constant or time-varying)
-    u = np.ones(len(t)) * 20 # example: no control input
+    u = np.ones(len(t)) * 20  # example: no control input
     # u = np.sin(t)  # example: sinusoidal control input
 
     for i in range(1, len(t)):
-        x[i] = env.control(x[i-1], u[i-1])
+        x[i] = env.control(x[i - 1], u[i - 1])
 
     # Extract theta and omega for plotting
     theta = x[:, 0]
@@ -64,20 +94,20 @@ if __name__ == "__main__":
 
     # Create an animation of the pendulum
     fig, ax = plt.subplots()
-    ax.set_xlim(-env.L-0.1, env.L+0.1)
-    ax.set_ylim(-env.L-0.1, env.L+0.1)
+    ax.set_xlim(-env.L - 0.1, env.L + 0.1)
+    ax.set_ylim(-env.L - 0.1, env.L + 0.1)
     ax.set_aspect('equal')
-    line, = ax.plot([], [], 'o-', lw=2)
+    (line,) = ax.plot([], [], 'o-', lw=2)
 
     def init():
         line.set_data([], [])
-        return line,
+        return (line,)
 
     def update(frame):
         x_pendulum = env.L * np.sin(theta[frame] + np.pi)
         y_pendulum = -env.L * np.cos(theta[frame] + np.pi)
         line.set_data([0, x_pendulum], [0, y_pendulum])
-        return line,
+        return (line,)
 
-    ani = FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=env.dt*1000)
+    ani = FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=env.dt * 1000)
     plt.show()

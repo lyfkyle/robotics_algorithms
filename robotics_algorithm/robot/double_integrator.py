@@ -4,6 +4,7 @@ from typing_extensions import override
 
 from robotics_algorithm.robot.robot import Robot
 
+
 class DoubleIntegrator(Robot):
     def __init__(self, dt=0.01):
         # Robot parameters
@@ -48,10 +49,11 @@ class DoubleIntegrator(Robot):
         return new_state.reshape(-1)
 
     @override
-    def linearize_state_transition(self, state, action):
+    def state_transition_jacobian(self, state, action):
         return self.A, self.B
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     # Simulation parameters
     dt = 0.01  # time step
     total_time = 10.0  # total simulation time
@@ -81,10 +83,10 @@ if __name__ == "__main__":
 
     # Plot results
     plt.figure()
-    plt.plot(time_history, state_history[:, 0], label="Robot Path")
-    plt.xlabel("time (s)")
-    plt.ylabel("position (m)")
-    plt.title("Double integrator Robot Path")
+    plt.plot(time_history, state_history[:, 0], label='Robot Path')
+    plt.xlabel('time (s)')
+    plt.ylabel('position (m)')
+    plt.title('Double integrator Robot Path')
     plt.legend()
     plt.grid()
     plt.show()
