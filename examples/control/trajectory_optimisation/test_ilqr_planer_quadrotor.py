@@ -6,7 +6,7 @@ from robotics_algorithm.env.planar_quadrotor_hover import PlanarQuadrotorHoverEn
 
 
 env = PlanarQuadrotorHoverEnv(
-    hover_pos=0.5, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=False
+    hover_pos=1.25, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=False
 )
 env.reset()
 print('cur_state: ', env.cur_state)
@@ -14,7 +14,7 @@ print('cur_state: ', env.cur_state)
 start = env.cur_state.copy()
 goal = env.goal_state.copy()
 
-# For trajectory optimization, the most important parameter is the horizon and initial path guess
+# For trajectory optimization, the most important parameter is the horizon and initial qpath guess
 optimizer = iLQR(env, horizon=300, max_iter=100)
 # Construct a good initial action path: ramp up to hover thrust, then maintain
 initial_action_path = np.zeros((optimizer.horizon, env.action_space.state_size))
@@ -46,8 +46,6 @@ print(f'Actions violate bounds: {np.any((action_path < env.action_space.low) | (
 print(f'Action contains NaN: {np.any(np.isnan(action_path))}')
 print(f'Action contains inf: {np.any(np.isinf(action_path))}')
 
-input('execute?')
-
 # Open loop execution of the optimized trajectory in the environment
 env.render()
 
@@ -62,6 +60,8 @@ for action in action_path:
 
     if term or trunc:
         break
+
+env.save_gif()
 
 # Plot imagined vs actual state paths
 actual_state_path = np.array(actual_state_path)

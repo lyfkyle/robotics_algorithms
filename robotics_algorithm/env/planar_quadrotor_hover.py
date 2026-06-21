@@ -3,6 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from typing_extensions import override
+from matplotlib.animation import PillowWriter
 
 from robotics_algorithm.env.base_env import ContinuousSpace, DeterministicEnv, FullyObservableEnv, FunctionType
 from robotics_algorithm.robot.planar_quadrotor import PlanarQuadrotor
@@ -164,9 +165,15 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
             plt.ion()
             plt.subplots(figsize=(10, 10), dpi=100)
 
+            # GIF writer
+            self._writer = PillowWriter(fps=int(round(1.0 / self.action_dt)))
+            self._writer.setup(plt.gcf(), 'quadrotor.gif', dpi=100)
+
             self._fig_created = True
 
-        plt.clf()
+        fig = plt.gcf()
+        fig.clear()
+
         # Extract positions and angles
         x, z, theta, _, _, _ = self.cur_state
         goal_x, goal_z = self.goal_state[0], self.goal_state[1]
@@ -266,4 +273,13 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         plt.xlim(-2, 2)
         plt.ylim(-1, 3)
         plt.grid()
+
+        self._writer.grab_frame()
+
         plt.pause(0.01)
+
+    def save_gif(self):
+        if hasattr(self, '_writer'):
+            print('Saving GIF to quadrotor.gif')
+            self._writer.finish()
+            print('Saved GIF to quadrotor.gif')
