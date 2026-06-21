@@ -218,6 +218,7 @@ class CartPoleEnv(DeterministicEnv, FullyObservableEnv):
                 'Second order approximation of reward is not implemented for non quadratic reward'
             )
 
+    @override
     def render(self):
         if self.screen is None:
             pygame.init()

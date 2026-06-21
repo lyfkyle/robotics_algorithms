@@ -2,19 +2,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from robotics_algorithm.control.trajectory_optimisation.ilqr import iLQR
-from robotics_algorithm.env.cartpole_balance import CartPoleEnv
+from robotics_algorithm.env.planar_quadrotor_hover import PlanarQuadrotorHoverEnv
 
 
-env = CartPoleEnv(quadratic_reward=True)
+env = PlanarQuadrotorHoverEnv(
+    hover_pos=0.5, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=False
+)
 env.reset()
+print('cur_state: ', env.cur_state)
 
 start = env.cur_state.copy()
 goal = env.goal_state.copy()
 
 # For trajectory optimization, the most important parameter is the horizon and initial path guess
-optimizer = iLQR(env, horizon=200, max_iter=100)
-# Here we use zero action as the initial action guess.
+optimizer = iLQR(env, horizon=300, max_iter=100)
+# Construct a good initial action path: ramp up to hover thrust, then maintain
 initial_action_path = np.zeros((optimizer.horizon, env.action_space.state_size))
+ramp_steps = 50  # Steps to ramp up to hover thrust
+for i in range(optimizer.horizon):
+    if i < ramp_steps:
+        # Smoothly ramp up from 0 to hover thrust (with slight overshoot to rise)
+        alpha = i / ramp_steps
+        ramp_factor = 1.1  # 10% overshoot to ensure rising
+        initial_action_path[i] = alpha * ramp_factor * env.goal_action
+    else:
+        # Maintain hover thrust after ramp
+        initial_action_path[i] = env.goal_action
+
 state_path, action_path = optimizer.run(start, initial_action_path)
 
 print('start state:', state_path[0])
@@ -27,12 +41,12 @@ print('=' * 60)
 print(f'Theta range: [{np.min(state_path[:, 2]):.4f}, {np.max(state_path[:, 2]):.4f}]')
 print(f'State contains NaN: {np.any(np.isnan(state_path))}')
 print(f'State contains inf: {np.any(np.isinf(state_path))}')
-print(f'Action bounds (env): [-10, 10]')
 print(f'Action range: [{np.min(action_path):.4f}, {np.max(action_path):.4f}]')
-print(f'Actions violate bounds: {np.any(np.abs(action_path) > 10)}')
+print(f'Actions violate bounds: {np.any((action_path < env.action_space.low) | (action_path > env.action_space.high))}')
 print(f'Action contains NaN: {np.any(np.isnan(action_path))}')
 print(f'Action contains inf: {np.any(np.isinf(action_path))}')
 
+input('execute?')
 
 # Open loop execution of the optimized trajectory in the environment
 env.render()

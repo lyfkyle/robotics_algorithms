@@ -114,6 +114,11 @@ class DDP:
                 Q_ux = l_ux + f_u.T @ V_xx @ f_x + np.tensordot(V_x, f_ux, axes=(0, 0))
                 Q_uu = l_uu + f_u.T @ V_xx @ f_u + np.tensordot(V_x, f_uu, axes=(0, 0))
 
+                # ensure symmetry
+                # ! Important for numerical stability
+                Q_xx = 0.5 * (Q_xx + Q_xx.T)
+                Q_uu = 0.5 * (Q_uu + Q_uu.T)
+
                 # Apply regularisation.
                 # * Regularisation is applied to V not Q according to original paper
                 # * https://roboti.us/lab/papers/TassaIROS12.pdf
@@ -135,12 +140,19 @@ class DDP:
                 # V_terms
                 V_x = Q_x + K.T @ Q_u + Q_ux.T @ k + K.T @ Q_uu @ k
                 V_xx = Q_xx + K.T @ Q_ux + Q_ux.T @ K + K.T @ Q_uu @ K
-                # V_xx = 0.5 * (V_xx + V_xx.T)  # ensure symmetry
+
+                # ensure symmetry
+                # ! Important for numerical stability
+                V_xx = 0.5 * (V_xx + V_xx.T)
 
                 # expected cost reduction
                 expected_delta_V += Q_u.T @ k + 0.5 * k.T @ Q_uu @ k
 
             # early stop if expected cost reduction is small
+            if expected_delta_V > 0:
+                print(expected_delta_V)
+                print('Expected cost is found to increase!!.')
+                break
             if expected_delta_V > -1e-6:
                 print('Expected cost reduction is small, stopping optimization.')
                 break

@@ -34,11 +34,13 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         self.action_space = ContinuousSpace(low=np.array([0, 0]), high=np.array([10, 10]))  # torque
 
         # reward
-        self.quadratic_reward = quadratic_reward
+        self._quadratic_reward = quadratic_reward
         if quadratic_reward:
             self.reward_func_type = FunctionType.QUADRATIC.value
-            self.Q = np.diag([10, 10, 500, 1, 1, 1])  # theta cost has to be large to minimize linearization error
-            self.R = np.diag([0.01, 0.01])
+            # x, z, theta, xdot, zdot, thetadot
+            self.Q = np.diag([20, 50, 100, 5, 20, 10])
+            # left thrust, right thrust
+            self.R = np.diag([0.5, 0.5])
 
         # robot model
         self.robot_model = PlanarQuadrotor()
@@ -66,6 +68,7 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
 
     @override
     def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
+        self.cur_action = action
         new_state, reward, term, trunc, info = super().step(action)
 
         info['constraint_violated'] = False
@@ -91,15 +94,15 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
             if self.term_if_constraints_violated:
                 terminated = True
 
-        if not terminated:
-            state_error = new_state - self.goal_state
-            action_error = action - self.goal_action
-            if self.quadratic_reward:
-                reward = -(state_error.T @ self.Q @ state_error + action_error.T @ self.R @ action_error)
-            else:
-                reward = 1.0
+        state_error = new_state - self.goal_state
+        action_error = action - self.goal_action
+        if self._quadratic_reward:
+            reward = -(state_error.T @ self.Q @ state_error + action_error.T @ self.R @ action_error)
         else:
-            reward = -1.0
+            if not terminated:
+                reward = 1.0
+            else:
+                reward = -1.0
 
         return reward
 
@@ -129,6 +132,32 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         return info
 
     @override
+    def reward_jacobian(self, state, action):
+        if self._quadratic_reward:
+            # Cost is -(state_error^T Q state_error + action_error^T R action_error)
+            # where state_error = state - goal_state, action_error = action - goal_action
+            # Jacobian w.r.t. state: d/d_state[-(err^T Q err)] = -2 * Q @ (state - goal_state)
+            state_error = state - self.goal_state
+            action_error = action - self.goal_action
+            self.l_x = -2 * self.Q @ state_error
+            self.l_u = -2 * self.R @ action_error
+            return self.l_x, self.l_u
+        else:
+            raise NotImplementedError('First order approximation of reward is not implemented for non quadratic reward')
+
+    @override
+    def reward_hessian(self, state, action):
+        if self._quadratic_reward:
+            # Hessian is constant for quadratic cost in the state error
+            self.l_xx = -2 * self.Q
+            self.l_uu = -2 * self.R
+            return self.l_xx, self.l_uu
+        else:
+            raise NotImplementedError(
+                'Second order approximation of reward is not implemented for non quadratic reward'
+            )
+
+    @override
     def render(self):
         if not self._fig_created:
             # Create an animation of the pendulum
@@ -140,6 +169,7 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         plt.clf()
         # Extract positions and angles
         x, z, theta, _, _, _ = self.cur_state
+        goal_x, goal_z = self.goal_state[0], self.goal_state[1]
 
         # Compute quadrotor geometry
         rotor1_x = x - self.robot_model.L * np.cos(theta)
@@ -148,19 +178,91 @@ class PlanarQuadrotorHoverEnv(DeterministicEnv, FullyObservableEnv):
         rotor2_z = z + self.robot_model.L * np.sin(theta)
 
         # Quadrotor body and thrusters
-        (body,) = plt.plot(
-            [rotor1_x, rotor2_x], [rotor1_z, rotor2_z], 'o-', lw=4, markersize=10, label='Quadrotor Body'
-        )  # Quadrotor body
+        plt.plot(
+            [rotor1_x, rotor2_x],
+            [rotor1_z, rotor2_z],
+            'o-',
+            lw=4,
+            markersize=10,
+            color='tab:blue',
+            label='Quadrotor Body',
+        )
+        # Draw center of the quadrotor
+        plt.scatter([x], [z], c='tab:red', s=40, zorder=3, label='Quadrotor Center')
+
+        # Draw thrust arrows
+        if hasattr(self, 'cur_action') and self.cur_action is not None:
+            left_thrust, right_thrust = self.cur_action
+        else:
+            left_thrust, right_thrust = self.goal_action
+
+        arrow_scale = 0.02
+        thrust_color = 'tab:purple'
+
+        # Left thrust arrow
+        arrow_dx = arrow_scale * left_thrust * np.sin(theta)
+        arrow_dz = arrow_scale * left_thrust * np.cos(theta)
+        plt.arrow(
+            rotor1_x,
+            rotor1_z,
+            arrow_dx,
+            arrow_dz,
+            head_width=0.05,
+            head_length=0.08,
+            fc=thrust_color,
+            ec=thrust_color,
+            length_includes_head=True,
+            zorder=4,
+        )
+        plt.text(
+            rotor1_x + arrow_dx * 1.1,
+            rotor1_z + arrow_dz * 1.1,
+            f'{left_thrust:.2f}',
+            color=thrust_color,
+            fontsize=10,
+            va='bottom',
+            ha='center',
+        )
+
+        # Right thrust arrow
+        arrow_dx = arrow_scale * right_thrust * np.sin(theta)
+        arrow_dz = arrow_scale * right_thrust * np.cos(theta)
+        plt.arrow(
+            rotor2_x,
+            rotor2_z,
+            arrow_dx,
+            arrow_dz,
+            head_width=0.05,
+            head_length=0.08,
+            fc=thrust_color,
+            ec=thrust_color,
+            length_includes_head=True,
+            zorder=4,
+        )
+        plt.text(
+            rotor2_x + arrow_dx * 1.1,
+            rotor2_z + arrow_dz * 1.1,
+            f'{right_thrust:.2f}',
+            color=thrust_color,
+            fontsize=10,
+            va='bottom',
+            ha='center',
+        )
+
+        # Draw goal hover position
+        plt.scatter([goal_x], [goal_z], c='tab:green', s=80, marker='X', zorder=2, label='Goal Hover Target')
+        plt.plot([goal_x - 0.1, goal_x + 0.1], [goal_z, goal_z], c='tab:green', lw=1)
+        plt.plot([goal_x, goal_x], [goal_z - 0.1, goal_z + 0.1], c='tab:green', lw=1)
 
         # Update simulation time
-        plt.text(0.02, -0.2, f'Time: {self.step_cnt * self.action_dt}s')
+        plt.text(0.02, -0.2, f'Time: {self.step_cnt * self.action_dt:.2f}s')
 
-        # Run the animation
-        plt.legend()
+        plt.legend(loc='upper right')
         plt.xlabel('X Position (m)')
         plt.ylabel('Z Position (m)')
         plt.title('Planar Quadrotor Simulation')
         # Limits for animation
+
         plt.xlim(-2, 2)
         plt.ylim(-1, 3)
         plt.grid()

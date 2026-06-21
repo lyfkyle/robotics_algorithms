@@ -66,15 +66,6 @@ class InvertedPendulumEnv(DeterministicEnv, FullyObservableEnv):
 
         return self.sample_observation(self.cur_state), {}
 
-    # @override
-    # def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
-    #     new_state, reward, term, trunc, info = super().step(action)
-
-    #     self.step_cnt += 1
-    #     trunc = self.step_cnt > self.max_steps  # set truncated flag
-
-    #     return new_state, reward, term, trunc, info
-
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
         # compute next state

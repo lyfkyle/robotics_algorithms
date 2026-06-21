@@ -4,9 +4,7 @@ from robotics_algorithm.env.planar_quadrotor_hover import PlanarQuadrotorHoverEn
 from robotics_algorithm.control.optimal_control.convex_mpc import ConvexMPC
 
 # discrete time model
-env = PlanarQuadrotorHoverEnv(
-    hover_pos=0.25, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=True
-)
+env = PlanarQuadrotorHoverEnv(hover_pos=0.5, hover_height=1.0, quadratic_reward=True, term_if_constraints_violated=True)
 env.reset()
 print('cur_state: ', env.cur_state)
 env.render()
@@ -40,6 +38,7 @@ path = [state]
 while True:
     state_error = state - env.goal_state
     action_error = controller.run(state_error)
+
     action = env.goal_action + action_error
 
     next_state, reward, term, trunc, info = env.step(action)
