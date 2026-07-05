@@ -88,6 +88,9 @@ class DiffDrive2DEnv(BaseEnv):
         self.robot_model = DiffDrive(wheel_dist=0.2, wheel_radius=0.05)
         self.robot_radius = robot_radius
         self.action_dt = action_dt
+        self._implicit_step_cnt = int(
+            self.action_dt / self.robot_model.dt
+        )  # number of internal robot steps per environment step
 
         self.path = None
         self.path_dict = {}
@@ -119,9 +122,10 @@ class DiffDrive2DEnv(BaseEnv):
     @override
     def state_transition_func(self, state: np.ndarray, action: np.ndarray) -> np.ndarray:
         # compute next state
-        new_state = self.robot_model.control(state, action, dt=self.action_dt)
+        for _ in range(self._implicit_step_cnt):
+            state = self.robot_model.control(state, action)
 
-        return new_state
+        return state
 
     @override
     def is_state_terminal(self, state):

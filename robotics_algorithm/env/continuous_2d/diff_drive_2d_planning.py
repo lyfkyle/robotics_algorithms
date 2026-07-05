@@ -70,12 +70,11 @@ class DiffDrive2DPlanning(DiffDrive2DEnv, DeterministicEnv, FullyObservableEnv):
         interpolated_path = [self.start_state]
 
         state = self.start_state
-        num_sub_steps = round(self.action_dt / self.robot_model.dt)
 
         # Run simulation
         for action in action_path:
-            for _ in range(num_sub_steps):
-                state = self.robot_model.control(state, action, dt=self.robot_model.dt)
+            for _ in range(self._implicit_step_cnt):
+                state = self.robot_model.control(state, action)
                 interpolated_path.append(state)
 
         self.path = interpolated_path
