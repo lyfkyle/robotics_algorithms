@@ -31,7 +31,7 @@ def se2_distance(state1: np.ndarray, state2: np.ndarray, w_theta: float = 0.2) -
     return np.sqrt(dx**2 + dy**2 + (w_theta * dyaw) ** 2)
 
 
-def se2_arc_lengths(states: np.ndarray, w_theta: float = 0.2) -> np.ndarray:
+def calc_se2_cumulative_distances(states: np.ndarray, w_theta: float = 0.2) -> np.ndarray:
     """Compute cumulative SE(2) arc-lengths along a sequence of [x, y, yaw] states.
 
     Uses d = sqrt(dx^2 + dy^2 + (w_theta * d_yaw)^2) so that in-place rotations
@@ -50,6 +50,22 @@ def se2_arc_lengths(states: np.ndarray, w_theta: float = 0.2) -> np.ndarray:
     dyaw = np.diff(np.unwrap(states[:, 2]), axis=0)
     seg_lengths = np.sqrt(np.sum(dxy**2, axis=1) + (w_theta * dyaw) ** 2)
     return np.concatenate(([0.0], np.cumsum(seg_lengths)))
+
+
+def calc_se2_path_length(states: np.ndarray, w_theta: float = 0.2) -> float:
+    """Compute the entire SE(2) path length of a sequence of [x, y, yaw] states.
+
+    Args:
+        states: Array of shape (N, 3) with columns [x, y, yaw].
+        w_theta: Scaling factor [m/rad] for angular contribution. Defaults to 0.2.
+
+    Returns:
+        The entire SE(2) path length as a float.
+    """
+    if states.shape[0] <= 1:
+        return 0.0
+    cumulative = calc_se2_cumulative_distances(states, w_theta)
+    return float(cumulative[-1])
 
 
 def smooth(scalars: list[float], weight: float = 0.5) -> list[float]:  # Weight between 0 and 1
