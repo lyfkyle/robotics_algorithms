@@ -30,7 +30,7 @@ class FrenetMPPI:
         longitudinal_progress_weight: float = 1.0,
         w_theta: float = 0.2,
         spatial_resolution: float = 0.02,
-        rotation_shim_threshold: float = 0.25,
+        rotation_shim_threshold: float = 0.1,
         lookahead_dist: float = 0.5,
     ) -> None:
         assert isinstance(env, DiffDrive2DControl), 'env must be a DiffDrive2DControl'
@@ -67,7 +67,7 @@ class FrenetMPPI:
         self.lookahead_dist = lookahead_dist
 
         # Keep reference progress entirely inside controller.
-        self._ref_cursor = 0
+        self.cur_pos_idx = 0
         self._lookahead_cursor = 0
         self._ref_search_window = 200
 
@@ -143,7 +143,7 @@ class FrenetMPPI:
         return n - 1
 
     def _get_reference_start_idx(self, state: np.ndarray) -> int:
-        start_idx = self._ref_cursor
+        start_idx = self.cur_pos_idx
         next_cusp = self._get_next_cusp_idx(start_idx)
         end_idx = min(next_cusp + 1, len(self.ref_path))
 
@@ -175,10 +175,10 @@ class FrenetMPPI:
                 if abs(heading_err_cusp) > self.rotation_shim_threshold:
                     nearest_idx = max(start_idx, next_cusp - 1)
 
-        self._ref_cursor = nearest_idx
+        self.cur_pos_idx = nearest_idx
         return nearest_idx
 
-    def _lateral_heading_cost(self, sampled_traj: np.ndarray, ref_traj: np.ndarray) -> float:
+    def _lateral_heading_cost(self, sampled_traj: np.ndarray, ref_traj: np.ndarray, is_reverse: bool = False) -> float:
         min_len = min(len(ref_traj), len(sampled_traj))
         if min_len < 1:
             return 0.0
@@ -195,7 +195,10 @@ class FrenetMPPI:
             lateral_err_signed = np.dot(pos_err, normal).item()
             lateral_err = abs(lateral_err_signed)
 
-            crosstrack_heading = np.arctan(-k_lateral * lateral_err_signed)
+            if is_reverse:
+                crosstrack_heading = np.arctan(k_lateral * lateral_err_signed)
+            else:
+                crosstrack_heading = np.arctan(-k_lateral * lateral_err_signed)
             yaw_desired = ref_yaw + crosstrack_heading
 
             heading_err = abs(math_utils.normalize_angle(yaw - yaw_desired))
@@ -244,9 +247,27 @@ class FrenetMPPI:
             self.best_traj = [state]
             return np.array([0.0, 0.0])
 
+        # Record old progression direction to detect cusp crossings
+        old_dir = self.progression_directions[min(self.cur_pos_idx, len(self.progression_directions) - 1)]
+
         # 2. Get current reference start index and build reference segment
         ref_start_idx = self._get_reference_start_idx(state)
         ref_segment = self._build_reference_segment(ref_start_idx, self.lookahead_dist)
+
+        new_dir = self.progression_directions[min(ref_start_idx, len(self.progression_directions) - 1)]
+
+        # Dynamically align nominal action with the current path segment direction
+        current_mean = self.action_mean.copy()
+        if new_dir == -1.0:
+            current_mean[0] = -abs(current_mean[0])
+        else:
+            current_mean[0] = abs(current_mean[0])
+        self.nominal_action = np.tile(current_mean, (self.sample_traj_len, 1))
+
+        # If we just crossed a cusp (direction of progression changed), clear/reset prev_actions
+        if new_dir != old_dir:
+            print(f"Cusp crossed! Clearing prev_actions from direction {old_dir} to {new_dir}")
+            self.prev_actions = np.tile(current_mean, (self.sample_traj_len, 1))
 
         # 3. Unified Rotation Shim Triggering
         current_ref_state = self.ref_path[ref_start_idx]
@@ -271,14 +292,26 @@ class FrenetMPPI:
                 trigger_shim = True
                 target_heading_err = lookahead_heading_err
             else:
-                print(f"In-place rotation complete! Directly jumping cursor from {self._ref_cursor} to end of rotation segment {self._lookahead_cursor}")
-                self._ref_cursor = self._lookahead_cursor
+                print(f"In-place rotation complete! Directly jumping cursor from {self.cur_pos_idx} to end of rotation segment {self._lookahead_cursor}")
+                self.cur_pos_idx = self._lookahead_cursor
                 ref_start_idx = self._lookahead_cursor
                 ref_segment = self._build_reference_segment(ref_start_idx, self.lookahead_dist)
+
+                # Update direction and nominal bias after jump
+                new_dir = self.progression_directions[min(ref_start_idx, len(self.progression_directions) - 1)]
+                current_mean = self.action_mean.copy()
+                if new_dir == -1.0:
+                    current_mean[0] = -abs(current_mean[0])
+                else:
+                    current_mean[0] = abs(current_mean[0])
+                self.nominal_action = np.tile(current_mean, (self.sample_traj_len, 1))
+                print(f"Jumping cursor completed! Clearing prev_actions to new direction {new_dir}")
+                self.prev_actions = np.tile(current_mean, (self.sample_traj_len, 1))
 
         # Execute Rotation Shim if triggered
         if trigger_shim:
             print("Rotation Shim Mode!!!!!")
+
             kp_omega = 2.0
             omega = np.clip(kp_omega * target_heading_err, self._min_ang_vel, self._max_ang_vel)
             traj = [state]
@@ -323,7 +356,7 @@ class FrenetMPPI:
             sampled_traj_rs = self._resample_states_by_spatial_resolution(sampled_traj, self.spatial_resolution)
 
             # Evaluate cost using Frenet/Stanley/Continuous Longitudinal critics
-            total_cost = self._lateral_heading_cost(sampled_traj_rs, ref_traj_rs)
+            total_cost = self._lateral_heading_cost(sampled_traj_rs, ref_traj_rs, is_reverse=(new_dir == -1.0))
             total_cost += self._longitudinal_cost(sampled_traj_rs, ref_traj_rs)
 
             all_costs.append(total_cost)
@@ -387,6 +420,9 @@ if __name__ == '__main__':
     # Initialize environment and reference path
     env = DiffDrive2DControl()
     env.reset(ref_path, empty=True)
+    # ! Override start state to test path merging
+    env.start_state = np.array([5.5, 5.0, 0.0])
+    env.cur_state = np.array([5.5, 5.0, 0.0])
 
     controller = FrenetMPPI(env, ref_path)
 
@@ -395,6 +431,7 @@ if __name__ == '__main__':
 
     state = env.start_state
     path = [state]
+    step = 0
     while True:
         action = controller.run(state)
 
@@ -404,8 +441,13 @@ if __name__ == '__main__':
 
         next_state, reward, term, trunc, _ = env.step(action)
         env.cur_carrot_pose_index = controller._lookahead_cursor
-        print(state, action, next_state, reward, term, trunc)
+        # print(state, action, next_state, reward, term, trunc)
 
+        # Get new progression direction for debug
+        cur_pos_idx = controller.cur_pos_idx
+        cur_dir = controller.progression_directions[min(cur_pos_idx, len(controller.progression_directions) - 1)]
+
+        print(f"Step {step} | State: {state} | Action: {action} | Dir: {cur_dir} | PathIdx: {cur_pos_idx}")
         env.render()
 
         path.append(next_state)
@@ -413,3 +455,5 @@ if __name__ == '__main__':
 
         if term or trunc:
             break
+
+        step += 1

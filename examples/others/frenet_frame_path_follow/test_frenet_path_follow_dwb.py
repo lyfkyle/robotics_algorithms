@@ -33,7 +33,7 @@ class FrenetDWB:
         longitudinal_progress_weight: float = 1.0,
         w_theta: float = 0.2,
         spatial_resolution: float = 0.02,
-        rotation_shim_threshold: float = 0.25,
+        rotation_shim_threshold: float = 0.1,
         lookahead_dist: float = 0.5,
     ) -> None:
         """
@@ -246,7 +246,7 @@ class FrenetDWB:
         self._ref_cursor = nearest_idx
         return nearest_idx
 
-    def _lateral_heading_cost(self, sampled_traj: np.ndarray, ref_traj: np.ndarray) -> float:
+    def _lateral_heading_cost(self, sampled_traj: np.ndarray, ref_traj: np.ndarray, is_reverse: bool = False) -> float:
         min_len = min(len(ref_traj), len(sampled_traj))
         if min_len < 1:
             return 0.0
@@ -267,7 +267,10 @@ class FrenetDWB:
 
             # Speed-independent crosstrack heading correction (Kinematic Stanley):
             # Uses arctan as a smooth, infinitely differentiable saturation function
-            crosstrack_heading = np.arctan(-k_lateral * lateral_err_signed)
+            if is_reverse:
+                crosstrack_heading = np.arctan(k_lateral * lateral_err_signed)
+            else:
+                crosstrack_heading = np.arctan(-k_lateral * lateral_err_signed)
             yaw_desired = ref_yaw + crosstrack_heading
 
             # Evaluate heading error relative to this desired corrective heading
@@ -346,6 +349,8 @@ class FrenetDWB:
         ref_start_idx = self._get_reference_start_idx(state)
         ref_segment = self._build_reference_segment(ref_start_idx, self.lookahead_dist)
 
+        new_dir = self.progression_directions[min(ref_start_idx, len(self.progression_directions) - 1)]
+
         # 3. Unified Rotation Shim Triggering
         current_ref_state = self.ref_path[ref_start_idx]
         current_heading_err = math_utils.normalize_angle(current_ref_state[2] - state[2])
@@ -418,7 +423,7 @@ class FrenetDWB:
             sampled_traj_rs = self._resample_states_by_spatial_resolution(sampled_traj, self.spatial_resolution)
 
             # Sum lateral and heading costs over all comparable resampled points (inside helper)
-            total_cost = self._lateral_heading_cost(sampled_traj_rs, ref_traj_rs)
+            total_cost = self._lateral_heading_cost(sampled_traj_rs, ref_traj_rs, is_reverse=(new_dir == -1.0))
 
             # Add terminal progress cost based on trajectory endpoint (inside helper)
             total_cost += self._longitudinal_cost(sampled_traj_rs, ref_traj_rs)
@@ -432,40 +437,44 @@ class FrenetDWB:
         # Return the best action
         return best_action
 
+# Main test block
+if __name__ == '__main__':
+    CUR_DIR = osp.join(osp.dirname(osp.abspath(__file__)))
+    path_file = osp.join(CUR_DIR, 'test_path_se2_easy.json')
 
-CUR_DIR = osp.join(osp.dirname(osp.abspath(__file__)))
-path_file = osp.join(CUR_DIR, 'test_path_se2_easy.json')
+    with open(path_file, 'r') as f:
+        ref_path = json.load(f)
 
-with open(path_file, 'r') as f:
-    ref_path = json.load(f)
+    # Initialize environment and reference path.
+    env = DiffDrive2DControl()
+    env.reset(ref_path, empty=True)
+    # ! Override start state to test path merging
+    env.start_state = np.array([5.5, 5.0, 0.0])
+    env.cur_state = np.array([5.5, 5.0, 0.0])
 
-# Initialize environment and reference path.
-env = DiffDrive2DControl()
-env.reset(ref_path, empty=True)
+    controller = FrenetDWB(env, ref_path)
 
-controller = FrenetDWB(env, ref_path)
+    # Debug visualization.
+    env.interactive_viz = True
 
-# Debug visualization.
-env.interactive_viz = True
+    state = env.start_state
+    path = [state]
+    while True:
+        action = controller.run(state)
 
-state = env.start_state
-path = [state]
-while True:
-    action = controller.run(state)
+        # Visualize current best local trajectory.
+        local_plan = controller.best_traj
+        env.set_local_plan(local_plan)
 
-    # Visualize current best local trajectory.
-    local_plan = controller.best_traj
-    env.set_local_plan(local_plan)
+        next_state, reward, term, trunc, _ = env.step(action)
+        # Synchronize the environment's carrot index with the controller's lookahead cursor for accurate plotting
+        env.cur_carrot_pose_index = controller._lookahead_cursor
+        print(state, action, next_state, reward, term, trunc)
 
-    next_state, reward, term, trunc, _ = env.step(action)
-    # Synchronize the environment's carrot index with the controller's lookahead cursor for accurate plotting
-    env.cur_carrot_pose_index = controller._lookahead_cursor
-    print(state, action, next_state, reward, term, trunc)
+        env.render()
 
-    env.render()
+        path.append(next_state)
+        state = next_state
 
-    path.append(next_state)
-    state = next_state
-
-    if term or trunc:
-        break
+        if term or trunc:
+            break

@@ -56,7 +56,7 @@ class DiffDrive2DEnv(BaseEnv):
         self.state_space = ContinuousSpace(low=[0, 0, -math.pi], high=[self.size, self.size, math.pi])
         if not discrete_action:
             if has_kinematics_constraint:
-                self.action_space = ContinuousSpace(low=[0, -math.radians(30)], high=[0.5, math.radians(30)])
+                self.action_space = ContinuousSpace(low=[-0.5, -math.radians(30)], high=[0.5, math.radians(30)])
             else:
                 self.action_space = ContinuousSpace(
                     low=[-float('inf'), -float('inf')], high=[float('inf'), float('inf')]
