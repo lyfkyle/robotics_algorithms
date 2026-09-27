@@ -4,11 +4,8 @@ import numpy as np
 
 
 def normalize_angle(angle):
-    angle = (angle + 6 * np.pi) % (2 * np.pi)  # normalize theta to [-pi, pi]
-    if angle > np.pi:
-        angle = angle - 2 * np.pi
-
-    return angle
+    """Normalize an angle to [-pi, pi)."""
+    return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
 def smooth(scalars: list[float], weight: float = 0.5) -> list[float]:  # Weight between 0 and 1
