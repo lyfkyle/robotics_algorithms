@@ -99,6 +99,14 @@ class DirectShooting:
         initial_cost = cost_func(action_guess)
         print('Initial cost:', initial_cost)
 
+        # * scipy>=1.15 deprecated the `disp`/`iprint` options for L-BFGS-B (they are now no-ops),
+        # * so per-iteration progress must be printed via a callback instead.
+        iteration_counter = [0]
+
+        def _print_progress(intermediate_result):
+            iteration_counter[0] += 1
+            print(f'iter {iteration_counter[0]}: cost={intermediate_result.fun:.6f}')
+
         # Convert equality constraints to quadratic penalties. L-BFGS-B handles box bounds directly.
         res = scipy.optimize.minimize(
             cost_func,
@@ -106,6 +114,7 @@ class DirectShooting:
             method='L-BFGS-B',
             bounds=variable_bounds(),
             options={'maxiter': self.max_iter, 'ftol': 1e-6, 'maxfun': 1000000},
+            callback=_print_progress,
         )
         self.optimization_result = res
         print(res)
