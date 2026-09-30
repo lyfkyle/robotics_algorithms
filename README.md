@@ -46,15 +46,17 @@ Algorithms
 
 - [ ] Robot Kinematic and Dynamics
   - [x] Differential drive
+    - [ ] Car
   - [x] Cartpole
   - [x] Double Integrator
   - [x] Inverted Pendulum
-  - [ ] Arm
-    - [ ] FK and IK
-  - [ ] Car
+  - [x] Arm
+    - [x] FK and IK
+    - [ ] Velocity Kinematics and Inverse velocity kinematics
   - [x] Planar Quadrotor
-  - [ ] Quadrotor
-  - [ ] Quadruped
+    - [ ] Quadrotor
+  - [ ] Planar Quadruped
+    - [ ] Quadruped
 - [x] State Estimation
   - [x] Localizaion
     - [x] Discrete bayes filter
@@ -71,6 +73,8 @@ Algorithms
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
+  - [ ] Coverage Path Planning
+    - [ ] BA\*
   - [ ] Motion Planning
     - [x] PRM
     - [x] RRT / RRT-Connect
@@ -135,7 +139,14 @@ Algorithms
 In addition to the algorithm itself, also implement several realistic robotics problems that often require additional
 domain-specific components and strategies.
 
-- [x] Path planning for differential drive robot using Hybrid A Star with original heuristics and cost weighted distance measure.
+- [ ] Systems
+  - [ ] Navigation
+    - [x] Cost aware planning
+    - [ ] SE2 Pose path tracking
+  - [ ] Manipulation
+    - [ ] Cartesian planning
+    - [ ] TOPP
+  - [ ] Locomotion
 
 ## Known issues
 
