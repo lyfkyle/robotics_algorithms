@@ -4,7 +4,7 @@ import numpy as np
 
 from robotics_algorithm.env.base_env import BaseEnv
 from robotics_algorithm.env.continuous_2d.omni_2d_planning import OmniDrive2DPlanning
-from robotics_algorithm.planning.motion_planning.rrt_star import RRTStar
+from robotics_algorithm.planning.motion_planning.BRRT_star import BRRTStar
 
 # Initialize environment
 env = OmniDrive2DPlanning()
@@ -43,7 +43,7 @@ env.reset(random_env=not FIX_MAZE)
 env.render()
 
 # initialize planner
-planner = RRTStar(env, sample_func, vertex_expand_func, is_edge_valid, distance_func, num_of_samples=1000)
+planner = BRRTStar(env, sample_func, vertex_expand_func, is_edge_valid, distance_func, num_of_samples=1000)
 
 # run path planner
 start = env.start_state
@@ -51,7 +51,7 @@ goal = env.goal_state
 start_time = time.time()
 res, shortest_path, shortest_path_len = planner.run(start, goal)
 end_time = time.time()
-print('TestRRTStar, online takes {} seconds'.format(end_time - start_time))
+print('TestBRRTStar, online takes {} seconds'.format(end_time - start_time))
 
 # visualize tree
 tree = planner.get_tree()
@@ -60,11 +60,11 @@ for state in tree.nodes:
         env.add_state_samples(state)
 
 if not res:
-    print('TestRRTStar, no path is available!')
+    print('TestBRRTStar, no path is available!')
 else:
     # visualize path
     env.add_state_path(shortest_path, interpolate=True)
-    print('TestRRTStar, found path of len {}'.format(shortest_path_len))
+    print('TestBRRTStar, found path of len {}'.format(shortest_path_len))
 
 env.render()
 
@@ -72,5 +72,5 @@ env.render()
 plt.plot(planner.cost_history)
 plt.xlabel('iteration')
 plt.ylabel('best path cost found so far')
-plt.title('TestRRTStar cost history')
+plt.title('TestBRRTStar cost history')
 plt.show()

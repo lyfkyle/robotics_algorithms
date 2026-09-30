@@ -1,5 +1,3 @@
-from collections import defaultdict
-import math
 from typing import Callable
 
 from sklearn.neighbors import NearestNeighbors
@@ -7,6 +5,9 @@ import numpy as np
 import networkx as nx
 
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
+
+# TODO
+# Implement sorting as suggested by original paper to improve the efficiency of neighbor selection.
 
 
 class RRTStar:
@@ -46,6 +47,7 @@ class RRTStar:
         self.tree = nx.Graph()
         self.g = {}
         self.num_of_samples = num_of_samples
+        self.cost_history = []  # best cost-to-goal found so far, indexed by iteration
 
         self.goal_bias = 0.2
 
@@ -73,7 +75,7 @@ class RRTStar:
 
         for i in range(self.num_of_samples):
             if i % 100 == 0:
-                print("RRTStar/run, iteration {}".format(i))
+                print('RRTStar/run, iteration {}'.format(i))
 
             if np.random.uniform() > self.goal_bias:
                 v_target = tuple(self._sample_func(self.env).tolist())
@@ -81,16 +83,17 @@ class RRTStar:
                 v_target = goal
 
             self.extend(v_target)
+            self.cost_history.append(self.g.get(goal, float('inf')))
 
         if self.tree.has_node(goal):
-            path = nx.shortest_path(self.tree, start, goal, weight="weight")
-            path_len = nx.shortest_path_length(self.tree, start, goal, weight="weight")
+            path = nx.shortest_path(self.tree, start, goal, weight='weight')
+            path_len = nx.shortest_path_length(self.tree, start, goal, weight='weight')
             print(path, path_len)
             return True, path, path_len
         else:
             return False, None, None
 
-    def extend(self, v_target: tuple):
+    def extend(self, v_target: tuple, rewire: bool = True):
         """
         Extend towards v_goal one step.
             1. find nearest_neighbor
@@ -120,7 +123,9 @@ class RRTStar:
             raw_neighbors = self.get_nearest_neighbors(all_nodes, v_new, n_neighbors=10)
 
             # filter out neighbors that are not connectable
-            neighbors = [tuple(n.tolist()) for n in raw_neighbors if self._edge_col_check_func(self.env, n, np.array(v_new))[0]]
+            neighbors = [
+                tuple(n.tolist()) for n in raw_neighbors if self._edge_col_check_func(self.env, n, np.array(v_new))[0]
+            ]
 
             # shortcut. Instead of connecting v_new to v_cur, connect to neighbor that has best cost-to-come
             best_cost_to_come = self.g[v_cur] + path_len
@@ -138,19 +143,22 @@ class RRTStar:
             self.g[v_new] = best_cost_to_come
 
             # rewire nearby neighbors.
-            for neighbor in neighbors:
-                dist_v_neighbour = self._distance_func(self.env, v_new, neighbor)
-                if self.g[v_new] + dist_v_neighbour < self.g[neighbor]:
-                    self.g[neighbor] = self.g[v_new] + dist_v_neighbour
-                    self.tree.remove_node(neighbor)  # remove old edge by removing the node itself.
-                    self.tree.add_edge(v_new, neighbor, weight=dist_v_neighbour)
+            if rewire:
+                for neighbor in neighbors:
+                    dist_v_neighbour = self._distance_func(self.env, v_new, neighbor)
+                    if self.g[v_new] + dist_v_neighbour < self.g[neighbor]:
+                        self.g[neighbor] = self.g[v_new] + dist_v_neighbour
+                        self.tree.remove_node(neighbor)  # remove old edge by removing the node itself.
+                        self.tree.add_edge(v_new, neighbor, weight=dist_v_neighbour)
 
         if v_new == v_target:
             return RRTStar.REACHED, v_new
         else:
             return RRTStar.TRAPPED, v_new
 
-    def get_nearest_neighbors(self, all_vertices: np.ndarray[tuple], v: tuple, n_neighbors: int = 1) -> np.ndarray[tuple]:
+    def get_nearest_neighbors(
+        self, all_vertices: np.ndarray[tuple], v: tuple, n_neighbors: int = 1
+    ) -> np.ndarray[tuple]:
         """
         return the closest neighbors of v in all_vertices.
 
@@ -167,7 +175,7 @@ class RRTStar:
         all_vertices = np.array(all_vertices)
         v = np.array(v).reshape(1, -1)
 
-        nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm="ball_tree").fit(all_vertices)
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(all_vertices)
         distances, indices = nbrs.kneighbors(v)
         # print("indices {}".format(indices))
         nbr_vertices = np.take(np.array(all_vertices), indices.ravel(), axis=0)

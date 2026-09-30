@@ -32,11 +32,11 @@ python examples/planning/path_planning/test_a_star.py
 
 ## News
 
+- 30/09/2026: Added B-RRT\* and PlanarRobotArm model (v0.14.0)
 - 21/06/2026: Added iLQR and DDP for trajectory optimisation (v0.13.0).
 - 08/06/2026: Added direct shooting and direct collocation trajectory optimisation (v0.12.0).
 - 26/03/2025: Added DWA (v0.11.2).
 - 20/02/2025: Added LQR and convex MPC for planar quadrotor (v0.11.1).
-- 17/02/2025: Added convex MPC, inverted pendulum and more path following examples (v0.11.0).
 
 ## Status
 
@@ -46,15 +46,17 @@ Algorithms
 
 - [ ] Robot Kinematic and Dynamics
   - [x] Differential drive
+    - [ ] Car
   - [x] Cartpole
   - [x] Double Integrator
   - [x] Inverted Pendulum
-  - [ ] Arm
-    - [ ] FK and IK
-  - [ ] Car
+  - [x] Arm
+    - [x] FK and IK
+    - [ ] Velocity Kinematics and Inverse velocity kinematics
   - [x] Planar Quadrotor
-  - [ ] Quadrotor
-  - [ ] Quadruped
+    - [ ] Quadrotor
+  - [ ] Planar Quadruped
+    - [ ] Quadruped
 - [x] State Estimation
   - [x] Localizaion
     - [x] Discrete bayes filter
@@ -71,11 +73,13 @@ Algorithms
     - [x] Dijkstra
     - [x] A-star
     - [x] Hybrid A-star
+  - [ ] Coverage Path Planning
+    - [ ] BA\*
   - [ ] Motion Planning
     - [x] PRM
     - [x] RRT / RRT-Connect
     - [x] RRT\*
-    - [ ] RRT\*-Connect
+    - [x] BRRT\*
     - [ ] Informed RRT\*
     - [ ] BIT\*
   - [x] MDP
@@ -135,7 +139,14 @@ Algorithms
 In addition to the algorithm itself, also implement several realistic robotics problems that often require additional
 domain-specific components and strategies.
 
-- [x] Path planning for differential drive robot using Hybrid A Star with original heuristics and cost weighted distance measure.
+- [ ] Systems
+  - [ ] Navigation
+    - [x] Cost aware planning
+    - [ ] SE2 Pose path tracking
+  - [ ] Manipulation
+    - [ ] Cartesian planning
+    - [ ] TOPP
+  - [ ] Locomotion
 
 ## Known issues
 
