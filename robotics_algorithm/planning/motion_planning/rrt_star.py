@@ -1,5 +1,3 @@
-from collections import defaultdict
-import math
 from typing import Callable
 
 from sklearn.neighbors import NearestNeighbors
@@ -7,6 +5,9 @@ import numpy as np
 import networkx as nx
 
 from robotics_algorithm.env.base_env import BaseEnv, SpaceType, EnvType
+
+# TODO
+# Implement sorting as suggested by original paper to improve the efficiency of neighbor selection.
 
 
 class RRTStar:

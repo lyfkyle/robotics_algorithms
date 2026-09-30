@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.14.0]
+
+- Added BRRT\* and PlanarRobotArm model
+- Refactored repo structure to prepare for future robot system algorithms
+
 ## [v0.13.0]
 
 - Added iLQR and DDP. Tested on `inverted_pendulum`, `cartpole` and `planar_quadrotor` envs.
